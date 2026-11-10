@@ -1,6 +1,7 @@
 package bac_meta
 
 import ".."
+import "base:runtime"
 import "core:fmt"
 import "core:odin/ast"
 import "core:odin/parser"
@@ -45,7 +46,7 @@ class_array :: proc(
 
 qualify_type :: proc(qual: string, pack: string, id: typeid) -> string {
 	if qual == "" do return fmt.tprintf("%v", id)
-	if pack == type_info_of(id).variant.(reflect.Type_Info_Named).pkg {
+	if pack == type_info_of(id).variant.(^runtime.Type_Info_Named).pkg {
 		return fmt.tprintf("%v", id)
 	}
 	return fmt.tprintf("%v%v", qual, id)

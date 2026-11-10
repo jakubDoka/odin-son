@@ -1,8 +1,22 @@
-function script
-    if not test -f script.bin
-        odin build script -out:script.bin; or return 1
+function run-if-changed --argument-names deps
+    set -l cmd $argv[2..]
+    set -l dir ~/.cache/run-if-changed
+    mkdir -p $dir
+    set -l stamp $dir/(string join \n -- $argv | sha1sum | string split -f1 ' ')
+
+    if test -e $stamp; and test -z "$(find (string split -n ' ' -- $deps) -newer $stamp -print -quit)"
+        return 0
     end
 
+    touch $stamp.tmp
+    $cmd
+    set -l code $status
+    test $code -eq 0; and mv $stamp.tmp $stamp
+    return $code
+end
+
+function script
+    run-if-changed './script' odin build script -out:script.bin
     ./script.bin $argv
 end
 
@@ -47,4 +61,4 @@ script-alias prebuild-libs
 ### unimportant
 
 alias measure 'rel-files | xargs wc -l | sort -n'
-alias deploy-mini-odin 'scp -r mini-odin root@95.217.156.80:/var/www/'
+alias deploy-mini-odin 'scp -r odinc/mini root@95.217.156.80:/var/www/'

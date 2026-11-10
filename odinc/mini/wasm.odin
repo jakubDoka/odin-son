@@ -1,9 +1,9 @@
 package bac_wasm_main
 
 import jit ".."
-import "../bac"
+import "../../bac"
+import "../../utils/arna"
 import "../typecheck"
-import "../utils/arna"
 import "base:runtime"
 import "core:odin/ast"
 import "core:odin/parser"
@@ -147,7 +147,7 @@ compiler_compile_bufs :: proc "c" (
 	diagnostics: strings.Builder
 	diagnostics.buf.allocator = state.types.allocator
 
-	tar := jit.TARGETS[target]
+	tar := jit.TARGETS[jit.Target_ID(target)]
 
 	state.ctx.types = &state.types
 	state.ctx.global = &state.global

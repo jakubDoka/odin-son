@@ -1,5 +1,5 @@
 package bac
-// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1054:2)
+// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1055:2)
 
 INHERITANCE_TABLE :: []u16{		0b1, // Nil
 		0b1, // Entry

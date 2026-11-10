@@ -1,5 +1,5 @@
 
-r: ([Shl ..= .U_Shr] dt: [I8 ..= I64] vl
+r: ([Shl ..= U_Shr] dt: [I8 ..= I64] vl
     match {
         (CInt {value >= i64(bac.DT_SIZE[r.dt] * 8)} value) => overflow,
         (CInt value) => imm,

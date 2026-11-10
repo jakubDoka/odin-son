@@ -28,12 +28,14 @@ rust_ident :: proc(s: string) -> string {
 }
 
 rust_lists :: proc(
-	sig: runtime.Type_Info_Procedure,
+	sig: ^runtime.Type_Info_Procedure,
 ) -> (
-	params, results: runtime.Type_Info_Parameters,
+	params, results: ^runtime.Type_Info_Parameters,
 ) {
-	if sig.params != nil do params = sig.params.variant.(runtime.Type_Info_Parameters)
-	if sig.results != nil do results = sig.results.variant.(runtime.Type_Info_Parameters)
+	@(static) empty: runtime.Type_Info_Parameters
+	params, results = &empty, &empty
+	if sig.params != nil do params = sig.params.variant.(^runtime.Type_Info_Parameters)
+	if sig.results != nil do results = sig.results.variant.(^runtime.Type_Info_Parameters)
 	return
 }
 
@@ -89,7 +91,7 @@ rust_type :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info, hint := "") -> string {
 		)
 	}
 	name := hint
-	if t, ok := ty.variant.(runtime.Type_Info_Named); ok {
+	if t, ok := ty.variant.(^runtime.Type_Info_Named); ok {
 		name = fmt.tprintf("%v_%v", t.pkg, t.name)
 		builder := strings.builder_make()
 		for c in name {
@@ -239,8 +241,8 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 	}
 	#partial switch _ in base.variant {
 	case ^runtime.Type_Info_Bit_Field,
-	     runtime.Type_Info_Struct,
-	     runtime.Type_Info_Union:
+	     ^runtime.Type_Info_Struct,
+	     ^runtime.Type_Info_Union:
 		rust_default(f, name)
 	}
 	fmt.fprintfln(
@@ -290,7 +292,7 @@ pub struct DynamicArray<T> { pub data: *mut T, pub len: isize, pub cap: isize, p
 	rust_default(f, "DynamicArray<T>", "<T>")
 	fmt.fprintln(f, "unsafe extern \"C\" {")
 	for entry in api {
-		if sig, ok := type_info_of(entry.type).variant.(runtime.Type_Info_Procedure);
+		if sig, ok := type_info_of(entry.type).variant.(^runtime.Type_Info_Procedure);
 		   ok {
 			params, results := rust_lists(sig)
 			fmt.fprintf(
@@ -350,7 +352,7 @@ Rust_ENUMS :: [?]struct {
 }
 
 rust_safe_type :: proc(ty: ^runtime.Type_Info) -> string {
-	if t, ok := ty.variant.(runtime.Type_Info_Named); ok {
+	if t, ok := ty.variant.(^runtime.Type_Info_Named); ok {
 		name := fmt.tprintf("%v_%v", t.pkg, t.name)
 		if name == "bac_Node_ID" do return "NodeId"
 		if name == "bac_Node_Type" do return "NodeType"
@@ -413,7 +415,7 @@ generate_rust_api :: proc(api: []API_Proc) {
 	g: Rust_Gen
 	_ = rust_type(&g, type_info_of(bac_ssa.Node_Type))
 	for entry in api {
-		sig, ok := type_info_of(entry.type).variant.(runtime.Type_Info_Procedure)
+		sig, ok := type_info_of(entry.type).variant.(^runtime.Type_Info_Procedure)
 		if !ok do continue
 		params, _ := rust_lists(sig)
 		for ty, i in params.types do _ = rust_type(&g, ty, fmt.tprintf("%v_%v_%v", rust_prefix(entry.package_path), entry.name, params.names[i]))
@@ -445,7 +447,7 @@ generate_rust_api :: proc(api: []API_Proc) {
 			fmt.fprintfln(f, "impl %v<'_> {{", receiver)
 		}
 		for entry in api {
-			sig, ok := type_info_of(entry.type).variant.(runtime.Type_Info_Procedure)
+			sig, ok := type_info_of(entry.type).variant.(^runtime.Type_Info_Procedure)
 			if !ok do continue
 			params, results := rust_lists(sig)
 			if len(params.types) == 0 || rust_type(&g, params.types[0]) != "*mut Proc" do continue

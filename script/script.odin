@@ -720,7 +720,7 @@ run_generated :: proc() -> int {
 		cmd(
 			"odin",
 			"build",
-			"wasm",
+			"odinc/mini",
 			"-target:freestanding_wasm32",
 			"-no-entry-point",
 			"-o:size",
@@ -730,8 +730,8 @@ run_generated :: proc() -> int {
 			`-extra-linker-flags:"-z stack-size=8388608 --export=source_buffer
        --export=output_buffer --export=__stack_pointer"`,
 		)
-		cmd("wasm-opt", "-Oz", "wasm.wasm", "-o", "wasm.wasm")
-		cmd("mv", "wasm.wasm", "mini-odin")
+		cmd("wasm-opt", "-Oz", "mini.wasm", "-o", "mini.wasm")
+		cmd("mv", "mini.wasm", "odinc/mini")
 	case "build-unicorn":
 		cmd(
 			"cmake",

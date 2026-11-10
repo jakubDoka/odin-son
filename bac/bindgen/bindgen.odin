@@ -137,7 +137,7 @@ typedef struct {
 		for entry, j in API {
 			first_pass := i == 0
 
-			sig, is_proc := type_info_of(entry.type).variant.(runtime.Type_Info_Procedure)
+			sig, is_proc := type_info_of(entry.type).variant.(^runtime.Type_Info_Procedure)
 
 			params, results := proc_lists(sig)
 
@@ -270,14 +270,14 @@ typedef struct {
 				cmp :: proc(v: Entry) -> int {
 					#partial switch t in type_info_of(v.type).variant {
 					case ^runtime.Type_Info_Struct,
-					     runtime.Type_Info_Union,
-					     runtime.Type_Info_Bit_Field,
-					     runtime.Type_Info_Bit_Set,
-					     runtime.Type_Info_Enum,
-					     runtime.Type_Info_Integer,
-					     runtime.Type_Info_Fixed_Capacity_Dynamic_Array,
-					     runtime.Type_Info_Slice,
-					     runtime.Type_Info_Dynamic_Array:
+					     ^runtime.Type_Info_Union,
+					     ^runtime.Type_Info_Bit_Field,
+					     ^runtime.Type_Info_Bit_Set,
+					     ^runtime.Type_Info_Enum,
+					     ^runtime.Type_Info_Integer,
+					     ^runtime.Type_Info_Fixed_Capacity_Dynamic_Array,
+					     ^runtime.Type_Info_Slice,
+					     ^runtime.Type_Info_Dynamic_Array:
 						return 0
 					case ^runtime.Type_Info_Named:
 						return cmp({0, t.base.id})
@@ -293,13 +293,13 @@ typedef struct {
 					ty := ent.type
 					#partial switch _ in type_info_of(ty).variant {
 					case ^runtime.Type_Info_Integer,
-					     runtime.Type_Info_Type_Id,
-					     runtime.Type_Info_Boolean,
-					     runtime.Type_Info_Float,
-					     runtime.Type_Info_Rune,
-					     runtime.Type_Info_String,
-					     runtime.Type_Info_Array,
-					     runtime.Type_Info_Enumerated_Array:
+					     ^runtime.Type_Info_Type_Id,
+					     ^runtime.Type_Info_Boolean,
+					     ^runtime.Type_Info_Float,
+					     ^runtime.Type_Info_Rune,
+					     ^runtime.Type_Info_String,
+					     ^runtime.Type_Info_Array,
+					     ^runtime.Type_Info_Enumerated_Array:
 						continue
 					}
 					name := c_type_name(type_info_of(ty))
@@ -308,7 +308,7 @@ typedef struct {
 						// C array typedefs require complete element definitions.
 						#partial switch t in
 							runtime.type_info_base(type_info_of(ty)).variant {
-						case ^runtime.Type_Info_Array, runtime.Type_Info_Enumerated_Array:
+						case ^runtime.Type_Info_Array, ^runtime.Type_Info_Enumerated_Array:
 							continue
 						}
 						fmt.sbprintf(&c_lib, "typedef ")
@@ -335,7 +335,7 @@ typedef struct {
 						mode := Display_Mode.Decl
 						#partial switch t in
 							runtime.type_info_base(type_info_of(ty)).variant {
-						case ^runtime.Type_Info_Array, runtime.Type_Info_Enumerated_Array:
+						case ^runtime.Type_Info_Array, ^runtime.Type_Info_Enumerated_Array:
 							fmt.sbprintf(&c_lib, "typedef ")
 							mode = .Typedef
 						}
@@ -460,11 +460,11 @@ typedef struct {
 		case ^runtime.Type_Info_Fixed_Capacity_Dynamic_Array:
 			depth = max(depth, visit(t.elem, coll, seen))
 		case ^runtime.Type_Info_Integer,
-		     runtime.Type_Info_Float,
-		     runtime.Type_Info_Rune,
-		     runtime.Type_Info_Type_Id,
-		     runtime.Type_Info_String,
-		     runtime.Type_Info_Boolean:
+		     ^runtime.Type_Info_Float,
+		     ^runtime.Type_Info_Rune,
+		     ^runtime.Type_Info_Type_Id,
+		     ^runtime.Type_Info_String,
+		     ^runtime.Type_Info_Boolean:
 		case ^runtime.Type_Info_Procedure:
 			params, results := proc_lists(t)
 			for ty in params.types {
@@ -583,10 +583,12 @@ typedef struct {
 				fmt.sbprint(f, c_type_name(ty))
 			case .Decl:
 				fmt.sbprintfln(f, "struct %v {{", name^)
-				info: runtime.Type_Info
-				info.variant = runtime.Type_Info_Array {
+				data := runtime.Type_Info_Array {
 					elem  = t.elem,
 					count = t.capacity,
+				}
+				info := runtime.Type_Info {
+					variant = &data,
 				}
 				c_display_field(f, &info, "data", depth)
 				padding := int(t.len_offset) - t.capacity * t.elem_size
@@ -607,7 +609,7 @@ typedef struct {
 			case .Typedef:
 				fmt.sbprintf(f, "bac_u%v", ty.size * 8)
 			case .Decl:
-				if _, ok := runtime.type_info_base(t.elem).variant.(runtime.Type_Info_Enum);
+				if _, ok := runtime.type_info_base(t.elem).variant.(^runtime.Type_Info_Enum);
 				   ok {
 					fmt.sbprintln(f, "enum {")
 					for field in reflect.enum_fields_zipped(t.elem.id) {
@@ -652,9 +654,11 @@ typedef struct {
 				fmt.sbprint(f, c_type_name(ty))
 			case .Decl:
 				fmt.sbprintfln(f, `struct %v {{`, name^)
-				info: runtime.Type_Info
-				info.variant = runtime.Type_Info_Pointer {
+				data := runtime.Type_Info_Pointer {
 					elem = t.elem,
+				}
+				info := runtime.Type_Info {
+					variant = &data,
 				}
 				c_display_field(f, &info, "data", depth)
 				fmt.sbprint(f, "\tbac_int len;\n}")
@@ -668,9 +672,11 @@ typedef struct {
 				fmt.sbprint(f, c_type_name(ty))
 			case .Decl:
 				fmt.sbprintfln(f, `struct %v {{`, name^)
-				info: runtime.Type_Info
-				info.variant = runtime.Type_Info_Pointer {
+				data := runtime.Type_Info_Pointer {
 					elem = t.elem,
+				}
+				info := runtime.Type_Info {
+					variant = &data,
 				}
 				c_display_field(f, &info, "data", depth)
 				fmt.sbprintln(f, "\tbac_int len, cap;")
@@ -790,7 +796,7 @@ typedef struct {
 
 				indent(f, depth)
 				fmt.sbprintf(f, "}}")
-				if _, ok := t.backing_type.variant.(runtime.Type_Info_Array); ok {
+				if _, ok := t.backing_type.variant.(^runtime.Type_Info_Array); ok {
 					fmt.sbprintf(f, " __attribute__((packed, aligned(%v)))", ty.align)
 				}
 			}
@@ -869,7 +875,7 @@ typedef struct {
 			fmt.sbprint(f, "void")
 		} else {
 			#partial switch _ in elem.variant {
-			case ^runtime.Type_Info_Array, runtime.Type_Info_Enumerated_Array:
+			case ^runtime.Type_Info_Array, ^runtime.Type_Info_Enumerated_Array:
 				name^ = fmt.tprintf("(%v)", name^)
 			}
 			c_display_type(f, elem, .Field, name, depth)
@@ -877,15 +883,18 @@ typedef struct {
 	}
 
 	proc_lists :: proc(
-		sig: runtime.Type_Info_Procedure,
+		sig: ^runtime.Type_Info_Procedure,
 	) -> (
-		params, results: runtime.Type_Info_Parameters,
+		params, results: ^runtime.Type_Info_Parameters,
 	) {
+		@(static) empty: runtime.Type_Info_Parameters
+		params, results = &empty, &empty
+		if sig == nil do return
 		if sig.params != nil {
-			params = sig.params.variant.(runtime.Type_Info_Parameters)
+			params = sig.params.variant.(^runtime.Type_Info_Parameters)
 		}
 		if sig.results != nil {
-			results = sig.results.variant.(runtime.Type_Info_Parameters)
+			results = sig.results.variant.(^runtime.Type_Info_Parameters)
 		}
 		return
 	}
@@ -895,7 +904,7 @@ typedef struct {
 		case:
 			return ""
 		case ^runtime.Type_Info_Named:
-			if _, ok := runtime.type_info_base(ty).variant.(runtime.Type_Info_Bit_Set);
+			if _, ok := runtime.type_info_base(ty).variant.(^runtime.Type_Info_Bit_Set);
 			   ok {
 				return fmt.tprintf("%v_Bs_%v", t.pkg, c_type_to_name(t.name))
 			}
@@ -909,7 +918,7 @@ typedef struct {
 				)
 			}
 		case ^runtime.Type_Info_Bit_Set:
-			if elem, ok := t.elem.variant.(runtime.Type_Info_Named); ok {
+			if elem, ok := t.elem.variant.(^runtime.Type_Info_Named); ok {
 				return fmt.tprintf("%v_Bs_%v", elem.pkg, c_type_to_name(elem.name))
 			}
 			return fmt.tprintf(

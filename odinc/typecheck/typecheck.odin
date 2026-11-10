@@ -338,6 +338,7 @@ type_align :: proc(ty: Type) -> int {
 	case ^Proc_Type, Pointer, Multi_Pointer, String_Type:
 		return 8
 	case ^Struct:
+		layout_struct(t)
 		return t.align
 	case ^Array:
 		return type_align(t.elem)
@@ -346,6 +347,7 @@ type_align :: proc(ty: Type) -> int {
 	case ^Enum:
 		return type_align(t.backing)
 	case ^Union:
+		layout_union(t)
 		return t.align
 	case ^Simd:
 		return type_size(t.elem) * t.len
@@ -360,6 +362,7 @@ type_size :: proc(ty: Type) -> (res: int) {
 	case ^Proc_Type, Pointer, Multi_Pointer:
 		return 8
 	case ^Struct:
+		layout_struct(t)
 		return t.size
 	case ^Array:
 		return int(min(uint(type_size(t.elem) * t.len), uint(max(int))))
@@ -368,12 +371,77 @@ type_size :: proc(ty: Type) -> (res: int) {
 	case ^Enum:
 		return type_size(t.backing)
 	case ^Union:
+		layout_union(t)
 		return t.size
 	case ^Simd:
 		return int(min(uint(type_size(t.elem) * t.len), uint(max(int))))
 	}
 	assert(ty <= .F64)
 	return TYPE_SIZES[ty]
+}
+
+// begin_layout tells whether the layout still needs computing, a type that
+// is requested while busy contains itself by value and is laid out as empty
+begin_layout :: proc(state: ^Layout_State) -> bool {
+	switch state^ {
+	case .Busy:
+		state^ = .Recursive
+	case .Pending:
+		state^ = .Busy
+		return true
+	case .Done, .Recursive:
+	}
+	return false
+}
+
+end_layout :: proc(state: ^Layout_State) {
+	if state^ == .Busy do state^ = .Done
+}
+
+layout_struct :: proc(s: ^Struct) {
+	// generic bases keep the field asts and only their instances get laid out
+	if len(s.param_names) != 0 do return
+	if !begin_layout(&s.layout) do return
+
+	s.size = 0
+	s.align = 1
+	for &field in s.fields {
+		field.offset = mem.align_forward_int(s.size, type_align(field.ty))
+		s.size = field.offset + type_size(field.ty)
+		s.align = max(s.align, type_align(field.ty))
+	}
+	s.size = mem.align_forward_int(s.size, s.align)
+
+	end_layout(&s.layout)
+}
+
+layout_union :: proc(u: ^Union) {
+	if !begin_layout(&u.layout) do return
+
+	max_size := 0
+	max_align := 1
+	for vt in u.variants {
+		max_size = max(max_size, type_size(vt))
+		max_align = max(max_align, type_align(vt))
+	}
+	tag_size := type_size(u.tag_ty)
+	u.tag_offset = mem.align_forward_int(max_size, tag_size)
+	u.align = max(max_align, tag_size)
+	u.size = mem.align_forward_int(u.tag_offset + tag_size, u.align)
+
+	end_layout(&u.layout)
+}
+
+finish_layout :: proc(
+	ctx: ^Gen_Ctx,
+	node: ^ast.Node,
+	ty: Type,
+	state: ^Layout_State,
+) {
+	assert(state^ == .Busy || state^ == .Recursive)
+	if state^ == .Busy do state^ = .Pending
+	type_size(ty)
+	if state^ == .Recursive do error(ctx, node, "recursive type, it contains itself by value")
 }
 
 @(rodata)
@@ -717,6 +785,7 @@ int_type_for_size :: proc(size: int) -> Type {
 
 instantiate_struct :: proc(
 	ctx: ^Gen_Ctx,
+	node: ^ast.Node,
 	base: ^Struct,
 	uargs: []Type,
 ) -> Type {
@@ -724,14 +793,13 @@ instantiate_struct :: proc(
 
 	args := intern_type_slice(ctx, uargs)
 	key := Struct_Inst_Key{base, string(mem.slice_data_cast([]u8, args))}
-	if existing, ok := ctx.struct_insts[key]; ok && len(args) != 0 {
+	if existing, ok := ctx.struct_insts[key]; ok {
 		return pack_type(existing)
 	}
 
 	structa := base
 	if len(uargs) != 0 do structa = new(Struct, ctx.types.allocator)
 	structa.custom_layout = base.custom_layout
-	structa.align = 1
 	structa.params = args
 	ctx.struct_insts[key] = structa
 
@@ -764,13 +832,9 @@ instantiate_struct :: proc(
 			field.ty = emit_type(ctx, ast.clone(field.ty_ast))
 		}
 		last_field = field.ty
-
-		// TODO: extract this to a layout computation
-		field.offset = mem.align_forward_int(structa.size, type_align(field.ty))
-		structa.size = field.offset + type_size(field.ty)
-		structa.align = max(structa.align, type_align(field.ty))
 	}
-	structa.size = mem.align_forward_int(structa.size, structa.align)
+
+	finish_layout(ctx, node, pack_type(structa), &structa.layout)
 
 	return pack_type(structa)
 }
@@ -833,6 +897,33 @@ hash_name :: proc(name: string) -> u8 {
 	return max(u8(hash.fnv32a(transmute([]u8)name)), 1)
 }
 
+// unique_type_name makes `module.proc.name` unique by suffixing `#n`, since
+// polymorphic instances share the segment of their proc and sibling scopes can
+// reuse a name
+unique_type_name :: proc(
+	ctx: ^Gen_Ctx,
+	mid: Module_ID,
+	parent: Proc_ID,
+	name: string,
+) -> string {
+	context.allocator, _ = arna.scrath()
+
+	segments: [dynamic]string
+	append(&segments, name)
+	for p := parent; p != 0; p = ctx.procs[p].parent {
+		fmt.assertf(ctx.procs[p].module == mid, "%v %v", ctx.procs[p].module, mid)
+		append(&segments, ctx.procs[p].segment)
+	}
+	append(&segments, ctx.modules[mid].name)
+	slice.reverse(segments[:])
+
+	full := strings.join(segments[:], ".", ctx.types.allocator)
+	count := ctx.name_counts[full] + 1
+	ctx.name_counts[full] = count
+	if count == 1 do return full
+	return fmt.aprintf("%v#%v", full, count, allocator = ctx.types.allocator)
+}
+
 find_module_decl :: proc(
 	ctx: ^Gen_Ctx,
 	mod: Module_ID,
@@ -885,20 +976,29 @@ typecheck_decl :: proc(
 	decl: ^Decl,
 ) -> ^Check_Meta {
 	if len(decl.value.end.file) == 0 && decl.value != &nil_node {
+		// the value node caches the result, so it must not be shared with a
+		// decl from a different context
+		fmt.assertf(decl.evaluated, "%v", decl)
 		fmt.assertf(get_node_meta(decl.value) != nil, "%v", decl)
 		return get_node_meta(decl.value)
 	}
 
+	fmt.assertf(!decl.evaluated, "%v", decl)
+	decl.evaluated = true
+
 	prev_module := ctx.module
 	prev_file_id := ctx.file_id
+	prev_prc_id := ctx.prc_id
 
 	defer {
 		ctx.module = prev_module
 		ctx.file_id = prev_file_id
 		ctx.file = &ctx.files[prev_file_id]
+		ctx.prc_id = prev_prc_id
 	}
 
 	ctx.module = Module_ID(mid)
+	ctx.prc_id = decl.parent
 
 	ctx.file_id = decl.file
 	ctx.file = &ctx.files[ctx.file_id]
@@ -1166,6 +1266,10 @@ emit_type :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> (ret: Type) {
 
 Proc :: struct {
 	name:        string,
+	// the `::` name, `name` gets mangled for polymorphic instances
+	segment:     string,
+	// enclosing proc, 0 at package level
+	parent:      Proc_ID,
 	polys:       #soa[]Poly_Entry,
 	param_types: []bac.Param_Spec,
 	using sig:   ^Proc_Type,
@@ -1326,6 +1430,9 @@ Decl :: struct {
 	is_mutable:  bool,
 	global_idx:  u32,
 	condition:   ^Decl_Condition,
+	// proc whose body declares this, 0 at package level
+	parent:      Proc_ID,
+	evaluated:   bool,
 }
 
 Module :: struct {
@@ -1386,6 +1493,7 @@ Types :: struct {
 	type_slices:    map[Type_Slice_Key][]Type,
 	globals:        [dynamic]Global_Data,
 	global_vars:    [dynamic]Global_Var,
+	name_counts:    map[string]int,
 	owns_scratch:   bool,
 }
 
@@ -1485,7 +1593,17 @@ Struct :: struct {
 	fields:        []Struct_Field,
 	size:          int,
 	align:         int,
+	layout:        Layout_State,
 	custom_layout: bool,
+}
+
+Layout_State :: enum u8 {
+	// the body is being checked or laid out, a request now means the type
+	// contains itself by value
+	Busy,
+	Pending,
+	Done,
+	Recursive,
 }
 
 Struct_Field :: struct {
@@ -1518,6 +1636,7 @@ Union :: struct {
 	tag_offset: int,
 	size:       int,
 	align:      int,
+	layout:     Layout_State,
 }
 
 union_variant_index :: proc(u: ^Union, ty: Type) -> (int, bool) {
@@ -1653,7 +1772,7 @@ typecheck :: proc(
 		}
 
 		if len(structa.param_names) == 0 {
-			instantiate_struct(ctx, structa, {})
+			instantiate_struct(ctx, node, structa, {})
 		}
 
 		ty = tpmeta(ctx, pack_type(structa))
@@ -1698,19 +1817,11 @@ typecheck :: proc(
 		u := intern_decl(ctx, &ctx.unions, prop.key, &ty) or_break
 
 		u.variants = make([]Type, len(d.variants), ctx.types.allocator)
-		max_size := 0
-		max_align := 1
 		for v, i in d.variants {
-			vt := emit_type(ctx, v)
-			u.variants[i] = vt
-			max_size = max(max_size, type_size(vt))
-			max_align = max(max_align, type_align(vt))
+			u.variants[i] = emit_type(ctx, v)
 		}
 		u.tag_ty = .I64
-		tag_size := type_size(u.tag_ty)
-		u.tag_offset = mem.align_forward_int(max_size, tag_size)
-		u.align = max(max_align, tag_size)
-		u.size = mem.align_forward_int(u.tag_offset + tag_size, u.align)
+		finish_layout(ctx, node, pack_type(u), &u.layout)
 		ty = tpmeta(ctx, pack_type(u))
 	case ^ast.Multi_Pointer_Type:
 		ty = tpmeta(ctx, intern_multi_pointer(ctx, emit_type(ctx, d.elem)))
@@ -3019,7 +3130,7 @@ typecheck :: proc(
 				for arg, i in d.args {
 					args[i] = emit_type(ctx, arg)
 				}
-				ty = tpmeta(ctx, instantiate_struct(ctx, t, args))
+				ty = tpmeta(ctx, instantiate_struct(ctx, node, t, args))
 				break match
 			case ^Simd:
 				expect_args(ctx, d, d.args, 1, &ty) or_break match
@@ -3053,6 +3164,8 @@ typecheck :: proc(
 				assert(len(prc.polys) == 0)
 
 				prev_polys := len(ctx.poly_types)
+				// the signature belongs to where the proc is declared, not to the caller
+				caller := ctx.prc_id
 
 				ar_params := preprocess_list(prc.lit.type.params)
 
@@ -3077,7 +3190,9 @@ typecheck :: proc(
 						inferred_ty = last_type
 					} else if !has_polys(ctx, param_ast.type) {
 						ast := ast.clone(param_ast.type)
+						ctx.prc_id = prc.parent
 						inferred_ty = emit_type(ctx, ast)
+						ctx.prc_id = caller
 					}
 
 					res: ^Check_Meta
@@ -3142,9 +3257,11 @@ typecheck :: proc(
 
 					rets := make([]Type, len(ar_rets))
 
+					ctx.prc_id = prc.parent
 					for ret, i in ar_rets {
 						rets[i] = emit_type(ctx, ret.type)
 					}
+					ctx.prc_id = caller
 
 					params = intern_type_slice(ctx, params)
 					rets = intern_type_slice(ctx, rets)
@@ -3403,6 +3520,8 @@ typecheck_proc :: proc(
 		&ctx.procs,
 		Proc {
 			name = decl.name,
+			segment = decl.name,
+			parent = ctx.prc_id,
 			lit = prc,
 			module = mid,
 			file = ctx.file,

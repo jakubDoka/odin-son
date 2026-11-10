@@ -19,12 +19,15 @@ when_condition :: proc(ctx: ^Gen_Ctx, expr: ^ast.Expr) -> ^Check_Meta {
 decl_enabled :: proc(ctx: ^Gen_Ctx, mid: Module_ID, decl: ^Decl) -> bool {
 	if decl.condition == nil do return true
 	previous_module, previous_file := ctx.module, ctx.file_id
+	previous_prc_id := ctx.prc_id
 	defer {
 		ctx.module = previous_module
 		ctx.file_id = previous_file
 		ctx.file = &ctx.files[previous_file]
+		ctx.prc_id = previous_prc_id
 	}
 	ctx.module = mid
+	ctx.prc_id = 0
 	ctx.file_id = decl.file
 	ctx.file = &ctx.files[decl.file]
 	return enabled(ctx, decl.condition)

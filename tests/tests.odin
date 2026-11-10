@@ -17334,6 +17334,37 @@ main :: proc() -> int {
 }
 `, 0)
 }
+@(test) fail_recursive_types_by_value :: proc(t: ^testing.T) {
+run_test(t, `fail_recursive_types_by_value`, `
+package main
+
+Direct :: struct {
+	d: Direct,
+}
+
+Through_Union :: struct {
+	x: int,
+	u: Variant,
+}
+
+Variant :: union {
+	Through_Union,
+}
+
+Linked :: struct {
+	next: ^Linked,
+	v:    int,
+}
+
+main :: proc() -> int {
+	Local :: struct {
+		l: [2]Local,
+	}
+	l: Linked
+	return size_of(Linked) + l.v
+}
+`, 0)
+}
 @(test) fail_bad_generics :: proc(t: ^testing.T) {
 run_test(t, `fail_bad_generics`, `
 package main
@@ -20409,6 +20440,7 @@ NAMES := []string{
 `fail_bad_control_flow`,
 `fail_bad_operands`,
 `fail_bad_enums_and_unions`,
+`fail_recursive_types_by_value`,
 `fail_bad_generics`,
 `size_of_check`,
 `fail_bad_returns_and_builtins`,
@@ -28920,6 +28952,35 @@ main :: proc() -> int {
 `
 package main
 
+Direct :: struct {
+	d: Direct,
+}
+
+Through_Union :: struct {
+	x: int,
+	u: Variant,
+}
+
+Variant :: union {
+	Through_Union,
+}
+
+Linked :: struct {
+	next: ^Linked,
+	v:    int,
+}
+
+main :: proc() -> int {
+	Local :: struct {
+		l: [2]Local,
+	}
+	l: Linked
+	return size_of(Linked) + l.v
+}
+`,
+`
+package main
+
 Vec :: struct($T: typeid) {
 	x: T,
 }
@@ -29949,6 +30010,7 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
+false,
 false,
 false,
 false,

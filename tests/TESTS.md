@@ -8699,6 +8699,37 @@ main :: proc() -> int {
 }
 ```
 
+#### fail recursive types by value
+```odin
+package main
+
+Direct :: struct {
+	d: Direct,
+}
+
+Through_Union :: struct {
+	x: int,
+	u: Variant,
+}
+
+Variant :: union {
+	Through_Union,
+}
+
+Linked :: struct {
+	next: ^Linked,
+	v:    int,
+}
+
+main :: proc() -> int {
+	Local :: struct {
+		l: [2]Local,
+	}
+	l: Linked
+	return size_of(Linked) + l.v
+}
+```
+
 #### fail bad generics
 ```odin
 package main

@@ -360,6 +360,7 @@ typecheck_block_constants :: proc(ctx: ^Gen_Ctx, stmts: []^ast.Stmt) {
 							ty = decl.type,
 							value = decl.values[i],
 							file = ctx.file_id,
+							parent = ctx.prc_id,
 						},
 						ctx.types.allocator,
 					),

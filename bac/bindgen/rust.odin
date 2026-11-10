@@ -53,35 +53,35 @@ rust_type :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info, hint := "") -> string {
 	if ty == nil do return "core::ffi::c_void"
 	if name, ok := g.names[ty.id]; ok do return name
 	#partial switch t in ty.variant {
-	case runtime.Type_Info_Integer:
+	case ^runtime.Type_Info_Integer:
 		if ty.id == int do return "isize"
 		if ty.id == uint || ty.id == uintptr do return "usize"
 		return fmt.tprintf("%v%v", "i" if t.signed else "u", ty.size * 8)
-	case runtime.Type_Info_Boolean:
+	case ^runtime.Type_Info_Boolean:
 		return "bool"
-	case runtime.Type_Info_Rune:
+	case ^runtime.Type_Info_Rune:
 		return "i32"
-	case runtime.Type_Info_Float:
+	case ^runtime.Type_Info_Float:
 		return fmt.tprintf("f%v", ty.size * 8)
-	case runtime.Type_Info_Type_Id:
+	case ^runtime.Type_Info_Type_Id:
 		return "usize"
-	case runtime.Type_Info_String:
+	case ^runtime.Type_Info_String:
 		return "String"
-	case runtime.Type_Info_Pointer:
+	case ^runtime.Type_Info_Pointer:
 		return fmt.tprintf("*mut %v", rust_type(g, t.elem, hint))
-	case runtime.Type_Info_Multi_Pointer:
+	case ^runtime.Type_Info_Multi_Pointer:
 		return fmt.tprintf("*mut %v", rust_type(g, t.elem, hint))
-	case runtime.Type_Info_Procedure:
+	case ^runtime.Type_Info_Procedure:
 		return "*mut core::ffi::c_void"
-	case runtime.Type_Info_Array:
+	case ^runtime.Type_Info_Array:
 		return fmt.tprintf("[%v; %v]", rust_type(g, t.elem, hint), t.count)
-	case runtime.Type_Info_Enumerated_Array:
+	case ^runtime.Type_Info_Enumerated_Array:
 		return fmt.tprintf("[%v; %v]", rust_type(g, t.elem, hint), t.count)
-	case runtime.Type_Info_Slice:
+	case ^runtime.Type_Info_Slice:
 		return fmt.tprintf("Slice<%v>", rust_type(g, t.elem, hint))
-	case runtime.Type_Info_Dynamic_Array:
+	case ^runtime.Type_Info_Dynamic_Array:
 		return fmt.tprintf("DynamicArray<%v>", rust_type(g, t.elem, hint))
-	case runtime.Type_Info_Fixed_Capacity_Dynamic_Array:
+	case ^runtime.Type_Info_Fixed_Capacity_Dynamic_Array:
 		return fmt.tprintf(
 			"FixedCapDynArray<%v, %v>",
 			t.capacity,
@@ -123,7 +123,7 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 	name := g.names[ty.id]
 	base := runtime.type_info_base(ty)
 	#partial switch t in base.variant {
-	case runtime.Type_Info_Enum:
+	case ^runtime.Type_Info_Enum:
 		fmt.fprintfln(f, "pub type %v = %v;", name, rust_type(g, t.base))
 		for field in reflect.enum_fields_zipped(ty.id) {
 			fmt.fprintfln(
@@ -135,9 +135,9 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 				field.value,
 			)
 		}
-	case runtime.Type_Info_Bit_Set:
+	case ^runtime.Type_Info_Bit_Set:
 		fmt.fprintfln(f, "pub type %v = u%v;", name, ty.size * 8)
-	case runtime.Type_Info_Bit_Field:
+	case ^runtime.Type_Info_Bit_Field:
 		fmt.fprintfln(
 			f,
 			"#[repr(C, align(%v))]\n#[derive(Clone, Copy)]\npub struct %v {{ pub bytes: [u8; %v] }}",
@@ -171,7 +171,7 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 			}
 			fmt.fprintln(f, "}")
 		}
-	case runtime.Type_Info_Struct:
+	case ^runtime.Type_Info_Struct:
 		kind := "union" if .raw_union in t.flags else "struct"
 		max_align := 1
 		for field in t.types[:t.field_count] do max_align = max(max_align, field.align)
@@ -206,7 +206,7 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 				t.offsets[i],
 			)
 		}
-	case runtime.Type_Info_Union:
+	case ^runtime.Type_Info_Union:
 		if t.tag_type == nil {
 			fmt.fprintfln(
 				f,
@@ -226,7 +226,7 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 				rust_type(g, t.tag_type),
 			)
 		}
-	case runtime.Type_Info_Fixed_Capacity_Dynamic_Array:
+	case ^runtime.Type_Info_Fixed_Capacity_Dynamic_Array:
 		fmt.fprintfln(
 			f,
 			"pub type %v = FixedCapDynArray<%v, %v>;",
@@ -238,7 +238,7 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 		fmt.fprintfln(f, "pub type %v = %v;", name, rust_type(g, base))
 	}
 	#partial switch _ in base.variant {
-	case runtime.Type_Info_Bit_Field,
+	case ^runtime.Type_Info_Bit_Field,
 	     runtime.Type_Info_Struct,
 	     runtime.Type_Info_Union:
 		rust_default(f, name)
@@ -361,17 +361,17 @@ rust_safe_type :: proc(ty: ^runtime.Type_Info) -> string {
 		if name == "bac_ssa_Block_State" do return "BlockState"
 	}
 	#partial switch t in ty.variant {
-	case runtime.Type_Info_Integer:
+	case ^runtime.Type_Info_Integer:
 		if ty.id == int do return "isize"
 		if ty.id == uint || ty.id == uintptr do return "usize"
 		return fmt.tprintf("%v%v", "i" if t.signed else "u", ty.size * 8)
-	case runtime.Type_Info_Boolean:
+	case ^runtime.Type_Info_Boolean:
 		return "bool"
-	case runtime.Type_Info_String:
+	case ^runtime.Type_Info_String:
 		return "&str"
-	case runtime.Type_Info_Slice:
+	case ^runtime.Type_Info_Slice:
 		if rust_safe_type(t.elem) == "NodeId" do return "&[NodeId]"
-	case runtime.Type_Info_Pointer:
+	case ^runtime.Type_Info_Pointer:
 		elem := rust_safe_type(t.elem)
 		if elem == "NodeId" do return "&mut NodeId"
 		if elem == "IfState" || elem == "LoopState" || elem == "BlockState" do return fmt.tprintf("&mut %v", elem)

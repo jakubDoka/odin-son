@@ -200,6 +200,9 @@ x86_reg_class_classify :: proc(
 			slots[offset / 8 + 1] = .Integer
 			return true
 		case ^typecheck.Struct:
+			// raw union fields overlap, the padding starts past the furthest
+			// field end
+			covered := 0
 			for f, i in t.fields {
 				classify(f.ty, slots, offset + f.offset) or_return
 
@@ -209,8 +212,8 @@ x86_reg_class_classify :: proc(
 				if i + 1 < len(t.fields) {
 					next_offset = t.fields[i + 1].offset
 				}
-				field_end := f.offset + type_size(f.ty)
-				for j in field_end ..< next_offset {
+				covered = max(covered, f.offset + type_size(f.ty))
+				for j in covered ..< next_offset {
 					classify(.I8, slots, offset + j)
 				}
 			}
@@ -1043,7 +1046,7 @@ emit_known :: proc(
 	}
 
 	dt := type_to_dt(meta.type)
-	if meta.type in typecheck.NUMBER_TYPES ||
+	if typecheck.in_set(meta.type, typecheck.NUMBER_TYPES) ||
 	   typecheck.is_of(meta.type, ^typecheck.Enum) {
 		return Value(bac.add_c_int(ctx, "cnst", dt, meta.int))
 	}
@@ -1752,21 +1755,26 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			bac.unpin(ctx, res, no_delete = true)
 		}
 	case ^ast.Type_Cast:
-		if d.tok.kind == .Cast {
+		inner := emit_nodes(ctx, {}, d.expr)
+		if dt == .Void {
+			res, lvalue = inner.id, true
+			// a #simd vector lives in a register
+			if !inner.is_lvalue {
+				res = alloca(ctx, "tmut", ty, zeroed = false)
+				field_store(ctx, "tmutst", res, 0, inner.id)
+			}
+		} else if d.tok.kind == .Cast {
 			res = emit_conversion(
 				ctx,
 				ty,
 				get_node_type(d.expr),
-				emit_rvalue(ctx, {}, d.expr),
+				to_rvalue(ctx, inner, d.expr),
 			)
-			break
-		}
-		dst_ty := get_node_type(node)
-		inner := emit_nodes(ctx, {}, d.expr)
-		if type_to_dt(dst_ty) == .Void {
-			res, lvalue = inner.id, inner.is_lvalue
 		} else {
-			res = to_rvalue(ctx, inner, dst_ty)
+			res = to_rvalue(ctx, inner, ty)
+			if !inner.is_lvalue && type_to_dt(get_node_type(d.expr)) != dt {
+				res = bac.add_un_op(ctx, "bitc", .Cast, dt, res)
+			}
 		}
 	case ^ast.If_Stmt:
 		cond := emit_rvalue(ctx, {}, d.cond)
@@ -2247,9 +2255,14 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		case base_ty == .Typeid:
 			dest_dt := type_to_dt(base_meta.typeida)
 			src_ty := get_node_type(d.args[0])
+			if dest_dt == .Void {
+				res, lvalue = unpack(emit_nodes(ctx, {}, d.args[0]))
+				break match
+			}
 			arg := emit_rvalue(ctx, {}, d.args[0])
 
-			if s, ok := unpack_type(base_meta.typeida).(^typecheck.Simd); ok {
+			if s, ok := unpack_type(base_meta.typeida).(^typecheck.Simd);
+			   ok && !typecheck.is_of(src_ty, ^typecheck.Simd) {
 				res = bac.add_un_op(
 					ctx,
 					"splat",
@@ -2430,6 +2443,12 @@ emit_call :: proc(
 
 			ty := get_node_type(arg)
 			vl := emit_nodes(ctx, {}, arg)
+			par_ty := sig.params[i]
+			if u, ok := unpack_type(par_ty).(^typecheck.Union); ok && ty != par_ty {
+				ptr := alloca(ctx, "uarg", par_ty)
+				store_union(ctx, ptr, vl, u, ty)
+				ty, vl = par_ty, {id = ptr, is_lvalue = true}
+			}
 			lower_call_arg(ctx, args, &lctx, ty, vl)
 		}
 	}

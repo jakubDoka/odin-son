@@ -130,6 +130,9 @@ Check_Meta :: struct {
 	type:      Type,
 	known:     bool,
 	lvalue:    bool,
+	// a constant that did not commit to its type yet, only those adopt the
+	// type a declaration is used as
+	untyped:   bool,
 	using lit: Lit,
 }
 
@@ -410,10 +413,17 @@ layout_struct :: proc(s: ^Struct) {
 	s.size = 0
 	s.align = 1
 	for &field in s.fields {
-		field.offset = mem.align_forward_int(s.size, type_align(field.ty))
-		s.size = field.offset + type_size(field.ty)
-		s.align = max(s.align, type_align(field.ty))
+		align := s.packed ? 1 : type_align(field.ty)
+		if s.raw_union {
+			field.offset = 0
+			s.size = max(s.size, type_size(field.ty))
+		} else {
+			field.offset = mem.align_forward_int(s.size, align)
+			s.size = field.offset + type_size(field.ty)
+		}
+		s.align = max(s.align, align)
 	}
+	if s.req_align != 0 do s.align = s.req_align
 	s.size = mem.align_forward_int(s.size, s.align)
 
 	end_layout(&s.layout)
@@ -450,6 +460,10 @@ finish_layout :: proc(
 	if state^ == .Checking do state^ = .Pending
 	append(&ctx.due_layouts, Due_Layout{node, ty, state})
 
+	close_type(ctx)
+}
+
+close_type :: proc(ctx: ^Gen_Ctx) {
 	ctx.open_types -= 1
 	if ctx.open_types != 0 do return
 
@@ -680,7 +694,11 @@ type_display :: proc(w: io.Writer, ty: Type) {
 			break
 		}
 
-		io.write_string(w, "struct {")
+		io.write_string(w, "struct ")
+		if t.packed do io.write_string(w, "#packed ")
+		if t.raw_union do io.write_string(w, "#raw_union ")
+		if t.req_align != 0 do fmt.wprintf(w, "#align(%v) ", t.req_align)
+		io.write_rune(w, '{')
 		for field, i in t.fields {
 			if i != 0 do io.write_string(w, ", ")
 			fmt.wprintf(w, "%v: ", field.name)
@@ -864,6 +882,8 @@ instantiate_struct :: proc(
 	structa := new_clone(
 		Struct {
 			custom_layout = base.custom_layout,
+			raw_union = base.raw_union,
+			packed = base.packed,
 			params = args,
 			fields = make([]Struct_Field, len(base.fields), ctx.types.allocator),
 		},
@@ -930,7 +950,14 @@ instantiate_struct :: proc(
 		)
 	}
 
-	resolve_struct_fields(ctx, node, pack_type(named), structa, base.fields)
+	resolve_struct_fields(
+		ctx,
+		node,
+		pack_type(named),
+		structa,
+		base.fields,
+		ast.clone(base.align_ast),
+	)
 
 	return pack_type(named)
 }
@@ -941,8 +968,20 @@ resolve_struct_fields :: proc(
 	ty: Type,
 	structa: ^Struct,
 	asts: []Struct_Field,
+	align_ast: ^ast.Expr,
 ) {
 	ctx.open_types += 1
+
+	if align_ast != nil {
+		res := typecheck_eval(ctx, {inferred_ty = .Int}, align_ast)
+		if strip_named(res.type) != .Int {
+			error(ctx, align_ast, "#align must be an integer, found %v", res.type)
+		} else if !math.is_power_of_two(int(res.lit.int)) {
+			error(ctx, align_ast, "#align must be a power of two, found %v", res.lit.int)
+		} else {
+			structa.req_align = int(res.lit.int)
+		}
+	}
 
 	last_field := Type.Void
 	for &field, i in structa.fields {
@@ -1074,6 +1113,20 @@ integrate_inferrence :: proc(
 	meta := get_node_meta(decl.value)
 	if meta == &INVALID do return error(ctx, decl.value, "Accessing invalid global")
 
+	for open, i in ctx.open_distincts {
+		if meta.type != .Typeid || meta.typeida != pack_type(open.named) do continue
+		// each distinct opened later adds one level, anything above that is
+		// a struct or union body, which may refer back through a pointer
+		if ctx.open_types == open.level + len(ctx.open_distincts) - 1 - i {
+			return error(
+				ctx,
+				decl.value,
+				"illegal declaration cycle of %v",
+				open.named.full_name,
+			)
+		}
+	}
+
 	if decl.is_mutable {
 		if ctx.eval_depth > 0 && decl.global_idx != 0 {
 			return lcmeta(ctx, decl.resolved_ty, {decl.global_idx, 0})
@@ -1082,9 +1135,15 @@ integrate_inferrence :: proc(
 		return tmeta(ctx, decl.resolved_ty)
 	}
 
-	if inferred == .Void do return meta
-	if meta.type == inferred do return meta
-	if !in_set(inferred, NUMBER_TYPES) do return meta
+	if inferred == .Void || meta.type == inferred || !meta.untyped do return meta
+	if strip_named(inferred) == strip_named(meta.type) {
+		res := new_clone(meta^, ctx.types.allocator)
+		res.type = inferred
+		return res
+	}
+	if !in_set(inferred, NUMBER_TYPES) || !in_set(meta.type, NUMBER_TYPES) {
+		return meta
+	}
 
 	return typecheck_conversion(ctx, decl.value, inferred, meta)
 }
@@ -1162,6 +1221,11 @@ typecheck_decl :: proc(
 	}
 
 	vl = expect(ctx, decl.value, vl, decl.resolved_ty)
+	if !decl.is_mutable && decl.ty != nil && vl.untyped {
+		vl = new_clone(vl^, ctx.types.allocator)
+		vl.untyped = false
+		set_node_data(decl.value, vl)
+	}
 	if !decl.is_mutable || vl.type == .Invalid_Type do return vl
 
 	if decl.global_idx == 0 {
@@ -1437,6 +1501,16 @@ expect_integer :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> ^Check_Meta {
 	return error(ctx, node, "expected an integer, found %v", got.type)
 }
 
+expect_boolean :: proc(
+	ctx: ^Gen_Ctx,
+	node: ^ast.Node,
+	inferred := Type.Bool,
+) -> ^Check_Meta {
+	got := typecheck(ctx, {inferred_ty = inferred}, node)
+	if got.type == .Invalid_Type || strip_named(got.type) == .Bool do return got
+	return error(ctx, node, "expected bool, found %v", got.type)
+}
+
 expect_args :: proc(
 	ctx: ^Gen_Ctx,
 	node: ^ast.Node,
@@ -1572,6 +1646,12 @@ Proc_Inst_Key :: struct {
 	polys: string,
 }
 
+Param_Type_Key :: struct {
+	prc:   Proc_ID,
+	index: int,
+	polys: string,
+}
+
 Types :: struct {
 	target:         Target,
 	check:          bool,
@@ -1580,6 +1660,7 @@ Types :: struct {
 	procs:          [dynamic]Proc,
 	scope:          [dynamic]Variable,
 	proc_insts:     map[Proc_Inst_Key]Proc_ID,
+	param_types:    map[Param_Type_Key]Type,
 	pointers:       map[Type]Pointer,
 	multi_pointers: map[Type]Multi_Pointer,
 	struct_insts:   map[Struct_Inst_Key]^Named,
@@ -1594,6 +1675,7 @@ Types :: struct {
 	due_layouts:    [dynamic]Due_Layout,
 	// type bodies currently being checked, layouts wait until this drops to 0
 	open_types:     int,
+	open_distincts: [dynamic]Open_Distinct,
 	owns_scratch:   bool,
 }
 
@@ -1632,9 +1714,9 @@ types_bind_allocators :: proc(types: ^Types) {
 		vl := reflect.struct_field_value(types^, field)
 
 		#partial switch t in type_info_of(vl.id).variant {
-		case runtime.Type_Info_Dynamic_Array:
+		case ^runtime.Type_Info_Dynamic_Array:
 			(^runtime.Raw_Dynamic_Array)(vl.data).allocator = types.allocator
-		case runtime.Type_Info_Map:
+		case ^runtime.Type_Info_Map:
 			(^runtime.Raw_Map)(vl.data).allocator = types.allocator
 		}
 	}
@@ -1689,6 +1771,11 @@ Struct :: struct {
 	align:         int,
 	layout:        Layout_State,
 	custom_layout: bool,
+	raw_union:     bool,
+	packed:        bool,
+	req_align:     int,
+	// generic instances evaluate it again, it can depend on the parameters
+	align_ast:     ^ast.Expr,
 }
 
 Layout_State :: enum u8 {
@@ -1720,6 +1807,12 @@ Named :: struct {
 	// exactly as written, never normalized, so the chains of `distinct` stay
 	// visible to type info
 	base:      Type,
+}
+
+Open_Distinct :: struct {
+	named: ^Named,
+	// `open_types` right after the distinct opened
+	level: int,
 }
 
 Struct_Field :: struct {
@@ -1860,6 +1953,11 @@ typecheck :: proc(
 			d.align != nil ||
 			d.min_field_align != nil ||
 			d.max_field_align != nil
+		structa.raw_union = d.is_raw_union
+		structa.packed = d.is_packed
+		if d.is_packed && d.align != nil {
+			error(ctx, d.align, "#align cannot be applied with #packed")
+		}
 
 		params: ast.Field_List
 		if d.poly_params != nil do params = d.poly_params^
@@ -1890,8 +1988,16 @@ typecheck :: proc(
 			field.ty_ast = ast_field.type
 		}
 
+		structa.align_ast = d.align
 		if len(structa.param_names) == 0 {
-			resolve_struct_fields(ctx, node, ty.typeida, structa, structa.fields)
+			resolve_struct_fields(
+				ctx,
+				node,
+				ty.typeida,
+				structa,
+				structa.fields,
+				d.align,
+			)
 		}
 	case ^ast.Enum_Type:
 		e := new(Enum, ctx.types.allocator)
@@ -1943,6 +2049,38 @@ typecheck :: proc(
 		}
 		u.tag_ty = .I64
 		finish_layout(ctx, node, ty.typeida, &u.layout)
+	case ^ast.Distinct_Type:
+		if prop.decl == nil || prop.decl.value != node {
+			ty = error(ctx, node, "invalid use of a distinct type")
+			break match
+		}
+		named := new_named(ctx, prop, node, .Invalid_Type)
+		ty = tpmeta(ctx, pack_type(named))
+		// bound before the base is checked, a struct or union in the base may
+		// refer back to it, every other reference is a declaration cycle
+		set_node_data(node, ty)
+
+		// the layouts of the bodies in the base wait for the base to be bound
+		ctx.open_types += 1
+		append(&ctx.open_distincts, Open_Distinct{named, ctx.open_types})
+		base := emit_type(ctx, d.type)
+		pop(&ctx.open_distincts)
+
+		if s, ok := unpack_type(base).(^Struct); ok && len(s.param_names) != 0 {
+			error(
+				ctx,
+				d.type,
+				"invalid use of the non-specialized polymorphic type %v",
+				base,
+			)
+		} else if is_of(base, ^Proc_Type) {
+			error(ctx, node, "TODO: distinct proc types")
+		} else if is_of(base, ^Simd) || strip_named(base) == .Typeid {
+			error(ctx, node, "'distinct' can not be applied to %v", base)
+		} else {
+			named.base = base
+		}
+		close_type(ctx)
 	case ^ast.Multi_Pointer_Type:
 		ty = tpmeta(ctx, intern_multi_pointer(ctx, emit_type(ctx, d.elem)))
 	case ^ast.Pointer_Type:
@@ -1954,7 +2092,7 @@ typecheck :: proc(
 			break match
 		}
 		res := typecheck_eval(ctx, {inferred_ty = .Int}, d.len)
-		if res.type != .Int || res.lit.int < 0 {
+		if strip_named(res.type) != .Int || res.lit.int < 0 {
 			ty = error(
 				ctx,
 				d.len,
@@ -2206,13 +2344,17 @@ typecheck :: proc(
 				ty = error(ctx, node, "invalid string literal")
 				break match
 			}
-			ty = expect(ctx, node, tcmeta(ctx, .String, {string = &d.tok.text}), tp)
+			str_ty := strip_named(tp) == .String ? tp : .String
+			ty = tcmeta(ctx, str_ty, {string = &d.tok.text})
+			ty.untyped = true
+			ty = expect(ctx, node, ty, tp)
 			break match
 		case:
 			ty = error(ctx, node, "TODO: %v literals", d.tok.kind)
 			break match
 		}
 		ty = tcmeta(ctx, tp, value)
+		ty.untyped = true
 	case ^ast.Comp_Lit:
 		comp_ty: Type
 		if d.type != nil && len(d.type.end.file) == 0 {
@@ -2228,6 +2370,15 @@ typecheck :: proc(
 			// the offsets are read here, and the type may still wait for its
 			// deferred layout
 			type_ensure_layout(prop.inferred_ty)
+			if t.raw_union && len(d.elems) > 1 {
+				error(
+					ctx,
+					node,
+					"%v literals can contain at most 1 'field = value' element, found %v",
+					prop.inferred_ty,
+					len(d.elems),
+				)
+			}
 			for elem, i in d.elems {
 				field: ^Struct_Field
 				value: ^ast.Expr
@@ -2246,6 +2397,15 @@ typecheck :: proc(
 					error(ctx, e.field, "%v has no field %q", prop.inferred_ty, name)
 					continue
 				case:
+					if t.raw_union {
+						error(
+							ctx,
+							elem,
+							"%v literals can only contain 'field = value' elements",
+							prop.inferred_ty,
+						)
+						continue
+					}
 					if i >= len(t.fields) {
 						error(
 							ctx,
@@ -2363,7 +2523,7 @@ typecheck :: proc(
 			ty = new_clone(base^, ctx.types.allocator)
 			break match
 		case String_Type:
-			ty = tmeta(ctx, .String)
+			ty = tmeta(ctx, base.type)
 			break match
 		case Pointer:
 			if nt, ok := unpack_type(t^).(^Array); ok {
@@ -2500,17 +2660,22 @@ typecheck :: proc(
 		}
 		ty = tmeta(ctx, target)
 	case ^ast.Binary_Expr:
+		bool_ty := strip_named(prop.inferred_ty) == .Bool ? prop.inferred_ty : .Bool
+
 		if d.op.kind == .Cmp_And || d.op.kind == .Cmp_Or {
-			lhs := typecheck_as(ctx, .Bool, d.left)
-			rhs := typecheck_as(ctx, .Bool, d.right)
+			lhs := expect_boolean(ctx, d.left, bool_ty)
+			// like in odin the operands may be different booleans
+			rhs := expect_boolean(ctx, d.right, lhs.type)
+			res_ty := lhs.untyped ? rhs.type : lhs.type
 			if lhs.type == .Invalid_Type || rhs.type == .Invalid_Type {
 				ty = &INVALID
 			} else if lhs.known && rhs.known {
 				value :=
 					d.op.kind == .Cmp_And ? lhs.int != 0 && rhs.int != 0 : lhs.int != 0 || rhs.int != 0
-				ty = tcmeta(ctx, .Bool, {int = i64(value)})
+				ty = tcmeta(ctx, res_ty, {int = i64(value)})
+				ty.untyped = lhs.untyped && rhs.untyped
 			} else {
-				ty = tmeta(ctx, .Bool)
+				ty = tmeta(ctx, res_ty)
 			}
 			break match
 		}
@@ -2591,8 +2756,9 @@ typecheck :: proc(
 
 		if lhs_ty.known && rhs_ty.known {
 			ty = constant_binary(ctx, d, lhs_ty, rhs_ty)
+			if is_comparison && ty != &INVALID do ty.type = bool_ty
 		} else {
-			ty = tmeta(ctx, is_comparison ? .Bool : lhs_ty.type)
+			ty = tmeta(ctx, is_comparison ? bool_ty : lhs_ty.type)
 		}
 	case ^ast.Unary_Expr:
 		#partial switch d.op.kind {
@@ -2618,12 +2784,17 @@ typecheck :: proc(
 				ty = tcmeta(ctx, ty.type, {dest = res.dest})
 			}
 		case .Not:
-			vl := typecheck_as(ctx, .Bool, d.expr)
-			if vl.known {
-				vl = new_clone(vl^, ctx.types.allocator)
-				vl.int = i64(vl.int == 0)
+			bool_ty := strip_named(prop.inferred_ty) == .Bool ? prop.inferred_ty : .Bool
+			vl := expect_boolean(ctx, d.expr, bool_ty)
+			if vl.type == .Invalid_Type {
+				ty = vl
+				break match
 			}
-			ty = vl
+			// like a comparison the result is an untyped boolean
+			ty = new_clone(vl^, ctx.types.allocator)
+			ty.type = bool_ty
+			ty.lvalue = false
+			if vl.known do ty.int = i64(vl.int == 0)
 		case .Xor:
 			vl := typecheck(ctx, prop, d.expr)
 			if !in_set(vl.type, INTEGER_TYPES) {
@@ -2684,7 +2855,7 @@ typecheck :: proc(
 		ty = typecheck(ctx, {}, d.expr)
 	case ^ast.If_Stmt:
 		if d.init != nil do error(ctx, d.init, "TODO: an if with an initializer")
-		typecheck_as(ctx, .Bool, d.cond)
+		expect_boolean(ctx, d.cond)
 		then_reachable := typecheck_branch(ctx, d.body)
 		if d.else_stmt != nil {
 			if !typecheck_branch(ctx, d.else_stmt) && !then_reachable {
@@ -2806,7 +2977,7 @@ typecheck :: proc(
 		}
 
 		typecheck(ctx, {}, d.init)
-		if d.cond != nil do typecheck_as(ctx, .Bool, d.cond)
+		if d.cond != nil do expect_boolean(ctx, d.cond)
 
 		loop := Loop_State {
 			parent = ctx.loop,
@@ -2940,7 +3111,7 @@ typecheck :: proc(
 		if cond.type != .Bool do break match
 		ty = typecheck(ctx, prop, cond.int != 0 ? d.x : d.y)
 	case ^ast.Ternary_If_Expr:
-		typecheck_as(ctx, .Bool, d.cond)
+		expect_boolean(ctx, d.cond)
 		x := typecheck(ctx, prop, d.x)
 		typecheck_as(ctx, x.type, d.y)
 		ty = tmeta(ctx, x.type)
@@ -2998,13 +3169,15 @@ typecheck :: proc(
 				meta.index = i
 
 				if decl, ok := var.idx.(^Decl); ok {
-					ty = typecheck_decl(ctx, ctx.module, decl)
-					ctx.scope[i].type = ty.type
+					res := typecheck_decl(ctx, ctx.module, decl)
+					ctx.scope[i].type = res.type
 					meta.kind = .Const
-					meta.lit = ty.lit
-					if ty.type == .Invalid_Type {
+					if res.type == .Invalid_Type {
 						ty = error(ctx, node, "accessing an invalid constant declaration")
+						break match
 					}
+					ty = integrate_inferrence(ctx, ctx.module, decl, prop.inferred_ty)
+					meta.lit = ty.lit
 					break match
 				}
 
@@ -3053,7 +3226,9 @@ typecheck :: proc(
 		if d.name == "false" || d.name == "true" {
 			meta.kind = .Const
 			meta.value = i64(d.name == "true")
-			ty = tcmeta(ctx, .Bool, {int = meta.value})
+			bool_ty := strip_named(prop.inferred_ty) == .Bool ? prop.inferred_ty : .Bool
+			ty = tcmeta(ctx, bool_ty, {int = meta.value})
+			ty.untyped = true
 			break match
 		}
 
@@ -3240,9 +3415,11 @@ typecheck :: proc(
 			ty = error(ctx, d.expr, "can not call a module")
 			break match
 		case Typeid_Type:
-			#partial switch t in unpack_type(callee.lit.typeida) {
-			case ^Struct:
-				generic := unpack_type_raw(callee.lit.typeida).(^Named)
+			dst := callee.lit.typeida
+			if t, ok := unpack_type(dst).(^Struct); ok && len(t.param_names) != 0 {
+				// a distinct of a generic is rejected, so only its declaration
+				// can wrap it
+				generic := unpack_type_raw(dst).(^Named)
 				if len(d.args) != len(t.param_names) {
 					ty = error(
 						ctx,
@@ -3259,19 +3436,23 @@ typecheck :: proc(
 				}
 				ty = tpmeta(ctx, instantiate_struct(ctx, node, generic, args))
 				break match
-			case ^Simd:
-				expect_args(ctx, d, d.args, 1, &ty) or_break match
-				typecheck_as(ctx, t.elem, d.args[0])
-				ty = tmeta(ctx, callee.typeida)
-				break match
-			case:
-				expect_args(ctx, d, d.args, 1, &ty) or_break match
-				inferred :=
-					is_num_lit(d.args[0]) && in_set(callee.typeida, NUMBER_TYPES) ? callee.typeida : .Void
-				src := typecheck(ctx, {inferred_ty = inferred}, d.args[0])
-				ty = typecheck_conversion(ctx, node, callee.typeida, src)
+			}
+
+			expect_args(ctx, d, d.args, 1, &ty) or_break match
+			if t, ok := unpack_type(dst).(^Simd); ok {
+				src := typecheck(ctx, {inferred_ty = t.elem}, d.args[0])
+				if !is_of(src.type, ^Simd) {
+					expect(ctx, d.args[0], src, t.elem)
+					ty = tmeta(ctx, dst)
+					break match
+				}
+				ty = typecheck_conversion(ctx, node, dst, src)
 				break match
 			}
+			inferred := is_num_lit(d.args[0]) && in_set(dst, NUMBER_TYPES) ? dst : .Void
+			src := typecheck(ctx, {inferred_ty = inferred}, d.args[0])
+			ty = typecheck_conversion(ctx, node, dst, src)
+			break match
 		case:
 			ty = error(ctx, d.expr, "can not call a %v", callee.type)
 			break match
@@ -3316,18 +3497,38 @@ typecheck :: proc(
 					if param_ast.type == nil {
 						inferred_ty = last_type
 					} else if !has_polys(ctx, param_ast.type) {
-						ast := ast.clone(param_ast.type)
-						ctx.prc_id = prc.parent
-						inferred_ty = emit_type(ctx, ast)
-						ctx.prc_id = caller
+						// the type can name the polymorphic parameters bound so
+						// far, and each evaluation of a type literal makes a new
+						// type, so the calls agreeing on them share one
+						bound := ctx.poly_types.meta[prev_polys:len(ctx.poly_types)]
+						key := Param_Type_Key {
+							prc   = proc_id,
+							index = i,
+							polys = string(mem.slice_data_cast([]u8, bound)),
+						}
+						cached, is_cached := ctx.param_types[key]
+						if is_cached {
+							inferred_ty = cached
+						} else {
+							ast := ast.clone(param_ast.type)
+							ctx.prc_id = prc.parent
+							inferred_ty = emit_type(ctx, ast)
+							ctx.prc_id = caller
+							key.polys = strings.clone(key.polys, ctx.types.allocator)
+							ctx.param_types[key] = inferred_ty
+						}
 					}
 
 					res: ^Check_Meta
 					if param_ast.is_const {
 						res = typecheck_eval(ctx, {inferred_ty = inferred_ty}, d.args[i])
-						append(&ctx.poly_types, Poly_Entry{param_ast.name.name, res^})
+						entry := Poly_Entry{param_ast.name.name, res^}
+						// the metas key the instances bytewise
+						entry.meta.untyped = false
+						append(&ctx.poly_types, entry)
 					} else {
 						res = typecheck(ctx, {inferred_ty = inferred_ty}, d.args[i])
+						res = expect(ctx, d.args[i], res, inferred_ty)
 					}
 
 					if !extract_polys(
@@ -3345,7 +3546,9 @@ typecheck :: proc(
 						break match
 					}
 
-					params[i], last_type = res.type, res.type
+					params[i] = inferred_ty
+					if inferred_ty == .Void || param_ast.is_const do params[i] = res.type
+					last_type = params[i]
 				}
 
 				names := ctx.poly_types.name[prev_polys:len(ctx.poly_types)]

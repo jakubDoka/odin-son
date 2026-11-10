@@ -1,0 +1,134 @@
+=========== OPT LEVEL: none-quick ===========
+add:
+    mov rax, rdi
+    add rax, rsi
+    ret
+main:
+    push rbx
+    mov rdi, 3
+    movzx.b ebx, [rip + 0xf2e]
+    mov rsi, 4
+    call add
+    lea rax, [rbx + rax + 0x1f]
+    add rax, -5
+    xor ecx, ecx
+2:
+    cmp rcx, 3
+    jl 3
+    pop rbx
+    ret
+3:
+    add rax, rcx
+    add rcx, 1
+    jmp 2
+=========== OPT LEVEL: none ===========
+add:
+    mov rax, rdi
+    add rax, rsi
+    ret
+main:
+    push rbx
+    mov rdi, 3
+    movzx.b ebx, [rip + 0xf4b]
+    mov rsi, 4
+    call add
+    lea rax, [rbx + rax + 0x1f]
+    add rax, -5
+    xor ecx, ecx
+2:
+    cmp rcx, 3
+    jl 3
+    pop rbx
+    ret
+3:
+    add rax, rcx
+    add rcx, 1
+    jmp 2
+=========== OPT LEVEL: moderate-quick ===========
+add:
+    mov rax, rdi
+    add rax, rsi
+    ret
+main:
+    push rbx
+    mov rdi, 3
+    movzx.b ebx, [rip + 0xf2e]
+    mov rsi, 4
+    call add
+    lea rax, [rbx + rax + 0x1f]
+    add rax, -5
+    xor ecx, ecx
+2:
+    cmp rcx, 3
+    jl 3
+    pop rbx
+    ret
+3:
+    add rax, rcx
+    add rcx, 1
+    jmp 2
+=========== OPT LEVEL: moderate ===========
+add:
+    mov rax, rdi
+    add rax, rsi
+    ret
+main:
+    push rbx
+    mov rdi, 3
+    movzx.b ebx, [rip + 0xf4b]
+    mov rsi, 4
+    call add
+    lea rax, [rbx + rax + 0x1f]
+    add rax, -5
+    xor ecx, ecx
+2:
+    cmp rcx, 3
+    jl 3
+    pop rbx
+    ret
+3:
+    add rax, rcx
+    add rcx, 1
+    jmp 2
+=========== OPT LEVEL: all ===========
+add:
+    mov rax, rdi
+    add rax, rsi
+    ret
+main:
+    push rbx
+    mov rdi, 3
+    movzx.b ebx, [rip + 0xf4b]
+    mov rsi, 4
+    call add
+    lea rcx, [rbx + rax + 0x1f]
+    add rcx, -5
+    xor esi, esi
+2:
+    mov rax, rcx
+    cmp rsi, 3
+    setl dl
+    movzx edx, dl
+    mov rcx, rax
+    add rcx, rsi
+    add rsi, 1
+    test dl, dl
+    jne 2
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movzx.b ecx, [rip + 0xf5b]
+    add rcx, 0x21
+    xor esi, esi
+1:
+    mov rax, rcx
+    cmp rsi, 3
+    setl dl
+    movzx edx, dl
+    mov rcx, rax
+    add rcx, rsi
+    add rsi, 1
+    test dl, dl
+    jne 1
+    ret

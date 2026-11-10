@@ -1,0 +1,483 @@
+=========== OPT LEVEL: none-quick ===========
+swap:
+    sub sp, sp, #16
+    add x2, sp, #0
+    movz x3, #8
+    add x3, x3, x2
+    str x0, [x2]
+    str x1, [x3]
+    ldr x0, [x3]
+    ldr x1, [x2]
+    add sp, sp, #16
+    ret
+grow:
+    add x0, x0, x2
+    movz x2, #2
+    madd x1, x1, x2, xzr
+    ret
+main:
+    sub sp, sp, #112
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
+    adr x1, 0xf2c
+    movz x0, #3
+    ldr x2, [x1]
+    movz x3, #16
+    add x2, x2, x3
+    str x2, [x1]
+    adr x1, 0xf2c
+    ldr x19, [x1]
+    movz x1, #9
+    bl 0x120
+    mov x20, x0
+    add x21, sp, #72
+    movz x22, #8
+    eor v0.16b, v0.16b, v0.16b
+    str q0, [x21]
+    adr x1, 0xf34
+    ldr x0, [x1]
+    add x1, x1, x22
+    ldr x1, [x1]
+    bl 0xffffffc8
+    add x2, x21, x22
+    str x0, [x21]
+    str x1, [x2]
+    adr x1, 0xf44
+    ldr x21, [x21]
+    ldr x23, [x2]
+    ldr x0, [x1]
+    add x1, x1, x22
+    ldr x1, [x1]
+    movz x2, #4
+    bl 0xfffffff0
+    add x2, sp, #56
+    add x3, sp, #88
+    movz x4, #0
+    str x4, [x3]
+    add x4, x3, x22
+    movz x5, #1
+    str x5, [x4]
+    str x3, [x2]
+    movz x4, #2
+    add x5, x2, x22
+    str x4, [x5]
+    str x2, [x3]
+    movz x3, #56
+    add x3, x19, x3
+    add x3, x3, x20
+    madd x4, x21, x4, xzr
+    add x4, x4, x23
+    add x3, x3, x4
+    add x0, x0, x1
+    add x0, x3, x0
+    add x0, x0, x1
+    ldr x1, [x2]
+    ldr x1, [x1]
+    add x1, x1, x22
+    ldr x1, [x1]
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
+    add sp, sp, #112
+    ret
+pick main.My_Int:
+    cmp x0, x1
+    csel x0, x1, x0, lt
+    ret
+=========== OPT LEVEL: none ===========
+swap:
+    sub sp, sp, #16
+    add x3, sp, #0
+    movz x2, #8
+    add x2, x2, x3
+    str x0, [x3]
+    str x1, [x2]
+    ldr x0, [x2]
+    ldr x1, [x3]
+    add sp, sp, #16
+    ret
+grow:
+    add x0, x0, x2
+    movz x2, #2
+    madd x1, x1, x2, xzr
+    ret
+main:
+    sub sp, sp, #112
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
+    adr x3, 0xf48
+    movz x0, #3
+    ldr x2, [x3]
+    movz x1, #16
+    add x1, x2, x1
+    str x1, [x3]
+    adr x1, 0xf48
+    ldr x22, [x1]
+    movz x1, #9
+    bl 0x120
+    mov x23, x0
+    add x20, sp, #72
+    movz x19, #8
+    eor v0.16b, v0.16b, v0.16b
+    str q0, [x20]
+    adr x1, 0xf50
+    ldr x0, [x1]
+    add x1, x1, x19
+    ldr x1, [x1]
+    bl 0xffffffc8
+    add x2, x20, x19
+    str x0, [x20]
+    str x1, [x2]
+    adr x1, 0xf60
+    ldr x21, [x20]
+    ldr x20, [x2]
+    ldr x0, [x1]
+    add x1, x1, x19
+    ldr x1, [x1]
+    movz x2, #4
+    bl 0xfffffff0
+    add x6, sp, #56
+    add x5, sp, #88
+    movz x2, #0
+    str x2, [x5]
+    add x3, x5, x19
+    movz x2, #1
+    str x2, [x3]
+    str x5, [x6]
+    movz x4, #2
+    add x2, x6, x19
+    str x4, [x2]
+    str x6, [x5]
+    movz x2, #56
+    add x3, x22, x2
+    add x3, x3, x23
+    madd x2, x21, x4, xzr
+    add x2, x2, x20
+    add x2, x3, x2
+    add x0, x0, x1
+    add x0, x2, x0
+    add x1, x0, x1
+    ldr x0, [x6]
+    ldr x0, [x0]
+    add x0, x0, x19
+    ldr x0, [x0]
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
+    add sp, sp, #112
+    ret
+pick main.My_Int:
+    cmp x0, x1
+    csel x0, x1, x0, lt
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+swap:
+    mov x2, x1
+    mov x1, x0
+    mov x0, x2
+    ret
+grow:
+    add x0, x0, x2
+    movz x2, #2
+    madd x1, x1, x2, xzr
+    ret
+main:
+    sub sp, sp, #96
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
+    adr x1, 0xf44
+    movz x0, #3
+    ldr x2, [x1]
+    movz x3, #16
+    add x2, x2, x3
+    str x2, [x1]
+    adr x1, 0xf44
+    ldr x19, [x1]
+    movz x1, #9
+    bl 0x108
+    mov x20, x0
+    adr x1, 0xf4c
+    ldr x0, [x1]
+    movz x21, #8
+    add x1, x1, x21
+    ldr x1, [x1]
+    bl 0xffffffe0
+    mov x22, x0
+    mov x23, x1
+    adr x1, 0xf5c
+    ldr x0, [x1]
+    add x1, x1, x21
+    ldr x1, [x1]
+    movz x2, #4
+    bl 0xfffffff0
+    add x2, sp, #56
+    add x3, sp, #72
+    movz x4, #0
+    str x4, [x2]
+    add x4, x2, x21
+    movz x5, #1
+    str x5, [x4]
+    str x2, [x3]
+    movz x4, #2
+    add x5, x3, x21
+    str x4, [x5]
+    str x3, [x2]
+    movz x2, #56
+    add x2, x19, x2
+    add x2, x2, x20
+    madd x4, x22, x4, xzr
+    add x4, x4, x23
+    add x2, x2, x4
+    add x0, x0, x1
+    add x0, x2, x0
+    add x0, x0, x1
+    ldr x1, [x3]
+    ldr x1, [x1]
+    add x1, x1, x21
+    ldr x1, [x1]
+    add x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
+    add sp, sp, #96
+    ret
+pick main.My_Int:
+    cmp x0, x1
+    csel x0, x1, x0, lt
+    ret
+=========== OPT LEVEL: moderate ===========
+swap:
+    mov x2, x0
+    mov x0, x1
+    mov x1, x2
+    ret
+grow:
+    add x0, x0, x2
+    movz x2, #2
+    madd x1, x1, x2, xzr
+    ret
+main:
+    sub sp, sp, #96
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
+    adr x3, 0xf60
+    movz x0, #3
+    ldr x2, [x3]
+    movz x1, #16
+    add x1, x2, x1
+    str x1, [x3]
+    adr x1, 0xf60
+    ldr x20, [x1]
+    movz x1, #9
+    bl 0x108
+    mov x23, x0
+    adr x1, 0xf68
+    ldr x0, [x1]
+    movz x19, #8
+    add x1, x1, x19
+    ldr x1, [x1]
+    bl 0xffffffe0
+    mov x22, x0
+    mov x21, x1
+    adr x1, 0xf78
+    ldr x0, [x1]
+    add x1, x1, x19
+    ldr x1, [x1]
+    movz x2, #4
+    bl 0xfffffff0
+    add x4, sp, #56
+    add x6, sp, #72
+    movz x2, #0
+    str x2, [x4]
+    add x3, x4, x19
+    movz x2, #1
+    str x2, [x3]
+    str x4, [x6]
+    movz x5, #2
+    add x2, x6, x19
+    str x5, [x2]
+    str x6, [x4]
+    movz x2, #56
+    add x3, x20, x2
+    add x4, x3, x23
+    madd x3, x22, x5, xzr
+    add x2, x3, x21
+    add x2, x4, x2
+    add x0, x0, x1
+    add x0, x2, x0
+    add x1, x0, x1
+    ldr x0, [x6]
+    ldr x0, [x0]
+    add x0, x0, x19
+    ldr x0, [x0]
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
+    add sp, sp, #96
+    ret
+pick main.My_Int:
+    cmp x0, x1
+    csel x0, x1, x0, lt
+    ret
+=========== OPT LEVEL: all ===========
+swap:
+    mov x2, x0
+    mov x0, x1
+    mov x1, x2
+    ret
+grow:
+    add x0, x0, x2
+    movz x2, #2
+    madd x1, x1, x2, xzr
+    ret
+main:
+    sub sp, sp, #96
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
+    adr x3, 0xf60
+    movz x0, #3
+    ldr x2, [x3]
+    movz x1, #16
+    add x1, x2, x1
+    str x1, [x3]
+    adr x1, 0xf60
+    ldr x20, [x1]
+    movz x1, #9
+    bl 0x108
+    mov x23, x0
+    adr x1, 0xf68
+    ldr x0, [x1]
+    movz x19, #8
+    add x1, x1, x19
+    ldr x1, [x1]
+    bl 0xffffffe0
+    mov x22, x0
+    mov x21, x1
+    adr x1, 0xf78
+    ldr x0, [x1]
+    add x1, x1, x19
+    ldr x1, [x1]
+    movz x2, #4
+    bl 0xfffffff0
+    add x4, sp, #56
+    add x6, sp, #72
+    movz x2, #0
+    str x2, [x4]
+    add x3, x4, x19
+    movz x2, #1
+    str x2, [x3]
+    str x4, [x6]
+    movz x5, #2
+    add x2, x6, x19
+    str x5, [x2]
+    str x6, [x4]
+    movz x2, #56
+    add x3, x20, x2
+    add x4, x3, x23
+    madd x3, x22, x5, xzr
+    add x2, x3, x21
+    add x2, x4, x2
+    add x0, x0, x1
+    add x0, x2, x0
+    add x1, x0, x1
+    ldr x0, [x6]
+    ldr x0, [x0]
+    add x0, x0, x19
+    ldr x0, [x0]
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
+    add sp, sp, #96
+    ret
+pick main.My_Int:
+    cmp x0, x1
+    csel x0, x1, x0, lt
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    sub sp, sp, #32
+    adr x3, 0xf80
+    ldr x2, [x3]
+    movz x0, #8
+    movz x1, #16
+    add x1, x2, x1
+    str x1, [x3]
+    add x11, sp, #0
+    add x10, x11, x0
+    adr x4, 0xf88
+    adr x3, 0xf98
+    adr x1, 0xf80
+    ldr x2, [x1]
+    add x9, sp, #16
+    add x1, x4, x0
+    ldr x8, [x1]
+    ldr x7, [x3]
+    movz x6, #2
+    ldr x5, [x4]
+    movz x1, #65
+    add x4, x2, x1
+    add x1, x3, x0
+    ldr x2, [x1]
+    movz x1, #0
+    str x1, [x11]
+    movz x1, #1
+    str x1, [x10]
+    str x11, [x9]
+    add x1, x9, x0
+    str x6, [x1]
+    str x9, [x11]
+    madd x3, x2, x6, xzr
+    madd x1, x8, x6, xzr
+    add x1, x1, x5
+    add x2, x4, x1
+    movz x1, #4
+    add x1, x7, x1
+    add x1, x1, x3
+    add x1, x2, x1
+    add x2, x1, x3
+    ldr x1, [x9]
+    ldr x1, [x1]
+    add x0, x1, x0
+    ldr x0, [x0]
+    add x0, x2, x0
+    add sp, sp, #32
+    ret

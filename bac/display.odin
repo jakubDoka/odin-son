@@ -329,14 +329,14 @@ when !fmt.NO_FMT {
 
 		#partial switch info in
 			type_info_of(reflect.typeid_base(extra.id)).variant {
-		case runtime.Type_Info_Struct:
+		case ^runtime.Type_Info_Struct:
 			for field in reflect.struct_fields_zipped(extra.id) {
 				extra_field := reflect.struct_field_value(extra, field)
 				display_extra(w, extra_field, field.name, written_one)
 				if .raw_union in info.flags do break
 			}
 			return
-		case runtime.Type_Info_Bit_Field:
+		case ^runtime.Type_Info_Bit_Field:
 			slt: i64
 			for fld in reflect.bit_fields_zipped(extra.id) {
 				copy(mem.ptr_to_bytes(&slt), reflect.as_bytes(extra))

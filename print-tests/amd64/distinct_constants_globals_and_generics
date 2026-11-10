@@ -1,0 +1,341 @@
+=========== OPT LEVEL: none-quick ===========
+swap:
+    mov.q [rsp - 0x18], rdi
+    mov.q [rsp - 0x10], rsi
+    mov.q rax, [rsp - 0x10]
+    mov.q rdx, [rsp - 0x18]
+    ret
+grow:
+    mov rax, rdi
+    add rax, rdx
+    imul rdx, rsi, 2
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    sub rsp, 0x38
+    mov rdi, 3
+    add.q [rip + 0xf04], 0x10
+    mov.q rbx, [rip + 0xefd]
+    mov rsi, 9
+    call pick main.My_Int
+    mov rbp, rax
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x20], xmm0
+    mov.q rdi, [rip + 0xee4]
+    mov.q rsi, [rip + 0xee5]
+    call swap
+    mov.q [rsp + 0x20], rax
+    mov.q [rsp + 0x28], rdx
+    mov.q r12, [rsp + 0x20]
+    mov.q rsi, [rip + 0xeda]
+    mov.q r13, [rsp + 0x28]
+    mov.q rdi, [rip + 0xec6]
+    mov rdx, 4
+    call grow
+    mov rcx, rax
+    lea rax, [rbx + rbp + 0x38]
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 1
+    lea rbx, [rsp]
+    mov.q [rsp + 0x10], rbx
+    mov.q [rsp + 0x18], 2
+    lea rbx, [rsp + 0x10]
+    mov.q [rsp], rbx
+    imul rbx, r12, 2
+    add rbx, r13
+    add rax, rbx
+    add rcx, rdx
+    add rax, rcx
+    add rax, rdx
+    mov.q rcx, [rsp + 0x10]
+    mov.q rcx, [rcx]
+    add.q rax, [rcx + 0x8]
+    add rsp, 0x38
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+pick main.My_Int:
+    mov rax, rdi
+    cmp rax, rsi
+    cmovl rax, rsi
+    ret
+=========== OPT LEVEL: none ===========
+swap:
+    mov.q [rsp - 0x18], rdi
+    mov.q [rsp - 0x10], rsi
+    mov.q rax, [rsp - 0x10]
+    mov.q rdx, [rsp - 0x18]
+    ret
+grow:
+    mov rax, rdi
+    add rax, rdx
+    imul rdx, rsi, 2
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    sub rsp, 0x38
+    mov rdi, 3
+    add.q [rip + 0xf21], 0x10
+    mov.q r13, [rip + 0xf1a]
+    mov rsi, 9
+    call pick main.My_Int
+    mov r12, rax
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x20], xmm0
+    mov.q rdi, [rip + 0xf01]
+    mov.q rsi, [rip + 0xf02]
+    call swap
+    mov.q [rsp + 0x20], rax
+    mov.q [rsp + 0x28], rdx
+    mov.q rbp, [rsp + 0x20]
+    mov.q rsi, [rip + 0xef7]
+    mov.q rbx, [rsp + 0x28]
+    mov.q rdi, [rip + 0xee3]
+    mov rdx, 4
+    call grow
+    lea rcx, [r13 + 0x38]
+    mov.q [rsp], 0
+    mov.q [rsp + 0x8], 1
+    lea rsi, [rsp]
+    mov.q [rsp + 0x10], rsi
+    mov.q [rsp + 0x18], 2
+    lea rsi, [rsp + 0x10]
+    mov.q [rsp], rsi
+    imul rsi, rbp, 2
+    add rsi, rbx
+    add rcx, rsi
+    add rax, rdx
+    add rcx, rax
+    add rcx, rdx
+    mov.q rax, [rsp + 0x10]
+    mov.q rax, [rax]
+    add.q rcx, [rax + 0x8]
+    mov rax, rcx
+    add rsp, 0x38
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+pick main.My_Int:
+    mov rax, rdi
+    cmp rax, rsi
+    cmovl rax, rsi
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+swap:
+    mov rax, rdi
+    mov rcx, rsi
+    mov rdx, rax
+    mov rax, rcx
+    ret
+grow:
+    mov rax, rdi
+    add rax, rdx
+    imul rdx, rsi, 2
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    sub rsp, 0x28
+    mov rdi, 3
+    add.q [rip + 0xf0c], 0x10
+    mov.q rbx, [rip + 0xf05]
+    mov rsi, 9
+    call pick main.My_Int
+    mov rbp, rax
+    mov.q rdi, [rip + 0xef7]
+    mov.q rsi, [rip + 0xef8]
+    call swap
+    mov r12, rax
+    mov r13, rdx
+    mov.q rsi, [rip + 0xef6]
+    mov.q rdi, [rip + 0xee7]
+    mov rdx, 4
+    call grow
+    mov rcx, rax
+    lea rax, [rbx + rbp + 0x38]
+    mov.q [rsp + 0x10], 0
+    mov.q [rsp + 0x18], 1
+    lea rbx, [rsp + 0x10]
+    mov.q [rsp], rbx
+    mov.q [rsp + 0x8], 2
+    lea rbx, [rsp]
+    mov.q [rsp + 0x10], rbx
+    imul rbx, r12, 2
+    add rbx, r13
+    add rax, rbx
+    add rcx, rdx
+    add rax, rcx
+    add rax, rdx
+    mov.q rcx, [rsp]
+    mov.q rcx, [rcx]
+    add.q rax, [rcx + 0x8]
+    add rsp, 0x28
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+pick main.My_Int:
+    mov rax, rdi
+    cmp rax, rsi
+    cmovl rax, rsi
+    ret
+=========== OPT LEVEL: moderate ===========
+swap:
+    mov rcx, rdi
+    mov rax, rsi
+    mov rdx, rcx
+    ret
+grow:
+    mov rax, rdi
+    add rax, rdx
+    imul rdx, rsi, 2
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    sub rsp, 0x28
+    mov rdi, 3
+    add.q [rip + 0xf2c], 0x10
+    mov.q r13, [rip + 0xf25]
+    mov rsi, 9
+    call pick main.My_Int
+    mov rbx, rax
+    mov.q rdi, [rip + 0xf17]
+    mov.q rsi, [rip + 0xf18]
+    call swap
+    mov r12, rax
+    mov rbp, rdx
+    mov.q rsi, [rip + 0xf16]
+    mov.q rdi, [rip + 0xf07]
+    mov rdx, 4
+    call grow
+    lea rcx, [r13 + rbx + 0x38]
+    mov.q [rsp + 0x10], 0
+    mov.q [rsp + 0x18], 1
+    lea rsi, [rsp + 0x10]
+    mov.q [rsp], rsi
+    mov.q [rsp + 0x8], 2
+    lea rsi, [rsp]
+    mov.q [rsp + 0x10], rsi
+    imul rdi, r12, 2
+    add rdi, rbp
+    add rcx, rdi
+    add rax, rdx
+    add rcx, rax
+    add rcx, rdx
+    mov.q rax, [rsp]
+    mov.q rax, [rax]
+    add.q rcx, [rax + 0x8]
+    mov rax, rcx
+    add rsp, 0x28
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+pick main.My_Int:
+    mov rax, rdi
+    cmp rax, rsi
+    cmovl rax, rsi
+    ret
+=========== OPT LEVEL: all ===========
+swap:
+    mov rcx, rdi
+    mov rax, rsi
+    mov rdx, rcx
+    ret
+grow:
+    mov rax, rdi
+    add rax, rdx
+    imul rdx, rsi, 2
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    sub rsp, 0x28
+    mov rdi, 3
+    add.q [rip + 0xf2c], 0x10
+    mov.q r13, [rip + 0xf25]
+    mov rsi, 9
+    call pick main.My_Int
+    mov rbx, rax
+    mov.q rdi, [rip + 0xf17]
+    mov.q rsi, [rip + 0xf18]
+    call swap
+    mov r12, rax
+    mov rbp, rdx
+    mov.q rsi, [rip + 0xf16]
+    mov.q rdi, [rip + 0xf07]
+    mov rdx, 4
+    call grow
+    lea rcx, [r13 + rbx + 0x38]
+    mov.q [rsp + 0x10], 0
+    mov.q [rsp + 0x18], 1
+    lea rsi, [rsp + 0x10]
+    mov.q [rsp], rsi
+    mov.q [rsp + 0x8], 2
+    lea rsi, [rsp]
+    mov.q [rsp + 0x10], rsi
+    imul rdi, r12, 2
+    add rdi, rbp
+    add rcx, rdi
+    add rax, rdx
+    add rcx, rax
+    add rcx, rdx
+    mov.q rax, [rsp]
+    mov.q rax, [rax]
+    add.q rcx, [rax + 0x8]
+    mov rax, rcx
+    add rsp, 0x28
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+pick main.My_Int:
+    mov rax, rdi
+    cmp rax, rsi
+    cmovl rax, rsi
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    add.q [rip + 0xf57], 0x10
+    mov.q r8, [rip + 0xf60]
+    mov.q rdi, [rip + 0xf49]
+    mov.q rsi, [rip + 0xf5a]
+    mov.q rcx, [rip + 0xf43]
+    mov.q rdx, [rip + 0xf54]
+    mov.q [rsp - 0x18], 0
+    mov.q [rsp - 0x10], 1
+    lea rax, [rsp - 0x18]
+    mov.q [rsp - 0x28], rax
+    mov.q [rsp - 0x20], 2
+    lea rax, [rsp - 0x28]
+    mov.q [rsp - 0x18], rax
+    imul rax, r8, 2
+    add rax, rcx
+    lea rcx, [rdi + rax + 0x41]
+    lea rax, [rsi + rdx*2 + 0x4]
+    add rcx, rax
+    lea rax, [rcx + rdx*2]
+    mov.q rcx, [rsp - 0x28]
+    mov.q rcx, [rcx]
+    add.q rax, [rcx + 0x8]
+    ret

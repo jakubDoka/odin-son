@@ -10069,3 +10069,927 @@ main :: proc() -> int {
 	return total + origin.x + int(mode)
 }
 ```
+
+#### distinct scalar types
+```odin
+package main
+
+My_Int :: distinct int
+My_F :: distinct f32
+My_B :: distinct bool
+My_S :: distinct string
+II :: distinct My_Int
+
+N :: 5
+STR :: "abc"
+
+add :: proc(a, b: My_Int) -> My_Int {
+	return a + b
+}
+
+main :: proc() -> int {
+	x: My_Int = 3
+	y: My_Int = N
+	z := x + y
+	z += 2
+	z = z * 2 - 1
+	w := -z
+	k := ~x
+	sh := x << 2
+	f: My_F = 1.5
+	f2 := f * 2
+	b: My_B = true
+	nb: My_B = !b
+	c := x < y
+	bb := b && nb
+	mixed := c && b
+	s: My_S = "hello"
+	s2: My_S = STR
+	r := 0
+	if b do r += 1
+	if bb do r += 0x100
+	if c do r += 2
+	if mixed do r += 0x10
+	ii := II(x)
+	back := int(ii)
+	r += len(s) + len(s2) + int(s[1]) + len(s[1:])
+	r += int(add(x, 4))
+	r += int(f2)
+	r += back
+	r += int(w) + int(k) + int(sh)
+	for i: My_Int = 0; i < 3; i += 1 {
+		r += int(i)
+	}
+	return r
+}
+```
+
+#### distinct composite types
+```odin
+package main
+
+Vec :: struct {
+	x, y: int,
+}
+D_Vec :: distinct Vec
+DD_Vec :: distinct D_Vec
+Arr :: distinct [4]int
+Sl :: distinct []int
+Ptr :: distinct ^int
+MP :: distinct [^]int
+Kind :: enum {
+	A,
+	B = 4,
+	C,
+}
+D_Kind :: distinct Kind
+Shape :: union {
+	int,
+	Vec,
+}
+D_Shape :: distinct Shape
+F4 :: #simd[4]i32
+Big :: distinct [5]int
+
+Node :: distinct struct {
+	next:  ^Node,
+	value: int,
+}
+
+My_Int :: distinct int
+Var :: union {
+	int,
+	My_Int,
+}
+
+sum_big :: proc(b: Big) -> Big {
+	r := b
+	for &v in r do v *= 2
+	return r
+}
+
+mk :: proc(x: int) -> DD_Vec {
+	return DD_Vec{x, x + 1}
+}
+
+which :: proc(v: Var) -> int {
+	switch t in v {
+	case int:
+		return t
+	case My_Int:
+		return int(t) * 0x10
+	}
+	return -1
+}
+
+main :: proc() -> int {
+	r := 0
+	v := D_Vec{1, 2}
+	r += v.x + v.y
+	dv := mk(3)
+	r += dv.x * dv.y
+	p := Vec(dv)
+	r += p.x
+	q := DD_Vec(p)
+	r += q.y
+	a := Arr{1, 2, 3, 4}
+	for e in a do r += e
+	r += a[2] + len(a)
+	plain := cast([4]int)a
+	r += plain[3]
+	s := Sl(a[:])
+	r += len(s) + s[1]
+	s2 := s[1:]
+	r += s2[0]
+	x := 7
+	ptr := Ptr(&x)
+	ptr^ += 1
+	r += x
+	if ptr != nil do r += 1
+	mp := MP(&x)
+	r += mp[0]
+	k: D_Kind = .B
+	if k == .B do r += 0x20
+	r += int(k)
+	r += int(D_Kind.C)
+	sh: D_Shape = Vec{5, 6}
+	switch t in sh {
+	case int:
+		r += t
+	case Vec:
+		r += t.y
+	}
+	f := transmute(F4)[4]i32{1, 2, 3, 4}
+	g := f + f
+	arr := transmute([4]i32)g
+	r += int(arr[3])
+	big := sum_big(Big{1, 2, 3, 4, 5})
+	r += big[4]
+	n2 := Node{nil, 0x40}
+	n1 := Node{&n2, 0x1}
+	r += n1.next.value
+	r += which(int(3)) + which(My_Int(2))
+	return r
+}
+```
+
+#### distinct constants globals and generics
+```odin
+package main
+
+My_Int :: distinct int
+My_F :: distinct f64
+Vec :: struct($T: typeid) {
+	x, y: T,
+}
+D_Vec :: distinct Vec(int)
+Left :: distinct struct {
+	right: ^Right,
+	v:     int,
+}
+Right :: distinct struct {
+	left: ^Left,
+	v:    int,
+}
+Pair :: distinct [2]My_Int
+
+LIMIT :: My_Int(0x10)
+DOUBLE :: LIMIT * 2 + 1
+HALF :: My_F(2.5)
+UNTYPED :: 7
+#assert(DOUBLE == 0x21)
+#assert(HALF * 2 == 5.0)
+
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) counter: My_Int
+	@(static) table: Pair
+	@(static) origin: D_Vec
+} else {
+	counter: My_Int = 3
+	table := Pair{4, 5}
+	origin := D_Vec{1, 2}
+}
+
+pick :: proc(a, b: $T) -> T {
+	return a < b ? b : a
+}
+
+swap :: proc(p: Pair) -> Pair {
+	return Pair{p[1], p[0]}
+}
+
+grow :: proc(v: D_Vec, by: My_Int) -> D_Vec {
+	return D_Vec{v.x + int(by), v.y * 2}
+}
+
+main :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		counter = 3
+		table = Pair{4, 5}
+		origin = D_Vec{1, 2}
+	}
+
+	r := 0
+	counter += LIMIT
+	r += int(counter)
+	arr: [DOUBLE]u8
+	r += len(arr)
+	u: My_Int = UNTYPED
+	r += int(u + UNTYPED)
+	f: My_F = UNTYPED
+	r += int(f + HALF)
+	r += int(pick(My_Int(3), 9))
+	s := swap(table)
+	r += int(s[0]) * 2 + int(s[1])
+	g := grow(origin, 4)
+	r += g.x + g.y
+	plain := Vec(int)(g)
+	r += plain.y
+	l := Left{nil, 1}
+	rr := Right{&l, 2}
+	l.right = &rr
+	r += l.right.left.right.v
+	return r
+}
+```
+
+#### distinct conversions and transmutes
+```odin
+package main
+
+Bits :: distinct u32
+Real :: distinct f32
+Flag :: distinct bool
+Name :: distinct string
+P :: struct {
+	x, y: int,
+}
+Q :: struct {
+	x, y: int,
+}
+D_P :: distinct P
+Mat :: distinct [2][2]int
+Shape :: union {
+	P,
+	D_P,
+}
+
+GREETING :: Name("hey")
+ORIGIN :: D_P{3, 4}
+when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+	@(static) greeting: Name
+	@(static) global_flag: Flag
+} else {
+	greeting := GREETING
+	global_flag: Flag = true
+}
+
+classify :: proc(s: Shape) -> int {
+	switch v in s {
+	case P:
+		return v.x
+	case D_P:
+		return v.y * 0x10
+	}
+	return 0
+}
+
+main :: proc() -> int {
+	when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
+		greeting = GREETING
+		global_flag = true
+	}
+
+	r := 0
+	f := Real(1.0)
+	bits := transmute(Bits)f
+	if bits == 0x3f80_0000 do r += 1
+	back := transmute(Real)bits
+	if back == 1.0 do r += 2
+	raw := transmute(u32)back
+	if Bits(raw) == bits do r += 4
+	q := Q(P{5, 6})
+	r += q.x
+	dp := D_P(q)
+	r += dp.y
+	m := Mat{{1, 2}, {3, 4}}
+	plain := cast([2][2]int)m
+	r += plain[1][0] + m[1][1]
+	fl := Flag(r > 3)
+	for i := 0; fl; i += 1 {
+		r += 1
+		fl = Flag(i < 2)
+	}
+	r += 1 if global_flag else 0
+	n: Name = "hey"
+	#assert(GREETING == "hey" && GREETING != Name("nope"))
+	r += len(greeting) * 0x10
+	r += len(n[1:])
+	r += classify(P{2, 0}) + classify(D_P{0, 3})
+	c := ORIGIN
+	r += c.x * c.y
+	x: Bits = 0xf0
+	x |= 0x0f
+	x >>= 4
+	r += int(x)
+	return r
+}
+```
+
+#### transmute between floats and integers
+```odin
+package main
+
+main :: proc() -> int {
+	f := f64(-2.0)
+	bits := transmute(i64)f
+	g := transmute(f64)(bits + 0)
+	u := u32(0x4040_0000)
+	h := transmute(f32)u
+	r := 0
+	if bits == transmute(i64)u64(0xc000_0000_0000_0000) do r += 1
+	if g == -2.0 do r += 2
+	if h == 3.0 do r += 4
+	return r
+}
+```
+
+#### union params from variant values
+```odin
+package main
+
+Var :: union {
+	int,
+	u8,
+}
+
+which :: proc(v: Var) -> int {
+	switch t in v {
+	case int:
+		return t
+	case u8:
+		return int(t) * 0x10
+	}
+	return 0x50
+}
+
+main :: proc() -> int {
+	x := int(3)
+	y := u8(2)
+	v: Var = x
+	return which(x) + which(y) + which(int(1)) + which(v)
+}
+```
+
+#### generic param type literals are shared
+```odin
+package main
+
+get :: proc(v: $T, x: struct {
+		a: int,
+	}, e: enum {
+		A,
+		B,
+	}) -> int {
+	return int(v) + x.a * (int(e) + 1)
+}
+
+main :: proc() -> int {
+	r := get(1, {2}, .A)
+	r += get(4, {5}, .B)
+	r += get(u8(7), {8}, .B)
+	r += get(u8(9), {1}, .A)
+	return r
+}
+```
+
+#### fail generic param type literals are shared
+```odin
+package main
+
+get :: proc(v: $T, x: struct {
+		a: int,
+	}) -> int {
+	return x.a
+}
+
+main :: proc() -> int {
+	r := get(1, {2})
+	r += get(3, "same instance")
+	r += get(u8(4), {5})
+	r += get(u8(6), "other instance")
+	return r
+}
+```
+
+#### fail distinct assignability
+```odin
+package main
+
+My_Int :: distinct int
+Other :: distinct int
+My_Str :: distinct string
+Flag :: distinct bool
+P :: struct {
+	x, y: int,
+}
+Q :: struct {
+	y, x: int,
+}
+D_P :: distinct P
+TYPED :: int(5)
+TYPED_S : string : "x"
+
+main :: proc() -> int {
+	a: My_Int = 1
+	b: int = 2
+	a = b
+	b = a
+	c := a + b
+	o: Other = 3
+	o = a
+	t: My_Int = TYPED
+	s: My_Str = TYPED_S
+	f: Flag = true
+	plain := false
+	g: bool = f && plain
+	p := P{1, 2}
+	q := Q(p)
+	dp: D_P = p
+	ds := cast([]P)[]D_P{}
+	return int(a) + c
+}
+```
+
+#### fail distinct declarations
+```odin
+package main
+
+A :: distinct A
+B :: distinct C
+C :: distinct B
+D :: distinct ^D
+E :: distinct [size_of(E)]int
+F :: distinct struct {
+	f: F,
+}
+P :: distinct proc(x: int)
+V :: struct($T: typeid) {
+	x: T,
+}
+D_V :: distinct V
+SIMD :: distinct #simd[4]i32
+INLINE :: [2]distinct int
+
+main :: proc() -> int {
+	L :: distinct L
+	x: distinct int
+	return 0
+}
+```
+
+#### raw union and align layouts
+```odin
+package main
+
+U :: struct #raw_union {
+	a: u8,
+	b: u64,
+	c: [3]u32,
+}
+Small :: struct #raw_union {
+	a: u8,
+	b: [3]u8,
+}
+A2 :: struct #align(2) {
+	x: u64,
+	y: u8,
+}
+A32 :: struct #align(32) {
+	x: u64,
+	y: u8,
+}
+UA :: struct #raw_union #align(16) {
+	a: u8,
+	b: [3]u8,
+}
+P :: struct #packed {
+	a: u8,
+	b: u64,
+	c: u16,
+}
+PU :: struct #raw_union #packed {
+	a: u8,
+	b: u64,
+}
+E :: struct #align(8) {}
+G :: struct($T: typeid) #align(2 * align_of(T)) {
+	a: T,
+}
+Holder :: struct {
+	tag: u8,
+	u:   U,
+}
+
+#assert(size_of(U) == 16 && align_of(U) == 8)
+#assert(size_of(Small) == 3 && align_of(Small) == 1)
+#assert(size_of(A2) == 10 && align_of(A2) == 2)
+#assert(size_of(A32) == 32 && align_of(A32) == 32)
+#assert(size_of(UA) == 16 && align_of(UA) == 16)
+#assert(size_of(P) == 11 && align_of(P) == 1)
+#assert(size_of(PU) == 8 && align_of(PU) == 1)
+#assert(size_of(E) == 0 && align_of(E) == 8)
+#assert(size_of(G(u32)) == 8 && align_of(G(u32)) == 8)
+#assert(size_of(G(u16)) == 4 && align_of(G(u16)) == 4)
+#assert(size_of(Holder) == 24)
+#assert(size_of([3]U) == 48)
+
+main :: proc() -> int {
+	p := P{1, 0x0102_0304_0506_0708, 0x0a0b}
+	p.b += 1
+	r := int(p.a) + int(p.b & 0xff) + int(p.c)
+	g: G(u16)
+	g.a = 7
+	return r + int(g.a) + size_of(A2) + align_of(A32)
+}
+```
+
+#### raw union type punning
+```odin
+package main
+
+F_Bits :: struct #raw_union {
+	f: f32,
+	u: u32,
+}
+D_Bits :: struct #raw_union {
+	f: f64,
+	u: u64,
+	h: [2]u32,
+}
+
+// COMPILER BUG: with Mem_Opt the f32 store is forwarded into the u32 load
+// (and back) as a value conversion instead of a bitcast, 1.0 reads back as 1,
+// the same happens with (^u32)(&f)^
+// to_bits :: proc(f: f32) -> u32 {
+// 	b: F_Bits
+// 	b.f = f
+// 	return b.u
+// }
+//
+// from_bits :: proc(u: u32) -> f32 {
+// 	b := F_Bits{u = u}
+// 	return b.f
+// }
+
+halves :: proc(d: ^D_Bits) -> (u32, u32) {
+	return d.h[0], d.h[1]
+}
+
+set_low :: proc(d: ^D_Bits, v: u32) {
+	d.h[0] = v
+}
+
+main :: proc() -> int {
+	r := 0
+	// COMPILER BUG: see to_bits
+	// if to_bits(1.0) == 0x3f80_0000 do r += 1
+	// if to_bits(-2.0) == 0xc000_0000 do r += 2
+	// if from_bits(0x4040_0000) == 3.0 do r += 4
+	r += size_of(F_Bits)
+
+	// COMPILER BUG: zero initializing the union and then mixing 8 and 4 byte
+	// accesses at offset 0 trips slot.size == bac.DT_SIZE[onode.dt] in
+	// bac/ssa/peep.odin, the same happens with (^[2]u32)(&u64_local)
+	// d: D_Bits
+	// d.f = 1.0
+	// if d.h[1] == 0x3ff0_0000 && d.h[0] == 0 do r += 0x10
+	// d.h[0] = 1
+	d := D_Bits{f = 1.0}
+	if d.u == 0x3ff0_0000_0000_0000 do r += 8
+	lo, hi := halves(&d)
+	if hi == 0x3ff0_0000 && lo == 0 do r += 0x10
+	set_low(&d, 1)
+	if d.u == 0x3ff0_0000_0000_0001 do r += 0x20
+	d.u = 0xc000_0000_0000_0000
+	if d.f == -2.0 do r += 0x40
+	return r
+}
+```
+
+#### raw union nested in structs and arrays
+```odin
+package main
+
+U :: struct #raw_union {
+	i: i32,
+	b: [4]u8,
+}
+Holder :: struct {
+	tag: u8,
+	u:   U,
+	us:  [2]U,
+}
+
+main :: proc() -> int {
+	h: Holder
+	h.tag = 3
+	h.u.i = 0x0403_0201
+	h.us[0].b[0] = 0xff
+	h.us[1].i = -1
+	r := int(h.tag) + int(h.u.b[0]) + int(h.u.b[3]) + int(h.us[0].i) + int(h.us[1].b[2])
+
+	// COMPILER BUG: two locals written and then read through the loops trip
+	// node.rtype != DEAD_NODE_KIND in bac/ssa/memopt.odin, the same happens
+	// with plain i32 locals read through (^[4]u8)(&e)
+	// arr: [3]U
+	// for &e, i in arr do e.i = i32(i) * 0x100
+	// for e in arr do r += int(e.b[1])
+	arr: [3]U
+	arr[0].i = 0x100
+	arr[1].i = 0x200
+	arr[2].i = 0x3_0400
+	r += int(arr[0].b[1]) + int(arr[1].b[1]) + int(arr[2].b[2]) + int(arr[2].b[1])
+	return r
+}
+```
+
+#### raw union and aligned structs by value
+```odin
+package main
+
+// COMPILER BUG: with Mem_Opt a float store forwarded into an integer load of
+// the same slot (and back) is not bitcast, this miscompiles or trips the
+// regalloc on every float field passed by value, the same happens with
+// struct {f: f64} or a u64 written through a ^f64
+// D :: struct #raw_union {
+// 	f: f64,
+// 	i: u64,
+// }
+//
+// swap_d :: proc(d: D) -> D {
+// 	return D{i = d.i ~ 0x8000_0000_0000_0000}
+// }
+//
+// if swap_d(D{f = 2.0}).f == -2.0 do r += 1
+Halves :: struct #raw_union {
+	wide:   u64,
+	halves: [2]u32,
+}
+// the bigger field is not the last one
+Mix :: struct #raw_union {
+	big:   [3]u32,
+	small: u16,
+}
+Wide :: struct #raw_union {
+	a: [3]u64,
+	b: u8,
+}
+Aligned :: struct #align(32) {
+	x: int,
+	y: f32,
+}
+Padded :: struct #align(16) {
+	x: u32,
+}
+Wrap :: struct {
+	u: Halves,
+	n: int,
+}
+
+flip :: proc(h: Halves) -> Halves {
+	return Halves{halves = {h.halves[1], h.halves[0]}}
+}
+
+mix :: proc(m: Mix) -> Mix {
+	r := m
+	r.big[2] += u32(r.small)
+	return r
+}
+
+wide :: proc(w: Wide) -> Wide {
+	r := w
+	r.a[2] = u64(r.b) + r.a[1]
+	return r
+}
+
+aligned :: proc(a: Aligned, k: int) -> Aligned {
+	return Aligned{a.x * k, a.y + 1}
+}
+
+padded :: proc(p: Padded, q: Padded) -> Padded {
+	return Padded{p.x * 0x10 + q.x}
+}
+
+wrap :: proc(w: Wrap) -> Wrap {
+	return Wrap{Halves{wide = w.u.wide << 4}, w.n + 1}
+}
+
+main :: proc() -> int {
+	r := 0
+	h := flip(Halves{wide = 0x0000_0002_0000_0001})
+	if h.wide == 0x0000_0001_0000_0002 do r += 1
+	m := mix(Mix{big = {0x1_0005, 2, 3}})
+	if m.big[2] == 8 && m.small == 5 do r += 2
+	w := wide(Wide{a = {5, 6, 7}})
+	if w.a[2] == 11 do r += 4
+	a := aligned(Aligned{3, 0.5}, 4)
+	if a.x == 12 && a.y == 1.5 do r += 8
+	wr := wrap(Wrap{Halves{wide = 0x10}, 9})
+	if wr.u.halves[0] == 0x100 && wr.n == 10 do r += 0x10
+	p := padded(Padded{3}, Padded{4})
+	if p.x == 0x34 do r += 0x20
+	return r
+}
+```
+
+#### raw union composite literals
+```odin
+package main
+
+U :: struct #raw_union {
+	a: u8,
+	b: u32,
+}
+Pair :: struct {
+	x: U,
+	y: U,
+}
+
+make_u :: proc(x: u32) -> U {
+	return {b = x}
+}
+
+main :: proc() -> int {
+	z := U{}
+	u := U{a = 0xff}
+	p := Pair{x = {b = 0x10}, y = U{a = 2}}
+	g := make_u(0x0102_0304)
+	return int(z.b) + int(u.b) + int(p.x.a) + int(p.y.b) + int(g.a)
+}
+```
+
+#### fail struct directives
+```odin
+package main
+
+H :: struct #align(3) {
+	a: u8,
+}
+I :: struct #align(0) {
+	a: u8,
+}
+J :: struct #align(true) {
+	a: u8,
+}
+K :: struct #packed #align(4) {
+	a: u8,
+}
+U :: struct #raw_union {
+	a: u8,
+	b: u64,
+}
+
+main :: proc() -> int {
+	c := U{a = 1, b = 2}
+	d := U{1}
+	_ = c
+	_ = d
+	return 0
+}
+```
+
+#### float int store forwarding f32 store u32 load
+```odin
+package main
+
+main :: proc() -> int {
+	b: u32
+	(^f32)(&b)^ = 1.0
+	return int(b)
+}
+```
+
+#### float int store forwarding u32 store f32 load
+```odin
+package main
+
+main :: proc() -> int {
+	f: f32
+	(^u32)(&f)^ = 0x4040_0000
+	return f == 3.0 ? 1 : 0
+}
+```
+
+#### float int store forwarding f64 store u64 load
+```odin
+package main
+
+bits :: proc(f: f64) -> u64 {
+	b: u64
+	(^f64)(&b)^ = f
+	return b
+}
+
+main :: proc() -> int {
+	return int(bits(2.0) >> 52)
+}
+```
+
+#### float int store forwarding u64 store f64 load
+```odin
+package main
+
+from_bits :: proc(u: u64) -> f64 {
+	f: f64
+	(^u64)(&f)^ = u
+	return f
+}
+
+main :: proc() -> int {
+	return from_bits(0xc000_0000_0000_0000) == -2.0 ? 1 : 0
+}
+```
+
+#### float int store forwarding f64 struct by value
+```odin
+package main
+
+D :: struct {
+	f: f64,
+}
+
+twice :: proc(d: D) -> D {
+	return D{d.f * 2}
+}
+
+main :: proc() -> int {
+	return twice(D{2.0}).f == 4.0 ? 1 : 0
+}
+```
+
+#### float int store forwarding f32 pair struct by value
+```odin
+package main
+
+Pair :: struct {
+	big: [2]f32,
+}
+
+sum :: proc(p: Pair) -> Pair {
+	r := p
+	r.big[1] += r.big[0]
+	return r
+}
+
+main :: proc() -> int {
+	return sum(Pair{{1, 2}}).big[1] == 3 ? 1 : 0
+}
+```
+
+#### float int store forwarding raw union punning
+```odin
+package main
+
+Bits :: struct #raw_union {
+	f: f32,
+	u: u32,
+}
+
+main :: proc() -> int {
+	b: Bits
+	b.f = -2.0
+	return int(b.u >> 16)
+}
+```
+
+#### mixed access sizes after zero init
+```odin
+package main
+
+main :: proc() -> int {
+	r := 0
+	d: u64
+	(^f64)(&d)^ = 1.0
+	if d == 0x3ff0_0000_0000_0000 do r += 1
+	if (^[2]u32)(&d)[1] == 0x3ff0_0000 && (^[2]u32)(&d)[0] == 0 do r += 2
+	(^[2]u32)(&d)[0] = 1
+	if d == 0x3ff0_0000_0000_0001 do r += 4
+	return r
+}
+```
+
+#### two locals read through loops dead node
+```odin
+package main
+
+main :: proc() -> int {
+	h: i32
+	h = 0x0403_0201
+	arr: [3]i32
+	for &e, i in arr do e = i32(i) * 0x100
+	r := int((^[4]u8)(&h)[3])
+	for &e in arr do r += int((^[4]u8)(&e)[1])
+	return r
+}
+```

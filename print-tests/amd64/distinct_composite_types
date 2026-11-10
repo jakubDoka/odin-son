@@ -1,0 +1,813 @@
+=========== OPT LEVEL: none-quick ===========
+sum_big:
+    push rbx
+    sub rsp, 0x30
+    mov rbx, rdi
+    lea rdi, [rsp]
+    mov rdx, 0x28
+    call -0xd4
+    xor eax, eax
+1:
+    cmp rax, 5
+    jge 2
+    mov.q rcx, [rsp + rax*8]
+    imul rcx, rcx, 2
+    mov rdx, rax
+    add rdx, 1
+    mov.q [rsp + rax*8], rcx
+    mov rax, rdx
+    jmp 1
+2:
+    lea rsi, [rsp]
+    mov rdi, rbx
+    mov rdx, 0x28
+    call -0x118
+    add rsp, 0x30
+    pop rbx
+    ret
+mk:
+    mov rax, rdi
+    mov rcx, rax
+    add rcx, 1
+    mov rdx, rcx
+    ret
+which:
+    mov rax, rdi
+    cmp rsi, 1
+    je 6
+    cmp rsi, 2
+    je 5
+    mov rcx, -1
+    jmp 7
+5:
+    imul rdx, rax, 0x10
+    mov rcx, rdx
+    jmp 7
+6:
+    mov rcx, rax
+7:
+    mov rax, rcx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0xf8
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x90], xmm0
+    mov rdi, 3
+    call mk
+    mov rbx, rax
+    mov rbp, rdx
+    lea rsi, [rsp + 0x90]
+    lea rdi, [rsp + 0xa0]
+    mov.q [rsp + 0x90], rbx
+    mov.q [rsp + 0x98], rbp
+    mov rdx, 0x10
+    call -0x1ce
+    mov.q rax, [rsp + 0xa0]
+    mov rcx, rbx
+    imul rcx, rbp
+    lea rax, [rcx + rax + 0x3]
+    add.q rax, [rsp + 0xa8]
+    mov.q [rsp + 0xd0], 1
+    mov.q [rsp + 0xd8], 2
+    mov.q [rsp + 0xe0], 3
+    mov.q [rsp + 0xe8], 4
+    xor ecx, ecx
+9:
+    cmp rcx, 4
+    jge 10
+    add.q rax, [rsp + rcx*8 + 0xd0]
+    add rcx, 1
+    jmp 9
+10:
+    mov.q rcx, [rsp + 0xd8]
+    mov.q rbx, [rsp + 0xe0]
+    add rbx, 4
+    add rbx, rax
+    add.q rbx, [rsp + 0xe8]
+    mov rax, rcx
+    add rax, 4
+    add rbx, rax
+    add rbx, rcx
+    lea rax, [rsp + 0x78]
+    cmp rax, 0
+    jne 11
+    add rbx, 8
+    jmp 12
+11:
+    add rbx, 9
+12:
+    mov.q [rsp + 0x78], 8
+    mov.q rbp, [rsp + 0x78]
+    movabs rax, 0x200000001
+    mov.q [rsp + 0x80], rax
+    movabs rax, 0x400000003
+    mov.q [rsp + 0x88], rax
+    movups.x xmm0, [rsp + 0x80]
+    paddd xmm0, xmm0
+    movups.x [rsp + 0xc0], xmm0
+    movsxd.d r12, [rsp + 0xcc]
+    mov.q [rsp + 0x70], 0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x60], xmm0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x50], xmm0
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q [rsp + 0x10], 3
+    mov.q [rsp + 0x18], 4
+    mov.q [rsp + 0x20], 5
+    lea rsi, [rsp]
+    lea rdi, [rsp + 0x28]
+    call sum_big
+    lea rdi, [rsp + 0x50]
+    mov rdx, 0x28
+    lea rsi, [rsp + 0x28]
+    call -0x355
+    mov.q r13, [rsp + 0x70]
+    mov.q [rsp + 0xb0], 0
+    mov.q [rsp + 0xb8], 0x40
+    mov.q r14, [rsp + 0xb8]
+    mov rsi, 1
+    mov rdi, 3
+    call which
+    mov r15, rax
+    mov rdi, 2
+    mov rsi, 2
+    call which
+    mov rcx, rax
+    add rbx, rbp
+    lea rax, [rbx + 0x2f]
+    add rax, r13
+    add rax, r14
+    mov rdx, r15
+    add rdx, rcx
+    mov rcx, rdx
+    add rax, rcx
+    add rsp, 0xf8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+sum_big:
+    push rbx
+    sub rsp, 0x30
+    mov rbx, rdi
+    lea rdi, [rsp]
+    mov rdx, 0x28
+    call -0xb7
+    xor eax, eax
+1:
+    cmp rax, 5
+    jge 2
+    mov.q rcx, [rsp + rax*8]
+    imul rdx, rcx, 2
+    mov rcx, rax
+    add rcx, 1
+    mov.q [rsp + rax*8], rdx
+    mov rax, rcx
+    jmp 1
+2:
+    lea rsi, [rsp]
+    mov rdi, rbx
+    mov rdx, 0x28
+    call -0xfb
+    add rsp, 0x30
+    pop rbx
+    ret
+mk:
+    mov rax, rdi
+    mov rcx, rax
+    add rcx, 1
+    mov rdx, rcx
+    ret
+which:
+    mov rax, rdi
+    cmp rsi, 1
+    je 6
+    cmp rsi, 2
+    je 5
+    mov rax, -1
+    jmp 6
+5:
+    imul rax, rax, 0x10
+    jmp 6
+6:
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0xf8
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x90], xmm0
+    mov rdi, 3
+    call mk
+    mov rbx, rax
+    mov rbp, rdx
+    lea rsi, [rsp + 0x90]
+    lea rdi, [rsp + 0xa0]
+    mov.q [rsp + 0x90], rbx
+    mov.q [rsp + 0x98], rbp
+    mov rdx, 0x10
+    call -0x1a8
+    mov.q rax, [rsp + 0xa0]
+    imul rbx, rbp
+    lea rdx, [rbx + rax + 0x3]
+    add.q rdx, [rsp + 0xa8]
+    mov.q [rsp + 0xd0], 1
+    mov.q [rsp + 0xd8], 2
+    mov.q [rsp + 0xe0], 3
+    mov.q [rsp + 0xe8], 4
+    xor eax, eax
+8:
+    cmp rax, 4
+    jge 9
+    add.q rdx, [rsp + rax*8 + 0xd0]
+    add rax, 1
+    jmp 8
+9:
+    mov.q rcx, [rsp + 0xd8]
+    mov.q r14, [rsp + 0xe0]
+    add r14, 4
+    add r14, rdx
+    add.q r14, [rsp + 0xe8]
+    mov rax, rcx
+    add rax, 4
+    add r14, rax
+    add r14, rcx
+    lea rax, [rsp + 0x78]
+    cmp rax, 0
+    jne 10
+    add r14, 8
+    jmp 11
+10:
+    add r14, 9
+11:
+    mov.q [rsp + 0x78], 8
+    mov.q r13, [rsp + 0x78]
+    movabs rax, 0x200000001
+    mov.q [rsp + 0x80], rax
+    movabs rax, 0x400000003
+    mov.q [rsp + 0x88], rax
+    movups.x xmm0, [rsp + 0x80]
+    paddd xmm0, xmm0
+    movups.x [rsp + 0xc0], xmm0
+    movsxd.d r12, [rsp + 0xcc]
+    mov.q [rsp + 0x70], 0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x60], xmm0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x50], xmm0
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q [rsp + 0x10], 3
+    mov.q [rsp + 0x18], 4
+    mov.q [rsp + 0x20], 5
+    lea rsi, [rsp]
+    lea rdi, [rsp + 0x28]
+    call sum_big
+    lea rdi, [rsp + 0x50]
+    mov rdx, 0x28
+    lea rsi, [rsp + 0x28]
+    call -0x32c
+    mov.q rbp, [rsp + 0x70]
+    mov.q [rsp + 0xb0], 0
+    mov.q [rsp + 0xb8], 0x40
+    mov.q rbx, [rsp + 0xb8]
+    mov rsi, 1
+    mov rdi, 3
+    call which
+    mov r15, rax
+    mov rdi, 2
+    mov rsi, 2
+    call which
+    add r14, r13
+    lea rcx, [r14 + 0x2f]
+    add rcx, rbp
+    add rcx, rbx
+    mov rdx, r15
+    add rdx, rax
+    add rcx, rdx
+    mov rax, rcx
+    add rsp, 0xf8
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+sum_big:
+    push rbx
+    sub rsp, 0x30
+    mov rbx, rdi
+    lea rdi, [rsp]
+    mov rdx, 0x28
+    call -0xd4
+    xor eax, eax
+1:
+    cmp rax, 5
+    jge 2
+    mov.q rcx, [rsp + rax*8]
+    imul rcx, rcx, 2
+    mov rdx, rax
+    add rdx, 1
+    mov.q [rsp + rax*8], rcx
+    mov rax, rdx
+    jmp 1
+2:
+    lea rsi, [rsp]
+    mov rdi, rbx
+    mov rdx, 0x28
+    call -0x118
+    add rsp, 0x30
+    pop rbx
+    ret
+mk:
+    mov rax, rdi
+    mov rcx, rax
+    add rcx, 1
+    mov rdx, rcx
+    ret
+which:
+    mov rax, rdi
+    cmp rsi, 1
+    je 6
+    cmp rsi, 2
+    je 5
+    mov rcx, -1
+    jmp 7
+5:
+    imul rdx, rax, 0x10
+    mov rcx, rdx
+    jmp 7
+6:
+    mov rcx, rax
+7:
+    mov rax, rcx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0xf0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x90], xmm0
+    mov rdi, 3
+    call mk
+    mov rbx, rax
+    mov rbp, rdx
+    lea rsi, [rsp + 0x90]
+    lea rdi, [rsp + 0xa0]
+    mov.q [rsp + 0x90], rbx
+    mov.q [rsp + 0x98], rbp
+    mov rdx, 0x10
+    call -0x1cc
+    mov.q rax, [rsp + 0xa0]
+    mov rcx, rbx
+    imul rcx, rbp
+    lea rax, [rcx + rax + 0x3]
+    add.q rax, [rsp + 0xa8]
+    mov.q [rsp + 0xd0], 1
+    mov.q [rsp + 0xd8], 2
+    mov.q [rsp + 0xe0], 3
+    mov.q [rsp + 0xe8], 4
+    xor ecx, ecx
+9:
+    cmp rcx, 4
+    jge 10
+    add.q rax, [rsp + rcx*8 + 0xd0]
+    add rcx, 1
+    jmp 9
+10:
+    mov.q rcx, [rsp + 0xd8]
+    mov rdx, rcx
+    add rdx, 4
+    lea rbx, [rax + rdx + 0xb]
+    add rbx, rcx
+    lea rax, [rsp + 0x78]
+    cmp rax, 0
+    jne 11
+    add rbx, 8
+    jmp 12
+11:
+    add rbx, 9
+12:
+    mov.q [rsp + 0x78], 8
+    movabs rax, 0x200000001
+    mov.q [rsp + 0x80], rax
+    movabs rax, 0x400000003
+    mov.q [rsp + 0x88], rax
+    movups.x xmm0, [rsp + 0x80]
+    paddd xmm0, xmm0
+    movups.x [rsp + 0xc0], xmm0
+    movsxd.d rbp, [rsp + 0xcc]
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x60], xmm0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x50], xmm0
+    mov.q [rsp + 0x70], 0
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q [rsp + 0x10], 3
+    mov.q [rsp + 0x18], 4
+    mov.q [rsp + 0x20], 5
+    lea rsi, [rsp]
+    lea rdi, [rsp + 0x28]
+    call sum_big
+    lea rdi, [rsp + 0x50]
+    mov rdx, 0x28
+    lea rsi, [rsp + 0x28]
+    call -0x336
+    mov.q r12, [rsp + 0x70]
+    mov.q [rsp + 0xb0], 0
+    mov.q [rsp + 0xb8], 0x40
+    mov.q r13, [rsp + 0xb8]
+    mov rsi, 1
+    mov rdi, 3
+    call which
+    mov r14, rax
+    mov rdi, 2
+    mov rsi, 2
+    call which
+    mov rcx, rax
+    lea rax, [rbx + rbp + 0x37]
+    add rax, r12
+    add rax, r13
+    mov rdx, r14
+    add rdx, rcx
+    mov rcx, rdx
+    add rax, rcx
+    add rsp, 0xf0
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+sum_big:
+    push rbx
+    sub rsp, 0x30
+    mov rbx, rdi
+    lea rdi, [rsp]
+    mov rdx, 0x28
+    call -0xb7
+    xor eax, eax
+1:
+    cmp rax, 5
+    jge 2
+    mov.q rcx, [rsp + rax*8]
+    imul rdx, rcx, 2
+    mov rcx, rax
+    add rcx, 1
+    mov.q [rsp + rax*8], rdx
+    mov rax, rcx
+    jmp 1
+2:
+    lea rsi, [rsp]
+    mov rdi, rbx
+    mov rdx, 0x28
+    call -0xfb
+    add rsp, 0x30
+    pop rbx
+    ret
+mk:
+    mov rax, rdi
+    mov rcx, rax
+    add rcx, 1
+    mov rdx, rcx
+    ret
+which:
+    mov rax, rdi
+    cmp rsi, 1
+    je 6
+    cmp rsi, 2
+    je 5
+    mov rax, -1
+    jmp 6
+5:
+    imul rax, rax, 0x10
+    jmp 6
+6:
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    sub rsp, 0xf0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x90], xmm0
+    mov rdi, 3
+    call mk
+    mov rbx, rax
+    mov rbp, rdx
+    lea rsi, [rsp + 0x90]
+    lea rdi, [rsp + 0xa0]
+    mov.q [rsp + 0x90], rbx
+    mov.q [rsp + 0x98], rbp
+    mov rdx, 0x10
+    call -0x1a6
+    mov.q rax, [rsp + 0xa0]
+    imul rbx, rbp
+    lea rdx, [rbx + rax + 0x3]
+    add.q rdx, [rsp + 0xa8]
+    mov.q [rsp + 0xd0], 1
+    mov.q [rsp + 0xd8], 2
+    mov.q [rsp + 0xe0], 3
+    mov.q [rsp + 0xe8], 4
+    xor eax, eax
+8:
+    cmp rax, 4
+    jge 9
+    add.q rdx, [rsp + rax*8 + 0xd0]
+    add rax, 1
+    jmp 8
+9:
+    mov.q rcx, [rsp + 0xd8]
+    mov rax, rcx
+    add rax, 4
+    lea r12, [rdx + rax + 0xb]
+    add r12, rcx
+    lea rax, [rsp + 0x78]
+    cmp rax, 0
+    jne 10
+    add r12, 8
+    jmp 11
+10:
+    add r12, 9
+11:
+    mov.q [rsp + 0x78], 8
+    movabs rax, 0x200000001
+    mov.q [rsp + 0x80], rax
+    movabs rax, 0x400000003
+    mov.q [rsp + 0x88], rax
+    movups.x xmm0, [rsp + 0x80]
+    paddd xmm0, xmm0
+    movups.x [rsp + 0xc0], xmm0
+    movsxd.d r14, [rsp + 0xcc]
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x60], xmm0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x50], xmm0
+    mov.q [rsp + 0x70], 0
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q [rsp + 0x10], 3
+    mov.q [rsp + 0x18], 4
+    mov.q [rsp + 0x20], 5
+    lea rsi, [rsp]
+    lea rdi, [rsp + 0x28]
+    call sum_big
+    lea rdi, [rsp + 0x50]
+    mov rdx, 0x28
+    lea rsi, [rsp + 0x28]
+    call -0x30d
+    mov.q rbp, [rsp + 0x70]
+    mov.q [rsp + 0xb0], 0
+    mov.q [rsp + 0xb8], 0x40
+    mov.q rbx, [rsp + 0xb8]
+    mov rsi, 1
+    mov rdi, 3
+    call which
+    mov r13, rax
+    mov rdi, 2
+    mov rsi, 2
+    call which
+    lea rcx, [r12 + r14 + 0x37]
+    add rcx, rbp
+    add rcx, rbx
+    mov rdx, r13
+    add rdx, rax
+    add rcx, rdx
+    mov rax, rcx
+    add rsp, 0xf0
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+sum_big:
+    push rbx
+    sub rsp, 0x30
+    mov rbx, rdi
+    lea rdi, [rsp]
+    mov rdx, 0x28
+    call -0xb7
+    xor ecx, ecx
+1:
+    mov.q rax, [rsp + rcx*8]
+    imul rax, rax, 2
+    mov.q [rsp + rcx*8], rax
+    add rcx, 1
+    cmp rcx, 5
+    jl 1
+    lea rsi, [rsp]
+    mov rdi, rbx
+    mov rdx, 0x28
+    call -0xf0
+    add rsp, 0x30
+    pop rbx
+    ret
+mk:
+    mov rax, rdi
+    mov rcx, rax
+    add rcx, 1
+    mov rdx, rcx
+    ret
+which:
+    mov rax, rdi
+    cmp rsi, 1
+    je 5
+    cmp rsi, 2
+    je 4
+    mov rax, -1
+    jmp 5
+4:
+    imul rax, rax, 0x10
+    jmp 5
+5:
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    sub rsp, 0xe0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x90], xmm0
+    mov rdi, 3
+    call mk
+    mov rbx, rax
+    mov rbp, rdx
+    lea rsi, [rsp + 0x90]
+    lea rdi, [rsp + 0xa0]
+    mov.q [rsp + 0x90], rbx
+    mov.q [rsp + 0x98], rbp
+    mov rdx, 0x10
+    call -0x197
+    mov.q rax, [rsp + 0xa0]
+    imul rbx, rbp
+    lea rsi, [rbx + rax + 0x3]
+    add.q rsi, [rsp + 0xa8]
+    mov.q [rsp + 0xc0], 1
+    mov.q [rsp + 0xc8], 2
+    mov.q [rsp + 0xd0], 3
+    mov.q [rsp + 0xd8], 4
+    xor eax, eax
+7:
+    mov rdx, rax
+    add rdx, 1
+    cmp rdx, 4
+    setge cl
+    movzx ecx, cl
+    add.q rsi, [rsp + rax*8 + 0xc0]
+    test cl, cl
+    mov rax, rdx
+    je 7
+    mov.q rcx, [rsp + 0xc8]
+    mov rax, rcx
+    add rax, 4
+    lea rbp, [rsi + rax + 0xb]
+    add rbp, rcx
+    lea rax, [rsp]
+    cmp rax, 0
+    jne 8
+    add rbp, 8
+    jmp 9
+8:
+    add rbp, 9
+9:
+    mov.q [rsp], 8
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x68], xmm0
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x58], xmm0
+    mov.q [rsp + 0x78], 0
+    mov.q [rsp + 0x8], 1
+    mov.q [rsp + 0x10], 2
+    mov.q [rsp + 0x18], 3
+    mov.q [rsp + 0x20], 4
+    mov.q [rsp + 0x28], 5
+    lea rsi, [rsp + 0x8]
+    lea rdi, [rsp + 0x30]
+    call sum_big
+    lea rdi, [rsp + 0x58]
+    mov rdx, 0x28
+    lea rsi, [rsp + 0x30]
+    call -0x2c7
+    mov.q rbx, [rsp + 0x78]
+    mov rsi, 1
+    mov rdi, 3
+    call which
+    mov r12, rax
+    mov rdi, 2
+    mov rsi, 2
+    call which
+    movabs rcx, 0x200000001
+    mov.q [rsp + 0x80], rcx
+    movabs rcx, 0x400000003
+    mov.q [rsp + 0x88], rcx
+    movups.x xmm0, [rsp + 0x80]
+    paddd xmm0, xmm0
+    movups.x [rsp + 0xb0], xmm0
+    movsxd.d rcx, [rsp + 0xbc]
+    lea rdx, [rbp + rcx + 0x37]
+    add rdx, rbx
+    mov rcx, r12
+    add rcx, rax
+    lea rax, [rdx + rcx + 0x40]
+    add rsp, 0xe0
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    push rbx
+    sub rsp, 0xa0
+    mov.q [rsp + 0x78], 1
+    mov.q [rsp + 0x80], 2
+    mov.q [rsp + 0x88], 3
+    mov.q [rsp + 0x90], 4
+    mov rsi, 0x16
+    xor eax, eax
+1:
+    mov rdx, rax
+    add rdx, 1
+    cmp rdx, 4
+    setge cl
+    movzx ecx, cl
+    add.q rsi, [rsp + rax*8 + 0x78]
+    test cl, cl
+    mov rax, rdx
+    je 1
+    mov.q rcx, [rsp + 0x80]
+    mov rax, rcx
+    add rax, 4
+    lea rbx, [rsi + rax + 0xb]
+    add rbx, rcx
+    lea rax, [rsp + 0x50]
+    cmp rax, 0
+    jne 2
+    add rbx, 8
+    jmp 3
+2:
+    add rbx, 9
+3:
+    pxor xmm0, xmm0
+    mov.q [rsp + 0x50], 8
+    movups.x [rsp + 0x38], xmm0
+    movups.x [rsp + 0x28], xmm0
+    mov.q [rsp + 0x48], 0
+    mov.q [rsp], 1
+    mov.q [rsp + 0x8], 2
+    mov.q [rsp + 0x10], 3
+    mov.q [rsp + 0x18], 4
+    mov.q [rsp + 0x20], 5
+    xor ecx, ecx
+4:
+    mov.q rax, [rsp + rcx*8]
+    imul rax, rax, 2
+    mov.q [rsp + rcx*8], rax
+    add rcx, 1
+    cmp rcx, 5
+    jl 4
+    lea rdi, [rsp + 0x28]
+    movabs rax, 0x200000001
+    mov.q [rsp + 0x58], rax
+    movabs rax, 0x400000003
+    mov.q [rsp + 0x60], rax
+    lea rsi, [rsp]
+    mov rdx, 0x28
+    call -0x1ef
+    movups.x xmm0, [rsp + 0x58]
+    mov.q rcx, [rsp + 0x48]
+    paddd xmm0, xmm0
+    movups.x [rsp + 0x68], xmm0
+    movsxd.d rax, [rsp + 0x74]
+    lea rax, [rbx + rax + 0x37]
+    add rax, rcx
+    add rax, 0x63
+    add rsp, 0xa0
+    pop rbx
+    ret

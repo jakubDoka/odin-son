@@ -266,7 +266,7 @@ global_slice :: proc(
 	low, high: ^Check_Meta,
 ) -> ^Check_Meta {
 	base := base
-	elem: Type
+	elem, ty: Type
 	length := i64(-1)
 	#partial switch t in unpack_type(base.type) {
 	case ^Array:
@@ -276,10 +276,10 @@ global_slice :: proc(
 			elem, length = array.elem, i64(array.len)
 		}
 	case ^Slice:
-		elem = t.elem
+		elem, ty = t.elem, base.type
 		length = global_load(ctx, global_field(ctx, base, .Int, 8)).int
 	case String_Type:
-		elem = .U8
+		elem, ty = .U8, base.type
 		base = global_string(ctx, base)
 		length = global_load(ctx, global_field(ctx, base, .Int, 8)).int
 	case Multi_Pointer:
@@ -304,7 +304,7 @@ global_slice :: proc(
 	data = tcmeta(ctx, data.type, {dest = {data.idx, u32(offset)}})
 	if hi < 0 do return data
 
-	ty := base.type == .String ? Type.String : intern_slice(ctx, elem)
+	if ty == .Void do ty = intern_slice(ctx, elem)
 	init := gi_init(ctx, prop, ty)
 	gi_ensure_stored(ctx, init, data)
 

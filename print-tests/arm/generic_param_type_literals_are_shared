@@ -1,0 +1,244 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    movz x1, #2
+    movz x0, #1
+    movz x2, #0
+    bl get int
+    mov x19, x0
+    movz x0, #4
+    movz x1, #5
+    movz x2, #1
+    bl get int
+    mov x20, x0
+    movz x0, #7
+    movz x1, #8
+    movz x2, #1
+    bl get u8
+    mov x21, x0
+    movz x0, #9
+    movz x1, #1
+    movz x2, #0
+    bl get u8
+    add x1, x19, x20
+    add x1, x1, x21
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+get int:
+    movz x3, #1
+    add x2, x2, x3
+    madd x1, x1, x2, xzr
+    add x0, x0, x1
+    ret
+get u8:
+    uxtb w0, w0
+    movz x3, #1
+    add x2, x2, x3
+    madd x1, x1, x2, xzr
+    add x0, x0, x1
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    movz x1, #2
+    movz x0, #1
+    movz x2, #0
+    bl get int
+    mov x21, x0
+    movz x0, #4
+    movz x1, #5
+    movz x2, #1
+    bl get int
+    mov x20, x0
+    movz x0, #7
+    movz x1, #8
+    movz x2, #1
+    bl get u8
+    mov x19, x0
+    movz x0, #9
+    movz x1, #1
+    movz x2, #0
+    bl get u8
+    add x1, x21, x20
+    add x1, x1, x19
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+get int:
+    movz x3, #1
+    add x2, x2, x3
+    madd x1, x1, x2, xzr
+    add x0, x0, x1
+    ret
+get u8:
+    uxtb w3, w0
+    movz x0, #1
+    add x0, x2, x0
+    madd x0, x1, x0, xzr
+    add x0, x3, x0
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    movz x1, #2
+    movz x0, #1
+    movz x2, #0
+    bl get int
+    mov x19, x0
+    movz x0, #4
+    movz x1, #5
+    movz x2, #1
+    bl get int
+    mov x20, x0
+    movz x0, #7
+    movz x1, #8
+    movz x2, #1
+    bl get u8
+    mov x21, x0
+    movz x0, #9
+    movz x1, #1
+    movz x2, #0
+    bl get u8
+    add x1, x19, x20
+    add x1, x1, x21
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+get int:
+    movz x3, #1
+    add x2, x2, x3
+    madd x1, x1, x2, xzr
+    add x0, x0, x1
+    ret
+get u8:
+    uxtb w0, w0
+    movz x3, #1
+    add x2, x2, x3
+    madd x1, x1, x2, xzr
+    add x0, x0, x1
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    movz x1, #2
+    movz x0, #1
+    movz x2, #0
+    bl get int
+    mov x21, x0
+    movz x0, #4
+    movz x1, #5
+    movz x2, #1
+    bl get int
+    mov x20, x0
+    movz x0, #7
+    movz x1, #8
+    movz x2, #1
+    bl get u8
+    mov x19, x0
+    movz x0, #9
+    movz x1, #1
+    movz x2, #0
+    bl get u8
+    add x1, x21, x20
+    add x1, x1, x19
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+get int:
+    movz x3, #1
+    add x2, x2, x3
+    madd x1, x1, x2, xzr
+    add x0, x0, x1
+    ret
+get u8:
+    uxtb w3, w0
+    movz x0, #1
+    add x0, x2, x0
+    madd x0, x1, x0, xzr
+    add x0, x3, x0
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    movz x1, #2
+    movz x0, #1
+    movz x2, #0
+    bl get int
+    mov x21, x0
+    movz x0, #4
+    movz x1, #5
+    movz x2, #1
+    bl get int
+    mov x20, x0
+    movz x0, #7
+    movz x1, #8
+    movz x2, #1
+    bl get u8
+    mov x19, x0
+    movz x0, #9
+    movz x1, #1
+    movz x2, #0
+    bl get u8
+    add x1, x21, x20
+    add x1, x1, x19
+    add x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+get int:
+    movz x3, #1
+    add x2, x2, x3
+    madd x1, x1, x2, xzr
+    add x0, x0, x1
+    ret
+get u8:
+    uxtb w3, w0
+    movz x0, #1
+    add x0, x2, x0
+    madd x0, x1, x0, xzr
+    add x0, x3, x0
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #50
+    ret

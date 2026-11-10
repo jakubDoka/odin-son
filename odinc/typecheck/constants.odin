@@ -3,6 +3,7 @@ package typecheck
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
+import "core:slice"
 import "core:strconv"
 
 constant_base_type :: proc(ty: Type) -> Type {
@@ -81,10 +82,13 @@ constant_binary :: proc(
 				lhs.type,
 			)
 		}
-		return tcmeta(ctx, .Bool, {int = i64(value)})
+		res := tcmeta(ctx, .Bool, {int = i64(value)})
+		res.untyped = true
+		return res
 	}
 
 	result := new_clone(lhs^, ctx.types.allocator)
+	result.untyped = lhs.untyped && rhs.untyped
 	if in_set(base, FLOAT_TYPES) {
 		#partial switch op {
 		case .Add:
@@ -200,6 +204,37 @@ valid_conversion_type :: proc(ty: Type) -> bool {
 	return in_set(constant_base_type(ty), NUMBER_TYPES) || is_data_pointer(ty)
 }
 
+// identical_core tells whether a value converts by reinterpreting it as is,
+// like in odin the nominal layers are only seen through at the outside, and
+// struct and union bodies match by their shape
+identical_core :: proc(a, b: Type) -> bool {
+	a, b := strip_named(a), strip_named(b)
+	if a == b do return true
+
+	#partial switch x in unpack_type(a) {
+	case ^Array:
+		y := unpack_type(b).(^Array) or_return
+		return x.len == y.len && identical_core(x.elem, y.elem)
+	case ^Simd:
+		y := unpack_type(b).(^Simd) or_return
+		return x.len == y.len && identical_core(x.elem, y.elem)
+	case ^Struct:
+		y := unpack_type(b).(^Struct) or_return
+		type_ensure_layout(a)
+		type_ensure_layout(b)
+		if len(x.fields) != len(y.fields) || x.size != y.size do return false
+		for f, i in x.fields {
+			g := y.fields[i]
+			if f.name != g.name || f.ty != g.ty || f.offset != g.offset do return false
+		}
+		return x.align == y.align && x.raw_union == y.raw_union && x.packed == y.packed
+	case ^Union:
+		y := unpack_type(b).(^Union) or_return
+		return slice.equal(x.variants, y.variants) && x.tag_ty == y.tag_ty
+	}
+	return false
+}
+
 typecheck_conversion :: proc(
 	ctx: ^Gen_Ctx,
 	node: ^ast.Node,
@@ -208,6 +243,14 @@ typecheck_conversion :: proc(
 	strict := false,
 ) -> ^Check_Meta {
 	if src.type == .Invalid_Type || dst == .Invalid_Type do return &INVALID
+
+	if identical_core(src.type, dst) {
+		if !src.known do return tmeta(ctx, dst)
+		res := new_clone(src^, ctx.types.allocator)
+		res.type = dst
+		res.untyped = false
+		return res
+	}
 
 	if !valid_conversion_type(src.type) || !valid_conversion_type(dst) {
 		return error(
@@ -220,8 +263,6 @@ typecheck_conversion :: proc(
 	}
 
 	if !src.known do return tmeta(ctx, dst)
-
-	if src.type == dst do return src
 
 	if is_data_pointer(dst) {
 		if is_data_pointer(src.type) do return tcmeta(ctx, dst, src.lit)

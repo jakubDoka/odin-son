@@ -164,7 +164,7 @@ peep :: proc(
 	kind := atype(node)
 
 	#partial switch kind {
-	case .Add ..= .And_Not, .Neg, .Not:
+	case .Add ..= .U_Rem, .And_Not, .Neg, .Not:
 		NARROW_DTS :: bit_set[bac.Node_Datatype]{.I8, .I16}
 		if node.dt in bac.VECTOR_DTS ||
 		   bac.operation_datatype(ctx, node) not_in NARROW_DTS {
@@ -261,6 +261,8 @@ peep :: proc(
 		return guard
 	case .Ctz:
 		return bac.normalize_ctz(ctx, node, .I32)
+	case .U_Mul_Hi:
+		return bac.normalize_u_mul_hi(ctx, node)
 	case .Popcnt:
 		// fmov d, x does not clear garbage above a narrow operand
 		ext := bac.normalize_popcnt(ctx, node, .I64)
@@ -1183,6 +1185,14 @@ emit_instr :: proc(
 			u32(rn) << 5 |
 			u32(rd),
 		)
+	case .U_Mul_Hi:
+		assert(node.dt == .I64)
+		rd := reg_of(ctx, instr)
+		rn := reg_of(ctx, node.inps[0])
+		rm := reg_of(ctx, node.inps[1])
+
+		// umulh xd, xn, xm
+		emit_op(ctx.code, rrr(true, 0x9BC07C00, rd, rn, rm))
 	case .Mul:
 		rm := reg_of(ctx, node.inps[1])
 		rn := reg_of(ctx, node.inps[0])

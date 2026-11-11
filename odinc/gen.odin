@@ -186,6 +186,8 @@ x86_reg_class_classify :: proc(
 			.String = .Integer,
 			.F32    = .Sse_32,
 			.F64    = .Sse,
+			.I128   = .Integer,
+			.U128   = .Integer,
 		}
 
 		class: X86_Reg_Class
@@ -247,7 +249,9 @@ x86_reg_class_classify :: proc(
 
 		if slots[offset / 8] == .Sse_32 do slots[offset / 8] = .Sse
 		slots[offset / 8] = max(slots[offset / 8], class)
-		if ty == .String do slots[offset / 8 + 1] = .Integer
+		if ty == .String || typecheck.in_set(ty, typecheck.WIDE_TYPES) {
+			slots[offset / 8 + 1] = .Integer
+		}
 
 		return true
 	}
@@ -381,7 +385,7 @@ emit_lvalue :: proc(ctx: ^Gen_Ctx, expr: ^ast.Node) -> Sym {
 		vl := ctx.poly_types[idmt.index]
 		assert(vl.meta.type == .Int)
 		return Value(
-			bac.add_c_int(ctx, "cnst", type_to_dt(meta.type), vl.meta.int),
+			bac.add_c_int(ctx, "cnst", type_to_dt(meta.type), i64(vl.meta.int)),
 		)
 	case .Local:
 		fmt.assertf(idmt.index < len(ctx.scope), "%#v", id)
@@ -817,7 +821,7 @@ emit_proc :: proc(
 	context.allocator, _ = arna.scrath()
 
 	prc := &ctx.procs[i]
-	if prc.sig == nil do return
+	if prc.sig == nil || prc.hidden do return
 
 	ctx.prc_id = auto_cast i
 	ctx.module = prc.module
@@ -1051,17 +1055,23 @@ emit_known :: proc(
 		return {id = ptr, is_lvalue = true}
 	}
 
+	if typecheck.is_wide(meta.type) {
+		lo := bac.add_c_int(ctx, "wclo", .I64, i64(meta.int))
+		hi := bac.add_c_int(ctx, "wchi", .I64, i64(meta.int >> 64))
+		return wide_store(ctx, prop.dest, meta.type, {lo, hi})
+	}
+
 	dt := type_to_dt(meta.type)
 	if typecheck.in_set(meta.type, typecheck.NUMBER_TYPES) ||
 	   typecheck.is_of(meta.type, ^typecheck.Enum) ||
 	   typecheck.is_of(meta.type, ^typecheck.Bit_Set) ||
 	   typecheck.is_of(meta.type, ^typecheck.Bit_Field) {
-		return Value(bac.add_c_int(ctx, "cnst", dt, meta.int))
+		return Value(bac.add_c_int(ctx, "cnst", dt, i64(meta.int)))
 	}
 
 	#partial switch t in unpack_type(meta.type) {
 	case typecheck.Typeid_Type:
-		return Value(bac.add_c_int(ctx, "cnst", dt, meta.int))
+		return Value(bac.add_c_int(ctx, "cnst", dt, i64(meta.int)))
 	case typecheck.Rawptr_Type, typecheck.Pointer, typecheck.Multi_Pointer:
 		global := ctx.globals[meta.idx]
 		if global.align == 0 {
@@ -1203,7 +1213,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		values := make([dynamic]Value_Slot, 0, len(d.lhs))
 		Mem_Store :: struct {
 			ptr: Node_ID,
-			vl:  Node_ID,
+			vl:  Value,
 			lhs: ^ast.Node,
 		}
 		mem_stores := make([dynamic]Mem_Store, 0, len(d.lhs))
@@ -1294,10 +1304,24 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						value := emit_nodes(ctx, {dest = sym.id}, rhs)
 						store_value(ctx, "asss", sym.id, value, lhs)
 					} else {
-						value := emit_rvalue(ctx, {}, rhs)
-						bac.pin(ctx, value)
+						value := emit_nodes(ctx, {}, rhs)
+						// a memory backed value is copied out, the stores of the
+						// other pairs could overwrite it
+						if type_to_dt(lhs_ty) == .Void {
+							tmp := alloca(ctx, "masst", lhs_ty, zeroed = false)
+							store_value(ctx, "masst", tmp, value, lhs_ty)
+							value = {id = tmp, is_lvalue = true}
+						} else {
+							value = Value(to_rvalue(ctx, value, rhs))
+						}
+						bac.pin(ctx, value.id)
 						append(&mem_stores, Mem_Store{sym.id, value, lhs})
 					}
+				} else if typecheck.is_wide(lhs_ty) {
+					bac.pin(ctx, sym.id)
+					rhsv := emit_wide_operand(ctx, d.op.kind, rhs)
+					emit_wide_binary(ctx, sym.id, d.op.kind, lhs_ty, sym, rhsv, rhs)
+					bac.unpin(ctx, sym.id)
 				} else {
 					op, name, lane :=
 						typecheck.tok_to_binop(
@@ -1327,8 +1351,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 
 		for s in mem_stores {
-			store_value(ctx, "asss", s.ptr, Value(s.vl), s.lhs)
-			bac.unpin(ctx, s.vl)
+			store_value(ctx, "asss", s.ptr, s.vl, s.lhs)
+			bac.unpin(ctx, s.vl.id)
 		}
 
 		for s in bit_field_stores {
@@ -1396,9 +1420,16 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 		lhsv := emit_nodes(ctx, {}, d.left)
 		bac.pin(ctx, lhsv.id)
+		lhs_ty := get_node_type(d.left)
+		if typecheck.is_wide(lhs_ty) {
+			rhsv := emit_wide_operand(ctx, d.op.kind, d.right)
+			wide := emit_wide_binary(ctx, prop.dest, d.op.kind, lhs_ty, lhsv, rhsv, d.right)
+			bac.unpin(ctx, lhsv.id)
+			res, lvalue = unpack(wide)
+			break
+		}
 		rhsv := emit_nodes(ctx, {}, d.right)
 		lhs, rhs := to_rvalue(ctx, lhsv, d.left), to_rvalue(ctx, rhsv, d.right)
-		lhs_ty := get_node_type(d.left)
 		kind, name, lane :=
 			typecheck.tok_to_binop(lhs_ty, d.op.kind) or_else panic("")
 		if typecheck.is_of(lhs_ty, ^typecheck.Bit_Set) &&
@@ -1421,6 +1452,10 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 	case ^ast.Unary_Expr:
 		#partial switch d.op.kind {
 		case .Add:
+			if typecheck.is_wide(ty) {
+				res, lvalue = unpack(emit_nodes(ctx, prop, d.expr))
+				break
+			}
 			res = emit_rvalue(ctx, {}, d.expr)
 		case .And:
 			node := emit_nodes(ctx, {}, d.expr)
@@ -1431,6 +1466,11 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			zero := bac.add_c_int(ctx, "zero", dt, 0)
 			res = bac.add_bin_op(ctx, "lnot", .Eq, dt, operand, zero)
 		case .Sub, .Xor:
+			if typecheck.is_wide(ty) {
+				operand := emit_nodes(ctx, {}, d.expr)
+				res, lvalue = unpack(emit_wide_unary(ctx, prop.dest, d.op.kind, ty, operand))
+				break
+			}
 			operand := emit_rvalue(ctx, {}, d.expr)
 
 			if d.op.kind == .Sub && dt in bac.FLOAT_DTS {
@@ -1614,7 +1654,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			for elem in d.elems {
 				emeta := typecheck.get_node_meta(elem)
 				if emeta.known {
-					known |= 1 << u64(emeta.int - bs.lower)
+					known |= 1 << u64(i64(emeta.int) - bs.lower)
 					continue
 				}
 
@@ -1647,7 +1687,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				mask := typecheck.bit_field_mask(member)
 				emeta := typecheck.get_node_meta(fv.value)
 				if emeta.known {
-					known |= (emeta.uint & mask) << u64(member.offset)
+					known |= (u64(emeta.uint) & mask) << u64(member.offset)
 					continue
 				}
 
@@ -1953,7 +1993,11 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 	case ^ast.Type_Cast:
 		inner := emit_nodes(ctx, {}, d.expr)
-		if dt == .Void {
+		src_ty := get_node_type(d.expr)
+		if d.tok.kind != .Transmute &&
+		   (typecheck.is_wide(ty) || typecheck.is_wide(src_ty)) {
+			res, lvalue = unpack(emit_wide_conversion(ctx, prop.dest, ty, src_ty, inner))
+		} else if dt == .Void {
 			res, lvalue = inner.id, true
 			// a #simd vector lives in a register
 			if !inner.is_lvalue {
@@ -1986,7 +2030,10 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		ssa.end_else(ctx, &ctx.node_scope, &if_state)
 		emit_stmts(ctx, {}, sbase)
 	case ^ast.Switch_Stmt:
-		condv := emit_rvalue(ctx, {}, d.cond)
+		cond_ty := get_node_type(d.cond)
+		wide := typecheck.is_wide(cond_ty)
+		condv := emit_nodes(ctx, {}, d.cond).id
+		if !wide do condv = to_rvalue(ctx, Value(condv), d.cond)
 		bac.pin(ctx, condv)
 
 		body := d.body.derived.(^ast.Block_Stmt)
@@ -2009,8 +2056,15 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 
 			cond: Node_ID
 			for v in clause.list {
-				cv := emit_rvalue(ctx, {}, v)
-				eq := bac.add_bin_op(ctx, "seq", .Eq, .I8, condv, cv)
+				eq: Node_ID
+				if wide {
+					condw := Value{id = condv, is_lvalue = true}
+					cv := emit_nodes(ctx, {}, v)
+					eq = emit_wide_binary(ctx, 0, .Cmp_Eq, cond_ty, condw, cv, v).id
+				} else {
+					cv := emit_rvalue(ctx, {}, v)
+					eq = bac.add_bin_op(ctx, "seq", .Eq, .I8, condv, cv)
+				}
 				cond = cond == 0 ? eq : bac.add_bin_op(ctx, "sor", .Or, .I8, cond, eq)
 			}
 
@@ -2523,12 +2577,47 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					a,
 				)
 				break match
+			case .fixed_point_mul:
+				dt := type_to_dt(get_node_type(node))
+				a := emit_rvalue(ctx, {}, d.args[0])
+				b := emit_rvalue(ctx, {}, d.args[1])
+				scale := i64(typecheck.get_node_meta(d.args[2]).uint)
+				bits := i64(bac.DT_SIZE[dt] * 8)
+
+				res = bac.add_bin_op(ctx, "fpmh", .U_Mul_Hi, dt, a, b)
+				if scale == bits do break match
+
+				high := bac.add_bin_op(
+					ctx,
+					"fpmh",
+					.Shl,
+					dt,
+					res,
+					bac.add_c_int(ctx, "fpmc", dt, bits - scale),
+				)
+				low := bac.add_bin_op(
+					ctx,
+					"fpml",
+					.U_Shr,
+					dt,
+					bac.add_bin_op(ctx, "fpml", .Mul, dt, a, b),
+					bac.add_c_int(ctx, "fpmc", dt, scale),
+				)
+				res = bac.add_bin_op(ctx, "fpm", .Or, dt, high, low)
+				break match
 			}
 		case base_ty == .Module:
 			panic("calling a module?")
 		case base_ty == .Typeid:
 			dest_dt := type_to_dt(base_meta.typeida)
 			src_ty := get_node_type(d.args[0])
+			if typecheck.is_wide(base_meta.typeida) || typecheck.is_wide(src_ty) {
+				inner := emit_nodes(ctx, {}, d.args[0])
+				res, lvalue = unpack(
+					emit_wide_conversion(ctx, prop.dest, base_meta.typeida, src_ty, inner),
+				)
+				break match
+			}
 			if dest_dt == .Void {
 				res, lvalue = unpack(emit_nodes(ctx, {}, d.args[0]))
 				break match
@@ -2973,4 +3062,314 @@ emit_string :: proc(ctx: ^Gen_Ctx, prop: Prop, value: string) -> Node_ID {
 	field_store(ctx, "slenst", slot, 8, len)
 
 	return slot
+}
+
+// a 128-bit integer is memory backed, the halves are only loaded around the
+// operations, low half first
+Wide :: [2]Node_ID
+
+wide_load :: proc(ctx: ^Gen_Ctx, value: Value) -> Wide {
+	assert(value.is_lvalue)
+	return {
+		field_load(ctx, "wlo", .I64, value.id),
+		field_load(ctx, "whi", .I64, value.id, 8),
+	}
+}
+
+wide_store :: proc(ctx: ^Gen_Ctx, dest: Node_ID, ty: Type, w: Wide) -> Value {
+	dest := dest != 0 ? dest : alloca(ctx, "wide", ty, zeroed = false)
+	field_store(ctx, "wlost", dest, 0, w[0])
+	field_store(ctx, "whist", dest, 8, w[1])
+	return {id = dest, is_lvalue = true}
+}
+
+emit_libcall :: proc(
+	ctx: ^Gen_Ctx,
+	call: typecheck.Libcall,
+	args: []Node_ID,
+	rets: []bac.Node_Datatype,
+	results: []Node_ID,
+) {
+	prc_id := ctx.libcalls[call]
+	assert(prc_id != 0)
+
+	inputs := make([]Node_ID, CALL_PREFIX + len(args))
+	copy(inputs[CALL_PREFIX:], args)
+	for arg in args do bac.pin(ctx, arg)
+
+	inputs[0] = ctx_ctrl(ctx)
+	inputs[1] = ctx_mem(ctx)
+	inputs[2] = bac.find_or_create_node(ctx, .Sym)
+	call_end, mem := ssa.make_call(
+		ctx,
+		inputs,
+		{flags = {imported = true}, cid = u32(prc_id)},
+	)
+
+	for arg in args do bac.unpin(ctx, arg)
+
+	bac.set_input(ctx, ctx.node_scope, 0, call_end)
+	ctx_set_mem(ctx, mem)
+
+	for &r, i in results do r = ssa.add_call_ret(ctx, call_end, rets[i])
+}
+
+emit_wide_binary :: proc(
+	ctx: ^Gen_Ctx,
+	dest: Node_ID,
+	tok: tokenizer.Token_Kind,
+	ty: Type,
+	lhs, rhs: Value,
+	rhs_node: ^ast.Node,
+) -> Value {
+	op, _, _ := typecheck.tok_to_binop(ty, tok) or_else panic("")
+	a := wide_load(ctx, lhs)
+
+	if op == .Shl || op == .Shr || op == .U_Shr {
+		return wide_store(ctx, dest, ty, emit_wide_shift(ctx, op, a, rhs, rhs_node))
+	}
+
+	b := wide_load(ctx, rhs)
+	r: Wide
+	#partial switch op {
+	case .Add:
+		r[0] = bac.add_bin_op(ctx, "wadd", .Add, .I64, a[0], b[0])
+		carry := bac.add_bin_op(ctx, "wcarry", .U_Lt, .I8, r[0], a[0])
+		carry = bac.add_un_op(ctx, "wcarry", .U_Conv, .I64, carry)
+		r[1] = bac.add_bin_op(ctx, "wadd", .Add, .I64, a[1], b[1])
+		r[1] = bac.add_bin_op(ctx, "wadd", .Add, .I64, r[1], carry)
+	case .Sub:
+		r[0] = bac.add_bin_op(ctx, "wsub", .Sub, .I64, a[0], b[0])
+		borrow := bac.add_bin_op(ctx, "wborrow", .U_Lt, .I8, a[0], b[0])
+		borrow = bac.add_un_op(ctx, "wborrow", .U_Conv, .I64, borrow)
+		r[1] = bac.add_bin_op(ctx, "wsub", .Sub, .I64, a[1], b[1])
+		r[1] = bac.add_bin_op(ctx, "wsub", .Sub, .I64, r[1], borrow)
+	case .Mul:
+		r[0] = bac.add_bin_op(ctx, "wmul", .Mul, .I64, a[0], b[0])
+		r[1] = bac.add_bin_op(ctx, "wmulh", .U_Mul_Hi, .I64, a[0], b[0])
+		cross := bac.add_bin_op(ctx, "wmulx", .Mul, .I64, a[0], b[1])
+		r[1] = bac.add_bin_op(ctx, "wmulh", .Add, .I64, r[1], cross)
+		cross = bac.add_bin_op(ctx, "wmulx", .Mul, .I64, a[1], b[0])
+		r[1] = bac.add_bin_op(ctx, "wmulh", .Add, .I64, r[1], cross)
+	case .Div, .U_Div, .Rem, .U_Rem:
+		call := typecheck.division_libcall(ty, tok) or_else panic("")
+		emit_libcall(ctx, call, {a[0], a[1], b[0], b[1]}, {.I64, .I64}, r[:])
+	case .And, .Or, .Xor, .And_Not:
+		r[0] = bac.add_bin_op(ctx, "wbit", op, .I64, a[0], b[0])
+		r[1] = bac.add_bin_op(ctx, "wbit", op, .I64, a[1], b[1])
+	case .Eq:
+		lo := bac.add_bin_op(ctx, "weq", .Eq, .I8, a[0], b[0])
+		hi := bac.add_bin_op(ctx, "weq", .Eq, .I8, a[1], b[1])
+		return Value(bac.add_bin_op(ctx, "weq", .And, .I8, lo, hi))
+	case .Ne:
+		lo := bac.add_bin_op(ctx, "wne", .Ne, .I8, a[0], b[0])
+		hi := bac.add_bin_op(ctx, "wne", .Ne, .I8, a[1], b[1])
+		return Value(bac.add_bin_op(ctx, "wne", .Or, .I8, lo, hi))
+	case .Lt, .Le, .Gt, .Ge, .U_Lt, .U_Le, .U_Gt, .U_Ge:
+		@(static, rodata)
+		STRICT := #partial [bac.Bin_Op]bac.Bin_Op {
+			.Lt   = .Lt,
+			.Le   = .Lt,
+			.Gt   = .Gt,
+			.Ge   = .Gt,
+			.U_Lt = .U_Lt,
+			.U_Le = .U_Lt,
+			.U_Gt = .U_Gt,
+			.U_Ge = .U_Gt,
+		}
+		@(static, rodata)
+		UNSIGNED := #partial [bac.Bin_Op]bac.Bin_Op {
+			.Lt   = .U_Lt,
+			.Le   = .U_Le,
+			.Gt   = .U_Gt,
+			.Ge   = .U_Ge,
+			.U_Lt = .U_Lt,
+			.U_Le = .U_Le,
+			.U_Gt = .U_Gt,
+			.U_Ge = .U_Ge,
+		}
+
+		decided := bac.add_bin_op(ctx, "wcmph", STRICT[op], .I8, a[1], b[1])
+		tied := bac.add_bin_op(ctx, "wcmpt", .Eq, .I8, a[1], b[1])
+		lo := bac.add_bin_op(ctx, "wcmpl", UNSIGNED[op], .I8, a[0], b[0])
+		lo = bac.add_bin_op(ctx, "wcmpl", .And, .I8, tied, lo)
+		return Value(bac.add_bin_op(ctx, "wcmp", .Or, .I8, decided, lo))
+	case:
+		fmt.panicf("TODO: %v", op)
+	}
+
+	return wide_store(ctx, dest, ty, r)
+}
+
+emit_wide_shift :: proc(
+	ctx: ^Gen_Ctx,
+	op: bac.Bin_Op,
+	a: Wide,
+	rhs: Value,
+	rhs_node: ^ast.Node,
+) -> (
+	r: Wide,
+) {
+	rmeta := typecheck.get_node_meta(rhs_node)
+	if rmeta.known {
+		// the native shifts are never given a 0 count, it would be folded
+		// away anyway and some targets do not expect it
+		n := u128(typecheck.constant_int(rmeta))
+		switch {
+		case n == 0:
+			return a
+		case n < 64 && op == .Shl:
+			r[0] = bac.add_bin_op(ctx, "wshl", .Shl, .I64, a[0], c(ctx, n))
+			r[1] = bac.add_bin_op(ctx, "wshl", .Shl, .I64, a[1], c(ctx, n))
+			carry := bac.add_bin_op(ctx, "wshl", .U_Shr, .I64, a[0], c(ctx, 64 - n))
+			r[1] = bac.add_bin_op(ctx, "wshl", .Or, .I64, r[1], carry)
+		case n < 64:
+			r[0] = bac.add_bin_op(ctx, "wshr", .U_Shr, .I64, a[0], c(ctx, n))
+			carry := bac.add_bin_op(ctx, "wshr", .Shl, .I64, a[1], c(ctx, 64 - n))
+			r[0] = bac.add_bin_op(ctx, "wshr", .Or, .I64, r[0], carry)
+			r[1] = bac.add_bin_op(ctx, "wshr", op, .I64, a[1], c(ctx, n))
+		case n == 64 && op == .Shl:
+			r = {c(ctx, 0), a[0]}
+		case n == 64:
+			r = {a[1], sign(ctx, op, a)}
+		case n < 128 && op == .Shl:
+			r = {c(ctx, 0), bac.add_bin_op(ctx, "wshl", .Shl, .I64, a[0], c(ctx, n - 64))}
+		case n < 128:
+			r = {bac.add_bin_op(ctx, "wshr", op, .I64, a[1], c(ctx, n - 64)), sign(ctx, op, a)}
+		case:
+			r = {sign(ctx, op, a), sign(ctx, op, a)}
+		}
+		return
+	}
+
+	// the native shifts produce 0 (or the sign) for counts past the width,
+	// which lets the halves be combined without checking which side the
+	// count falls on
+	n: Node_ID
+	if rty := get_node_type(rhs_node); typecheck.is_wide(rty) {
+		b := wide_load(ctx, rhs)
+		huge := bac.add_bin_op(ctx, "wshbig", .Ne, .I8, b[1], c(ctx, 0))
+		n = bac.add_select(ctx, "wshn", .I64, c(ctx, ~u128(0)), b[0], huge)
+	} else {
+		n = emit_conversion(ctx, .U64, rty, to_rvalue(ctx, rhs, rty))
+	}
+	bac.pin(ctx, n)
+
+	up := bac.add_bin_op(ctx, "wshup", .Sub, .I64, c(ctx, 64), n)
+	down := bac.add_bin_op(ctx, "wshdown", .Sub, .I64, n, c(ctx, 64))
+	if op == .Shl {
+		r[0] = bac.add_bin_op(ctx, "wshl", .Shl, .I64, a[0], n)
+		r[1] = bac.add_bin_op(ctx, "wshl", .Shl, .I64, a[1], n)
+		carry := bac.add_bin_op(ctx, "wshl", .U_Shr, .I64, a[0], up)
+		r[1] = bac.add_bin_op(ctx, "wshl", .Or, .I64, r[1], carry)
+		carry = bac.add_bin_op(ctx, "wshl", .Shl, .I64, a[0], down)
+		r[1] = bac.add_bin_op(ctx, "wshl", .Or, .I64, r[1], carry)
+	} else {
+		r[0] = bac.add_bin_op(ctx, "wshr", .U_Shr, .I64, a[0], n)
+		carry := bac.add_bin_op(ctx, "wshr", .Shl, .I64, a[1], up)
+		r[0] = bac.add_bin_op(ctx, "wshr", .Or, .I64, r[0], carry)
+		far := bac.add_bin_op(ctx, "wshr", op, .I64, a[1], down)
+		if op == .Shr {
+			// a signed shift fills the low half with the sign when the count is
+			// below 64, so the far part has to be selected instead
+			near := bac.add_bin_op(ctx, "wshnear", .U_Lt, .I8, n, c(ctx, 64))
+			r[0] = bac.add_select(ctx, "wshr", .I64, r[0], far, near)
+		} else {
+			r[0] = bac.add_bin_op(ctx, "wshr", .Or, .I64, r[0], far)
+		}
+		r[1] = bac.add_bin_op(ctx, "wshr", op, .I64, a[1], n)
+	}
+	bac.unpin(ctx, n)
+	return
+
+	c :: proc(ctx: ^Gen_Ctx, value: u128) -> Node_ID {
+		return bac.add_c_int(ctx, "wsh", .I64, i64(value))
+	}
+
+	sign :: proc(ctx: ^Gen_Ctx, op: bac.Bin_Op, a: Wide) -> Node_ID {
+		if op != .Shr do return c(ctx, 0)
+		return bac.add_bin_op(ctx, "wsign", .Shr, .I64, a[1], c(ctx, 63))
+	}
+}
+
+emit_wide_unary :: proc(
+	ctx: ^Gen_Ctx,
+	dest: Node_ID,
+	tok: tokenizer.Token_Kind,
+	ty: Type,
+	operand: Value,
+) -> Value {
+	a := wide_load(ctx, operand)
+	r: Wide
+	if tok == .Xor {
+		r[0] = bac.add_un_op(ctx, "wnot", .Not, .I64, a[0])
+		r[1] = bac.add_un_op(ctx, "wnot", .Not, .I64, a[1])
+	} else {
+		assert(tok == .Sub)
+		r[0] = bac.add_un_op(ctx, "wneg", .Neg, .I64, a[0])
+		zero := bac.add_c_int(ctx, "wneg", .I64, 0)
+		borrow := bac.add_bin_op(ctx, "wborrow", .Ne, .I8, a[0], zero)
+		borrow = bac.add_un_op(ctx, "wborrow", .U_Conv, .I64, borrow)
+		r[1] = bac.add_un_op(ctx, "wneg", .Neg, .I64, a[1])
+		r[1] = bac.add_bin_op(ctx, "wneg", .Sub, .I64, r[1], borrow)
+	}
+	return wide_store(ctx, dest, ty, r)
+}
+
+emit_wide_conversion :: proc(
+	ctx: ^Gen_Ctx,
+	dest: Node_ID,
+	dst, src: Type,
+	value: Value,
+) -> Value {
+	if typecheck.is_wide(dst) && typecheck.is_wide(src) do return value
+
+	if call, ok := typecheck.float_libcall(dst, src); ok {
+		if typecheck.is_wide(src) {
+			a := wide_load(ctx, value)
+			res: [1]Node_ID
+			emit_libcall(ctx, call, a[:], {type_to_dt(dst)}, res[:])
+			return Value(res[0])
+		}
+
+		r: Wide
+		arg := to_rvalue(ctx, value, src)
+		emit_libcall(ctx, call, {arg}, {.I64, .I64}, r[:])
+		return wide_store(ctx, dest, dst, r)
+	}
+
+	if typecheck.is_wide(src) {
+		a := wide_load(ctx, value)
+		signed := typecheck.in_set(typecheck.constant_base_type(src), typecheck.SIGNED_TYPES)
+		low := a[0]
+		if typecheck.strip_named(dst) == .Bool {
+			low = bac.add_bin_op(ctx, "wbool", .Or, .I64, a[0], a[1])
+		}
+		return Value(emit_conversion(ctx, dst, signed ? .I64 : .U64, low))
+	}
+
+	base := src
+	if bf, ok := unpack_type(src).(^typecheck.Bit_Field); ok do base = bf.backing
+	signed := typecheck.in_set(typecheck.constant_base_type(base), typecheck.SIGNED_TYPES)
+
+	r: Wide
+	r[0] = emit_conversion(ctx, signed ? .I64 : .U64, src, to_rvalue(ctx, value, src))
+	if signed {
+		r[1] = bac.add_bin_op(ctx, "wsext", .Shr, .I64, r[0], bac.add_c_int(ctx, "wsext", .I64, 63))
+	} else {
+		r[1] = bac.add_c_int(ctx, "wzext", .I64, 0)
+	}
+	return wide_store(ctx, dest, dst, r)
+}
+
+// a constant shift count is folded into the lowering, so it is not
+// materialized
+emit_wide_operand :: proc(
+	ctx: ^Gen_Ctx,
+	tok: tokenizer.Token_Kind,
+	node: ^ast.Node,
+) -> Value {
+	is_shift := tok == .Shl || tok == .Shr || tok == .Shl_Eq || tok == .Shr_Eq
+	if is_shift && typecheck.get_node_meta(node).known do return {}
+	return emit_nodes(ctx, {}, node)
 }

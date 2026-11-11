@@ -1,5 +1,5 @@
 package bac
-// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1022:2)
+// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1023:2)
 
 INHERITANCE_TABLE :: []u16{		0b1, // Nil
 		0b1, // Entry
@@ -52,6 +52,7 @@ INHERITANCE_TABLE :: []u16{		0b1, // Nil
 		0b10, // U_Div
 		0b10, // Rem
 		0b10, // U_Rem
+		0b10, // U_Mul_Hi
 		0b10, // And_Not
 		0b10, // Split
 		0b10, // Local_Addr
@@ -128,6 +129,7 @@ NODE_EXTRA_SIZES :: []u8{		1, // Nil -> Cfg
 		0, // U_Div -> No_Extra
 		0, // Rem -> No_Extra
 		0, // U_Rem -> No_Extra
+		0, // U_Mul_Hi -> No_Extra
 		0, // And_Not -> No_Extra
 		0, // Split -> No_Extra
 		0, // Local_Addr -> No_Extra
@@ -205,6 +207,7 @@ NODE_EXTRA_SIZES :: []u8{		1, // Nil -> Cfg
 		{Class_Flag.Interned}, // U_Div
 		{Class_Flag.Interned}, // Rem
 		{Class_Flag.Interned}, // U_Rem
+		{Class_Flag.Interned, Class_Flag.Comutes}, // U_Mul_Hi
 		{Class_Flag.Interned}, // And_Not
 		{}, // Split
 		{Class_Flag.Clonable}, // Local_Addr
@@ -286,6 +289,7 @@ NODE_EXTRA_SIZES :: []u8{		1, // Nil -> Cfg
 		No_Extra,
 		No_Extra,
 		No_Extra,
+		No_Extra,
 		Tup,
 		No_Extra,
 		No_Extra,
@@ -331,6 +335,7 @@ Bin_Op :: enum u16 {
 	U_Div = u16(Node_Type.U_Div),
 	Rem = u16(Node_Type.Rem),
 	U_Rem = u16(Node_Type.U_Rem),
+	U_Mul_Hi = u16(Node_Type.U_Mul_Hi),
 	And_Not = u16(Node_Type.And_Not),
 }
 Un_Op :: enum u16 {
@@ -398,6 +403,7 @@ Node_Type :: enum u16 {
 	U_Div,
 	Rem,
 	U_Rem,
+	U_Mul_Hi,
 	And_Not,
 	Split,
 	Local_Addr,

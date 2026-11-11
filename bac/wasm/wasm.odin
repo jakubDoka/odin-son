@@ -126,7 +126,7 @@ peep :: proc(
 			lsbssh,
 			lane = node.lane,
 		)
-	case .Add ..= .And_Not, .Neg, .Not:
+	case .Add ..= .U_Rem, .And_Not, .Neg, .Not:
 		NARROW_DTS :: bit_set[bac.Node_Datatype]{.I8, .I16}
 		if node.dt in bac.VECTOR_DTS ||
 		   bac.operation_datatype(ctx, node) not_in NARROW_DTS {
@@ -226,6 +226,28 @@ peep :: proc(
 		return bac.normalize_ctz(ctx, node, .I32)
 	case .Popcnt:
 		return bac.normalize_popcnt(ctx, node, .I32)
+	case .U_Mul_Hi:
+		if res := bac.normalize_u_mul_hi(ctx, node); res != nil do return res
+
+		// no widening multiply, the product is assembled from 32-bit halves
+		low := bac.add_c_int(ctx, "umhk", .I64, 0xffffffff)
+		half := bac.add_c_int(ctx, "umhh", .I64, 32)
+		al := bin(ctx, .And, node.inps[0], low)
+		ah := bin(ctx, .U_Shr, node.inps[0], half)
+		bl := bin(ctx, .And, node.inps[1], low)
+		bh := bin(ctx, .U_Shr, node.inps[1], half)
+
+		t := bin(ctx, .Mul, al, bl)
+		u := bin(ctx, .Add, bin(ctx, .Mul, ah, bl), bin(ctx, .U_Shr, t, half))
+		v := bin(ctx, .Add, bin(ctx, .Mul, al, bh), bin(ctx, .And, u, low))
+		high := bin(ctx, .Add, bin(ctx, .Mul, ah, bh), bin(ctx, .U_Shr, u, half))
+		return bin(ctx, .Add, high, bin(ctx, .U_Shr, v, half))
+
+		bin :: proc(ctx: bac.Peep_Ctx, kind: bac.Bin_Op, lhs, rhs: bac.Node_ID) -> bac.Node_ID {
+			res := bac.add_bin_op(ctx, "umh", kind, .I64, lhs, rhs)
+			bac.worklist_add(ctx, ctx.worklist, res)
+			return res
+		}
 	case .Conv, .U_Conv:
 		if res := bac.fold_bit_count_conv(ctx, node); res != nil do return res
 
@@ -411,7 +433,11 @@ meta_of :: #force_inline proc(
 		unreachable()
 	case:
 		fallthrough
-	case .Nil ..= .Dbg_Scope, .Simd_Reduce_Add_Bisect, .Simd_Extract_Lsbs:
+	case .Nil ..=
+	     .Dbg_Scope,
+	     .Simd_Reduce_Add_Bisect,
+	     .Simd_Extract_Lsbs,
+	     .U_Mul_Hi:
 		fmt.panicf("should not reach these: %v", node)
 	case .Poison ..=
 	     .Global,
@@ -1039,7 +1065,8 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, block_idx: int) {
 	     .Simd_Reduce_Add_Bisect,
 	     .Simd_Extract_Lsbs,
 	     .And_Not,
-	     .Neg:
+	     .Neg,
+	     .U_Mul_Hi:
 		fmt.panicf("Should not reach this: %v", node)
 	case .Poison ..= .Phi, .Stub:
 	case .CInt:

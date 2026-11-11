@@ -46,7 +46,7 @@ global_zero :: proc(
 		return global_pointer(ctx, prop.inferred_ty, 0), false
 	}
 
-	if type_to_dt(prop.inferred_ty) == .Void {
+	if type_to_dt(prop.inferred_ty) == .Void && !is_wide(prop.inferred_ty) {
 		return gi_end(ctx, gi_init(ctx, prop, .Void))
 	}
 
@@ -121,7 +121,7 @@ global_store :: proc(ctx: ^Gen_Ctx, dest: Global_Dest, meta: ^Check_Meta) {
 	} else {
 		value := meta.lit
 		if strip_named(meta.type) == .F32 {
-			value.uint = u64(transmute(u32)f32(meta.float))
+			value.uint = u128(transmute(u32)f32(meta.float))
 		}
 
 		assert(size <= size_of(value))
@@ -130,7 +130,8 @@ global_store :: proc(ctx: ^Gen_Ctx, dest: Global_Dest, meta: ^Check_Meta) {
 }
 
 global_load :: proc(ctx: ^Gen_Ctx, meta: ^Check_Meta) -> ^Check_Meta {
-	if !meta.known || !meta.lvalue || type_to_dt(meta.type) == .Void do return meta
+	if !meta.known || !meta.lvalue do return meta
+	if type_to_dt(meta.type) == .Void && !is_wide(meta.type) do return meta
 
 	global := ctx.globals[meta.idx]
 	if global.align == 0 ||
@@ -157,13 +158,13 @@ global_load :: proc(ctx: ^Gen_Ctx, meta: ^Check_Meta) -> ^Check_Meta {
 		mem.ptr_to_bytes(&value),
 		global.bytes[meta.offset:][:type_size(meta.type)],
 	)
-	if is_data_pointer(meta.type) do return global_pointer(ctx, meta.type, value.uint)
+	if is_data_pointer(meta.type) do return global_pointer(ctx, meta.type, u64(value.uint))
 
 	if strip_named(meta.type) == .F32 {
 		value.float = f64(transmute(f32)u32(value.uint))
 	}
 	if in_set(constant_base_type(meta.type), SIGNED_TYPES) {
-		shift := uint(64 - type_size(meta.type) * 8)
+		shift := uint(128 - type_size(meta.type) * 8)
 		value.int = (value.int << shift) >> shift
 	}
 
@@ -237,12 +238,12 @@ global_index :: proc(
 		}
 	case ^Slice:
 		elem = t.elem
-		length = global_load(ctx, global_field(ctx, base, .Int, 8)).int
+		length = i64(global_load(ctx, global_field(ctx, base, .Int, 8)).int)
 		data = global_raw_data(ctx, node, base).dest
 	case String_Type:
 		elem = .U8
 		base := global_string(ctx, base)
-		length = global_load(ctx, global_field(ctx, base, .Int, 8)).int
+		length = i64(global_load(ctx, global_field(ctx, base, .Int, 8)).int)
 		data = global_raw_data(ctx, node, base).dest
 	case Multi_Pointer:
 		elem = t^
@@ -277,19 +278,19 @@ global_slice :: proc(
 		}
 	case ^Slice:
 		elem, ty = t.elem, base.type
-		length = global_load(ctx, global_field(ctx, base, .Int, 8)).int
+		length = i64(global_load(ctx, global_field(ctx, base, .Int, 8)).int)
 	case String_Type:
 		elem, ty = .U8, base.type
 		base = global_string(ctx, base)
-		length = global_load(ctx, global_field(ctx, base, .Int, 8)).int
+		length = i64(global_load(ctx, global_field(ctx, base, .Int, 8)).int)
 	case Multi_Pointer:
 		elem = t^
 	}
 
 	if elem == .Void do return error(ctx, node, "can not slice a %v", base.type)
 
-	lo := node.low == nil ? 0 : low.int
-	hi := node.high == nil ? length : high.int
+	lo := node.low == nil ? 0 : i64(low.int)
+	hi := node.high == nil ? length : i64(high.int)
 	if lo < 0 ||
 	   (node.high != nil && hi < 0) ||
 	   (hi >= 0 && lo > hi) ||
@@ -309,6 +310,6 @@ global_slice :: proc(
 	gi_ensure_stored(ctx, init, data)
 
 	gi_set_offset(&init, 8)
-	gi_ensure_stored(ctx, init, tcmeta(ctx, .Int, {int = hi - lo}))
+	gi_ensure_stored(ctx, init, tcmeta(ctx, .Int, {int = i128(hi - lo)}))
 	return gi_end(ctx, init)
 }

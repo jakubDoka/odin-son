@@ -172,6 +172,7 @@ when SPEC_NOT_PRESENT {
 		U_Div,
 		Rem,
 		U_Rem,
+		U_Mul_Hi,
 		And_Not,
 		// Split
 		Split,

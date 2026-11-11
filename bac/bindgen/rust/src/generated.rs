@@ -78,6 +78,7 @@ impl NodeType {
     pub const U_Div: Self = Self(sys::ssa_Node_Type_U_Div);
     pub const Rem: Self = Self(sys::ssa_Node_Type_Rem);
     pub const U_Rem: Self = Self(sys::ssa_Node_Type_U_Rem);
+    pub const U_Mul_Hi: Self = Self(sys::ssa_Node_Type_U_Mul_Hi);
     pub const And_Not: Self = Self(sys::ssa_Node_Type_And_Not);
     pub const Split: Self = Self(sys::ssa_Node_Type_Split);
     pub const Local_Addr: Self = Self(sys::ssa_Node_Type_Local_Addr);
@@ -133,6 +134,7 @@ impl BinOp {
     pub const U_Div: Self = Self(sys::Bin_Op_U_Div);
     pub const Rem: Self = Self(sys::Bin_Op_Rem);
     pub const U_Rem: Self = Self(sys::Bin_Op_U_Rem);
+    pub const U_Mul_Hi: Self = Self(sys::Bin_Op_U_Mul_Hi);
     pub const And_Not: Self = Self(sys::Bin_Op_And_Not);
 }
 #[repr(transparent)]

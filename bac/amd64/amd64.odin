@@ -1182,7 +1182,7 @@ meta_of_raw :: proc(
 			clobbers = CLOBBERS[:],
 			in_place_slot = 1,
 		}
-	case .Rem, .U_Rem:
+	case .Rem, .U_Rem, .U_Mul_Hi:
 		@(static, rodata)
 		CLOBBERS := [?]i64 {
 			RK_GENERAL = 1 << uint(RAX) | 1 << uint(FLAGS),
@@ -2539,6 +2539,20 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: Node_ID, is_consecutive: bool) {
 
 			// movsx edx, ah
 			emit(ctx.code, {0x0F, 0xBE, 0xD4})
+		}
+	case .U_Mul_Hi:
+		assert(node.dt in bac.INT_DTS)
+		rhs := reg_of(ctx, node.inps[1])
+
+		// mul $rhs
+		rx := rex(RAX, rhs, RAX, node.dt == .I64)
+		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
+		emit(ctx.code, {mod_sm(.Direct, 0b100, rhs)})
+		if node.dt == .I8 {
+			next_sloc(ctx)
+
+			// movzx edx, ah
+			emit(ctx.code, {0x0F, 0xB6, 0xD4})
 		}
 	case .Split:
 		dst := reg_of(ctx, instr)

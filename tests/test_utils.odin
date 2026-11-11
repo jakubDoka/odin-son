@@ -336,11 +336,17 @@ run_test :: proc(
 		append(&confs, Test_Conf{level = level, vm = .Arm})
 	}
 
-	if name == "foreign_block" do resize(&confs, check)
+	// foreign symbols only resolve natively, the arm emulator and the wasm
+	// interpreter have nothing to link them against
+	uses_libcalls := false
+	for id in ctx.libcalls do uses_libcalls ||= id != 0
+	if name == "foreign_block" || uses_libcalls do resize(&confs, check)
 	if ctx.error_cnt > 0 do clear(&confs)
 
 	lib, did_load := dynlib.load_library("")
 	assert(did_load, dynlib.last_error())
+	// the 128-bit integer helpers are not exported by the test binary
+	libgcc, _ := dynlib.load_library("libgcc_s.so.1")
 
 	prev_glob_count := len(ctx.globals)
 
@@ -413,19 +419,21 @@ run_test :: proc(
 
 		switch level.vm {
 		case .Native, .Arm:
-			imported_offsets: [dynamic]uintptr
-			imported_offsets.allocator = context.temp_allocator
-			append(&imported_offsets, 0)
-			for p in ctx.procs[1:] {
+			// the got relocations name the imported procedure by its id
+			imported_offsets := make([]uintptr, len(ctx.procs), context.temp_allocator)
+			for p, i in ctx.procs[1:] {
 				if p.lit.body == nil {
 					// fuzzed sources name symbols that exist nowhere, and nothing
 					// is ever called under NO_RUN, so a null slot is harmless
 					addr := dynlib.symbol_address(lib, p.name)
+					if addr == nil && libgcc != nil {
+						addr = dynlib.symbol_address(libgcc, p.name)
+					}
 					if !no_run {
 						fmt.assertf(addr != nil, "missing symbol: %v", p.name)
 					}
 					slot := bac.emit_aligned(&ctx.mems.code, addr)
-					append(&imported_offsets, uintptr(slot))
+					imported_offsets[i + 1] = uintptr(slot)
 				}
 			}
 

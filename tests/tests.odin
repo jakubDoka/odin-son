@@ -22941,6 +22941,1399 @@ main :: proc() -> int {
 }
 `, 0)
 }
+@(test) field_tags :: proc(t: ^testing.T) {
+
+
+
+Tagged :: struct {
+	a:    int "json:\"a\"",
+	b, c: u8 "x\ty",
+	d:    u16,
+}
+
+Plain :: struct {
+	a:    int,
+	b, c: u8,
+	d:    u16,
+}
+
+Tagged_Union :: struct #raw_union {
+	whole: u32 "whole",
+	half:  u16 "half",
+}
+
+Tagged_Bits :: bit_field u16 {
+	lo:  u8   | 4 "lo",
+	mid: u8   | 7 "mid\x41",
+	on:  bool | 1,
+}
+
+Pair :: struct($T: typeid) {
+	first:  T "first",
+	second: T "second",
+}
+
+main_ :: proc() -> int {
+	t := Tagged{0x10, 0x2, 0x3, 0x400}
+	p := Plain{0x10, 0x2, 0x3, 0x400}
+	#assert(size_of(Tagged) == size_of(Plain))
+
+	u: Tagged_Union
+	u.whole = 0x1234_5678
+
+	bits := Tagged_Bits{lo = 0x5, mid = 0x41, on = true}
+	bits.mid += 1
+
+	pair := Pair(u16){0x7, 0x8}
+	return(
+		t.a + int(t.b) + int(t.c) + int(t.d) - p.a - int(p.d) +
+		int(u.half) +
+		int(bits.lo) + int(bits.mid) + int(bits.on) +
+		int(pair.first) * 0x10 + int(pair.second) \
+	)
+}
+
+run_test(t, `field_tags`, `
+package main
+
+Tagged :: struct {
+	a:    int "json:\"a\"",
+	b, c: u8 "x\ty",
+	d:    u16,
+}
+
+Plain :: struct {
+	a:    int,
+	b, c: u8,
+	d:    u16,
+}
+
+Tagged_Union :: struct #raw_union {
+	whole: u32 "whole",
+	half:  u16 "half",
+}
+
+Tagged_Bits :: bit_field u16 {
+	lo:  u8   | 4 "lo",
+	mid: u8   | 7 "mid\x41",
+	on:  bool | 1,
+}
+
+Pair :: struct($T: typeid) {
+	first:  T "first",
+	second: T "second",
+}
+
+main :: proc() -> int {
+	t := Tagged{0x10, 0x2, 0x3, 0x400}
+	p := Plain{0x10, 0x2, 0x3, 0x400}
+	#assert(size_of(Tagged) == size_of(Plain))
+
+	u: Tagged_Union
+	u.whole = 0x1234_5678
+
+	bits := Tagged_Bits{lo = 0x5, mid = 0x41, on = true}
+	bits.mid += 1
+
+	pair := Pair(u16){0x7, 0x8}
+	return(
+		t.a + int(t.b) + int(t.c) + int(t.d) - p.a - int(p.d) +
+		int(u.half) +
+		int(bits.lo) + int(bits.mid) + int(bits.on) +
+		int(pair.first) * 0x10 + int(pair.second) \
+	)
+}
+`, main_())
+}
+@(test) field_tags_in_struct_conversions :: proc(t: ^testing.T) {
+
+
+
+Raw :: struct {
+	a: int "t",
+	b: u8 "a\\n",
+}
+
+Quoted :: struct {
+	a: int "\x74",
+	b: u8 "a\x5cn",
+}
+
+Raw_Union :: struct #raw_union {
+	whole: u32 "w",
+	half:  u16,
+}
+
+Quoted_Union :: struct #raw_union {
+	whole: u32 "\u0077",
+	half:  u16,
+}
+
+Pair :: struct($T: typeid) {
+	first:  T "first",
+	second: T "second",
+}
+
+Int_Pair :: struct {
+	first:  int "first",
+	second: int "second",
+}
+
+main_ :: proc() -> int {
+	q := Quoted(Raw{0x10, 0x2})
+	u := Quoted_Union(Raw_Union{whole = 0x30})
+	ip := Int_Pair(Pair(int){0x400, 0x500})
+	return q.a + int(q.b) + int(u.whole) + ip.first + ip.second
+}
+
+run_test(t, `field_tags_in_struct_conversions`, `
+package main
+
+Raw :: struct {
+	a: int "t",
+	b: u8 "a\\n",
+}
+
+Quoted :: struct {
+	a: int "\x74",
+	b: u8 "a\x5cn",
+}
+
+Raw_Union :: struct #raw_union {
+	whole: u32 "w",
+	half:  u16,
+}
+
+Quoted_Union :: struct #raw_union {
+	whole: u32 "\u0077",
+	half:  u16,
+}
+
+Pair :: struct($T: typeid) {
+	first:  T "first",
+	second: T "second",
+}
+
+Int_Pair :: struct {
+	first:  int "first",
+	second: int "second",
+}
+
+main :: proc() -> int {
+	q := Quoted(Raw{0x10, 0x2})
+	u := Quoted_Union(Raw_Union{whole = 0x30})
+	ip := Int_Pair(Pair(int){0x400, 0x500})
+	return q.a + int(q.b) + int(u.whole) + ip.first + ip.second
+}
+`, main_())
+}
+@(test) fail_field_tags_in_struct_conversions :: proc(t: ^testing.T) {
+run_test(t, `fail_field_tags_in_struct_conversions`, `
+package main
+
+Raw :: struct {
+	a: int "a\\n",
+}
+
+Quoted :: struct {
+	a: int "a\n",
+}
+
+Untagged :: struct {
+	a: int,
+}
+
+Pair :: struct($T: typeid) {
+	first: T "first",
+}
+
+Other_Pair :: struct {
+	first: int "second",
+}
+
+Raw_Union :: struct #raw_union {
+	whole: u32 "w",
+}
+
+Other_Union :: struct #raw_union {
+	whole: u32 "v",
+}
+
+Bad_Escape :: struct {
+	a: int "\q",
+}
+
+Bad_Bits :: bit_field u8 {
+	a: u8 | 3 "\q",
+}
+
+main :: proc() -> int {
+	q := Quoted(Raw{1})
+	n := Untagged(Raw{1})
+	o := Other_Pair(Pair(int){1})
+	u := Other_Union(Raw_Union{whole = 1})
+	e: Bad_Escape
+	b: Bad_Bits
+	return q.a + n.a + o.first + int(u.whole) + e.a + int(b.a)
+}
+`, 0)
+}
+@(test) unsigned_fixed_point_multiply_of_every_integer_width :: proc(t: ^testing.T) {
+
+
+
+mh8 :: proc(a, b: u8) -> u8 {
+	return intrinsics.fixed_point_mul(a + 1, b, 8)
+}
+
+mh16 :: proc(a, b: u16) -> u16 {
+	return intrinsics.fixed_point_mul(a, b + 1, 16)
+}
+
+mh32 :: proc(a, b: u32) -> u32 {
+	return intrinsics.fixed_point_mul(a, b, 32)
+}
+
+mh64 :: proc(a, b: u64) -> u64 {
+	return intrinsics.fixed_point_mul(a, b, 64)
+}
+
+mh8_wide :: proc(a, b: u8) -> u64 {
+	return u64(intrinsics.fixed_point_mul(a, b, 8))
+}
+
+mh16_wide :: proc(a, b: u16) -> u64 {
+	return u64(intrinsics.fixed_point_mul(a, b, 16))
+}
+
+fix32 :: proc(a, b: u32) -> u32 {
+	return intrinsics.fixed_point_mul(a, b, 13)
+}
+
+fix64 :: proc(a, b: u64) -> u64 {
+	return intrinsics.fixed_point_mul(a, b, 37)
+}
+
+trivia :: proc(a: u64) -> u64 {
+	z, o: u64 = 0, 1
+	return intrinsics.fixed_point_mul(a, z, 64) + intrinsics.fixed_point_mul(o, a, 64)
+}
+
+main_ :: proc() -> int {
+	vals := [10]u64 {
+		0x0000000000000000,
+		0x0000000000000001,
+		0x00000000000000ff,
+		0x0000000000008000,
+		0x000000000000ffff,
+		0x00000000deadbeef,
+		0x00000000ffffffff,
+		0x8000000000000000,
+		0xffffffffffffffff,
+		0x123456789abcdef0,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + int(mh8(u8(a), u8(b)))
+			r = r * 31 + int(mh16(u16(a), u16(b)))
+			r = r * 31 + int(mh32(u32(a), u32(b)))
+			r = r * 31 + int(mh64(a, b))
+			r = r * 31 + int(mh8_wide(u8(a), u8(b)))
+			r = r * 31 + int(mh16_wide(u16(a), u16(b)))
+			r = r * 31 + int(fix32(u32(a), u32(b)))
+			r = r * 31 + int(fix64(a, b))
+		}
+		r = r * 31 + int(trivia(a))
+	}
+
+	c8: u8 = 0xc8
+	c16: u16 = 0xfffe
+	c32: u32 = 0xfffffffe
+	c64: u64 = 0xdeadbeefcafebabe
+	r = r * 31 + int(intrinsics.fixed_point_mul(c8, 0xfa, 8))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c16, 0xfffd, 16))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c32, 0xffffffff, 32))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c64, 0x123456789abcdef0, 64))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c64, 0xffffffffffffffff, 64))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c64, 0x123456789abcdef0, 21))
+	return r
+}
+
+run_test(t, `unsigned_fixed_point_multiply_of_every_integer_width`, `
+package main
+
+mh8 :: proc(a, b: u8) -> u8 {
+	return intrinsics.fixed_point_mul(a + 1, b, 8)
+}
+
+mh16 :: proc(a, b: u16) -> u16 {
+	return intrinsics.fixed_point_mul(a, b + 1, 16)
+}
+
+mh32 :: proc(a, b: u32) -> u32 {
+	return intrinsics.fixed_point_mul(a, b, 32)
+}
+
+mh64 :: proc(a, b: u64) -> u64 {
+	return intrinsics.fixed_point_mul(a, b, 64)
+}
+
+mh8_wide :: proc(a, b: u8) -> u64 {
+	return u64(intrinsics.fixed_point_mul(a, b, 8))
+}
+
+mh16_wide :: proc(a, b: u16) -> u64 {
+	return u64(intrinsics.fixed_point_mul(a, b, 16))
+}
+
+fix32 :: proc(a, b: u32) -> u32 {
+	return intrinsics.fixed_point_mul(a, b, 13)
+}
+
+fix64 :: proc(a, b: u64) -> u64 {
+	return intrinsics.fixed_point_mul(a, b, 37)
+}
+
+trivia :: proc(a: u64) -> u64 {
+	z, o: u64 = 0, 1
+	return intrinsics.fixed_point_mul(a, z, 64) + intrinsics.fixed_point_mul(o, a, 64)
+}
+
+main :: proc() -> int {
+	vals := [10]u64 {
+		0x0000000000000000,
+		0x0000000000000001,
+		0x00000000000000ff,
+		0x0000000000008000,
+		0x000000000000ffff,
+		0x00000000deadbeef,
+		0x00000000ffffffff,
+		0x8000000000000000,
+		0xffffffffffffffff,
+		0x123456789abcdef0,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + int(mh8(u8(a), u8(b)))
+			r = r * 31 + int(mh16(u16(a), u16(b)))
+			r = r * 31 + int(mh32(u32(a), u32(b)))
+			r = r * 31 + int(mh64(a, b))
+			r = r * 31 + int(mh8_wide(u8(a), u8(b)))
+			r = r * 31 + int(mh16_wide(u16(a), u16(b)))
+			r = r * 31 + int(fix32(u32(a), u32(b)))
+			r = r * 31 + int(fix64(a, b))
+		}
+		r = r * 31 + int(trivia(a))
+	}
+
+	c8: u8 = 0xc8
+	c16: u16 = 0xfffe
+	c32: u32 = 0xfffffffe
+	c64: u64 = 0xdeadbeefcafebabe
+	r = r * 31 + int(intrinsics.fixed_point_mul(c8, 0xfa, 8))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c16, 0xfffd, 16))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c32, 0xffffffff, 32))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c64, 0x123456789abcdef0, 64))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c64, 0xffffffffffffffff, 64))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c64, 0x123456789abcdef0, 21))
+	return r
+}
+`, main_())
+}
+@(test) int128_add_and_sub_carry_across_the_halves :: proc(t: ^testing.T) {
+
+
+
+add :: proc(a, b: u128) -> u128 {
+	return a + b
+}
+
+sub :: proc(a, b: i128) -> i128 {
+	return a - b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main_ :: proc() -> int {
+	vals := [6]u128 {
+		0x0,
+		0x1,
+		0xffff_ffff_ffff_ffff,
+		0x1_0000_0000_0000_0000,
+		0x8000_0000_0000_0000_0000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + fold(add(a, b))
+			r = r * 31 + fold(u128(sub(i128(a), i128(b))))
+		}
+	}
+
+	x: u128 = 0xffff_ffff_ffff_ffff
+	x += 1
+	y: i128 = 0
+	y -= 1
+	z := -i128(x)
+	w := ~x
+	r = r * 31 + fold(x) + fold(u128(y)) + fold(u128(z)) + fold(w)
+	return r
+}
+
+run_test(t, `int128_add_and_sub_carry_across_the_halves`, `
+package main
+
+add :: proc(a, b: u128) -> u128 {
+	return a + b
+}
+
+sub :: proc(a, b: i128) -> i128 {
+	return a - b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main :: proc() -> int {
+	vals := [6]u128 {
+		0x0,
+		0x1,
+		0xffff_ffff_ffff_ffff,
+		0x1_0000_0000_0000_0000,
+		0x8000_0000_0000_0000_0000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + fold(add(a, b))
+			r = r * 31 + fold(u128(sub(i128(a), i128(b))))
+		}
+	}
+
+	x: u128 = 0xffff_ffff_ffff_ffff
+	x += 1
+	y: i128 = 0
+	y -= 1
+	z := -i128(x)
+	w := ~x
+	r = r * 31 + fold(x) + fold(u128(y)) + fold(u128(z)) + fold(w)
+	return r
+}
+`, main_())
+}
+@(test) int128_comparisons_around_the_sign_bit_and_equal_high_halves :: proc(t: ^testing.T) {
+
+
+
+cmp_s :: proc(a, b: i128) -> int {
+	return int(a < b) | int(a <= b) << 1 | int(a > b) << 2 | int(a >= b) << 3 | int(a == b) << 4 | int(a != b) << 5
+}
+
+cmp_u :: proc(a, b: u128) -> int {
+	return int(a < b) | int(a <= b) << 1 | int(a > b) << 2 | int(a >= b) << 3 | int(a == b) << 4 | int(a != b) << 5
+}
+
+main_ :: proc() -> int {
+	vals := [8]u128 {
+		0x0,
+		0x1,
+		0x8000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff,
+		0x5_0000_0000_0000_0001,
+		0x5_ffff_ffff_ffff_ffff,
+		0x8000_0000_0000_0000_0000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 7 + cmp_s(i128(a), i128(b))
+			r = r * 7 + cmp_u(a, b)
+		}
+	}
+
+	big: u128 = 0x7_0000_0000_0000_0000
+	switch big {
+	case 0x7:
+		r += 1
+	case 0x7_0000_0000_0000_0000:
+		r += 2
+	case:
+		r += 3
+	}
+	if big > 0xffff_ffff_ffff_ffff do r += 5
+	return r
+}
+
+run_test(t, `int128_comparisons_around_the_sign_bit_and_equal_high_halves`, `
+package main
+
+cmp_s :: proc(a, b: i128) -> int {
+	return int(a < b) | int(a <= b) << 1 | int(a > b) << 2 | int(a >= b) << 3 | int(a == b) << 4 | int(a != b) << 5
+}
+
+cmp_u :: proc(a, b: u128) -> int {
+	return int(a < b) | int(a <= b) << 1 | int(a > b) << 2 | int(a >= b) << 3 | int(a == b) << 4 | int(a != b) << 5
+}
+
+main :: proc() -> int {
+	vals := [8]u128 {
+		0x0,
+		0x1,
+		0x8000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff,
+		0x5_0000_0000_0000_0001,
+		0x5_ffff_ffff_ffff_ffff,
+		0x8000_0000_0000_0000_0000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 7 + cmp_s(i128(a), i128(b))
+			r = r * 7 + cmp_u(a, b)
+		}
+	}
+
+	big: u128 = 0x7_0000_0000_0000_0000
+	switch big {
+	case 0x7:
+		r += 1
+	case 0x7_0000_0000_0000_0000:
+		r += 2
+	case:
+		r += 3
+	}
+	if big > 0xffff_ffff_ffff_ffff do r += 5
+	return r
+}
+`, main_())
+}
+@(test) int128_shifts_by_constant_and_runtime_counts :: proc(t: ^testing.T) {
+
+
+
+shl :: proc(a: u128, n: uint) -> u128 {
+	return a << n
+}
+
+shr :: proc(a: i128, n: uint) -> i128 {
+	return a >> n
+}
+
+shru :: proc(a: u128, n: uint) -> u128 {
+	return a >> n
+}
+
+shw :: proc(a: u128, n: u128) -> u128 {
+	return a << n ~ a >> n
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+consts :: proc(a: u128) -> int {
+	s := i128(a)
+	r := fold(a << 0) + fold(a << 1) + fold(a << 63) + fold(a << 64) + fold(a << 65) + fold(a << 127) + fold(a << 128)
+	r = r * 31 + fold(a >> 0) + fold(a >> 1) + fold(a >> 63) + fold(a >> 64) + fold(a >> 65) + fold(a >> 127) + fold(a >> 128)
+	r = r * 31 + fold(u128(s >> 0)) + fold(u128(s >> 1)) + fold(u128(s >> 63)) + fold(u128(s >> 64))
+	r = r * 31 + fold(u128(s >> 65)) + fold(u128(s >> 127)) + fold(u128(s >> 128))
+	return r
+}
+
+main_ :: proc() -> int {
+	vals := [3]u128 {
+		0x8000_0000_0000_0001_8000_0000_0000_0001,
+		0x7123_4567_89ab_cdef_fedc_ba98_7654_3210,
+		0x1,
+	}
+	counts := [10]uint{0, 1, 63, 64, 65, 127, 128, 129, 200, 0xffff_ffff_ffff_ffff}
+
+	r := 0
+	for a in vals {
+		for n in counts {
+			r = r * 31 + fold(shl(a, n))
+			r = r * 31 + fold(u128(shr(i128(a), n)))
+			r = r * 31 + fold(shru(a, n))
+		}
+		r = r * 31 + fold(shw(a, 3)) + fold(shw(a, 0x1_0000_0000_0000_0000))
+		r = r * 31 + consts(a)
+	}
+
+	x: i128 = -5
+	x <<= 70
+	x >>= 3
+	y: u128 = 0x1234
+	y <<= 100
+	y >>= 90
+	r = r * 31 + fold(u128(x)) + fold(y)
+	return r
+}
+
+run_test(t, `int128_shifts_by_constant_and_runtime_counts`, `
+package main
+
+shl :: proc(a: u128, n: uint) -> u128 {
+	return a << n
+}
+
+shr :: proc(a: i128, n: uint) -> i128 {
+	return a >> n
+}
+
+shru :: proc(a: u128, n: uint) -> u128 {
+	return a >> n
+}
+
+shw :: proc(a: u128, n: u128) -> u128 {
+	return a << n ~ a >> n
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+consts :: proc(a: u128) -> int {
+	s := i128(a)
+	r := fold(a << 0) + fold(a << 1) + fold(a << 63) + fold(a << 64) + fold(a << 65) + fold(a << 127) + fold(a << 128)
+	r = r * 31 + fold(a >> 0) + fold(a >> 1) + fold(a >> 63) + fold(a >> 64) + fold(a >> 65) + fold(a >> 127) + fold(a >> 128)
+	r = r * 31 + fold(u128(s >> 0)) + fold(u128(s >> 1)) + fold(u128(s >> 63)) + fold(u128(s >> 64))
+	r = r * 31 + fold(u128(s >> 65)) + fold(u128(s >> 127)) + fold(u128(s >> 128))
+	return r
+}
+
+main :: proc() -> int {
+	vals := [3]u128 {
+		0x8000_0000_0000_0001_8000_0000_0000_0001,
+		0x7123_4567_89ab_cdef_fedc_ba98_7654_3210,
+		0x1,
+	}
+	counts := [10]uint{0, 1, 63, 64, 65, 127, 128, 129, 200, 0xffff_ffff_ffff_ffff}
+
+	r := 0
+	for a in vals {
+		for n in counts {
+			r = r * 31 + fold(shl(a, n))
+			r = r * 31 + fold(u128(shr(i128(a), n)))
+			r = r * 31 + fold(shru(a, n))
+		}
+		r = r * 31 + fold(shw(a, 3)) + fold(shw(a, 0x1_0000_0000_0000_0000))
+		r = r * 31 + consts(a)
+	}
+
+	x: i128 = -5
+	x <<= 70
+	x >>= 3
+	y: u128 = 0x1234
+	y <<= 100
+	y >>= 90
+	r = r * 31 + fold(u128(x)) + fold(y)
+	return r
+}
+`, main_())
+}
+@(test) int128_multiply_overflowing_into_the_high_half :: proc(t: ^testing.T) {
+
+
+
+mul :: proc(a, b: i128) -> i128 {
+	return a * b
+}
+
+mulu :: proc(a, b: u128) -> u128 {
+	return a * b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main_ :: proc() -> int {
+	vals := [7]i128 {
+		0x0,
+		0x1,
+		-0x1,
+		0xffff_ffff_ffff_ffff,
+		-0x1234_5678_9abc_def0_1234,
+		0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+		0x3_0000_0000_0000_0007,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + fold(u128(mul(a, b)))
+			r = r * 31 + fold(mulu(u128(a), u128(b)))
+		}
+	}
+
+	x: u128 = 0xdead_beef_cafe_babe
+	x *= x
+	x *= 0x1_0000_0001
+	r = r * 31 + fold(x)
+
+	p, q: u128 = 0x1_0000_0000_0000_0003, 0x5
+	for _ in 0 ..< 6 do p, q = q, p * q + 1
+	r = r * 31 + fold(p) + fold(q) * 3
+	for v in vals do r = r * 31 + fold(u128(v * v))
+	return r
+}
+
+run_test(t, `int128_multiply_overflowing_into_the_high_half`, `
+package main
+
+mul :: proc(a, b: i128) -> i128 {
+	return a * b
+}
+
+mulu :: proc(a, b: u128) -> u128 {
+	return a * b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main :: proc() -> int {
+	vals := [7]i128 {
+		0x0,
+		0x1,
+		-0x1,
+		0xffff_ffff_ffff_ffff,
+		-0x1234_5678_9abc_def0_1234,
+		0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+		0x3_0000_0000_0000_0007,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + fold(u128(mul(a, b)))
+			r = r * 31 + fold(mulu(u128(a), u128(b)))
+		}
+	}
+
+	x: u128 = 0xdead_beef_cafe_babe
+	x *= x
+	x *= 0x1_0000_0001
+	r = r * 31 + fold(x)
+
+	p, q: u128 = 0x1_0000_0000_0000_0003, 0x5
+	for _ in 0 ..< 6 do p, q = q, p * q + 1
+	r = r * 31 + fold(p) + fold(q) * 3
+	for v in vals do r = r * 31 + fold(u128(v * v))
+	return r
+}
+`, main_())
+}
+@(test) int128_transmute_and_memory_layout :: proc(t: ^testing.T) {
+
+
+
+Pair :: struct {
+	tag: u8,
+	v:   i128,
+	w:   u128,
+}
+
+swap_halves :: proc(x: u128) -> u128 {
+	h := transmute([2]u64)x
+	return transmute(u128)[2]u64{h[1], h[0]}
+}
+
+main_ :: proc() -> int {
+	x: i128 = -2
+	h := transmute([2]u64)x
+	b := transmute([16]u8)u128(0x0f0e_0d0c_0b0a_0908_0706_0504_0302_0100)
+	r := int(h[0] & 0xff) + int(h[1] >> 60) + int(b[3]) * 3 + int(b[15]) * 5
+	r = r * 31 + size_of(i128) + align_of(u128) * 2 + size_of(Pair) * 3 + align_of(Pair) * 5
+	r = r * 31 + int(u64(swap_halves(0x1_0000_0000_0000_0002)))
+	p := Pair{3, -7, 0x9_0000_0000_0000_0000}
+	q := p
+	q.v += 1
+	r = r * 31 + int(u64(q.v)) + int(u64(q.w >> 64)) + int(q.tag)
+	return r
+}
+
+run_test(t, `int128_transmute_and_memory_layout`, `
+package main
+
+Pair :: struct {
+	tag: u8,
+	v:   i128,
+	w:   u128,
+}
+
+swap_halves :: proc(x: u128) -> u128 {
+	h := transmute([2]u64)x
+	return transmute(u128)[2]u64{h[1], h[0]}
+}
+
+main :: proc() -> int {
+	x: i128 = -2
+	h := transmute([2]u64)x
+	b := transmute([16]u8)u128(0x0f0e_0d0c_0b0a_0908_0706_0504_0302_0100)
+	r := int(h[0] & 0xff) + int(h[1] >> 60) + int(b[3]) * 3 + int(b[15]) * 5
+	r = r * 31 + size_of(i128) + align_of(u128) * 2 + size_of(Pair) * 3 + align_of(Pair) * 5
+	r = r * 31 + int(u64(swap_halves(0x1_0000_0000_0000_0002)))
+	p := Pair{3, -7, 0x9_0000_0000_0000_0000}
+	q := p
+	q.v += 1
+	r = r * 31 + int(u64(q.v)) + int(u64(q.w >> 64)) + int(q.tag)
+	return r
+}
+`, main_())
+}
+@(test) int128_conversions_to_and_from_every_integer_width :: proc(t: ^testing.T) {
+
+
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+widen :: proc(v: u64) -> int {
+	r := fold(u128(u8(v))) + fold(u128(i8(v))) * 3
+	r = r * 31 + fold(u128(u16(v))) + fold(u128(i16(v))) * 3
+	r = r * 31 + fold(u128(u32(v))) + fold(u128(i32(v))) * 3
+	r = r * 31 + fold(u128(v)) + fold(u128(i64(v))) * 3
+	r = r * 31 + fold(u128(uint(v))) + fold(u128(int(v))) * 3 + fold(u128(uintptr(v))) * 5
+	r = r * 31 + fold(u128(i128(i8(v)))) + fold(u128(i128(i64(v)))) * 3
+	r = r * 31 + fold(u128(i128(u8(v)))) + fold(u128(i128(bool(v != 0)))) * 3
+	return r
+}
+
+narrow :: proc(w: i128) -> int {
+	r := int(u8(w)) + int(i8(w)) * 3 + int(u16(w)) * 5 + int(i16(w)) * 7
+	r = r * 31 + int(u32(w)) + int(i32(w)) * 3 + int(u64(w)) * 5 + int(i64(w)) * 7
+	r = r * 31 + int(uint(w)) + int(uintptr(w)) * 3 + int(bool(w)) * 5 + int(bool(u128(w))) * 7
+	r = r * 31 + int(u8(u128(w))) + int(i32(u128(w))) * 3
+	return r
+}
+
+main_ :: proc() -> int {
+	vals := [6]u64 {
+		0x0,
+		0x7f,
+		0x80,
+		0xffff_8000,
+		0x8000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff,
+	}
+	wides := [5]i128 {
+		0x0,
+		-0x1,
+		0x1_0000_0000_0000_0000,
+		-0x1234_5678_9abc_def0_8765_4321,
+		0x7fff_ffff_ffff_ffff_8000_0000_0000_0080,
+	}
+
+	r := 0
+	for v in vals do r = r * 31 + widen(v)
+	for w in wides do r = r * 31 + narrow(w)
+	return r
+}
+
+run_test(t, `int128_conversions_to_and_from_every_integer_width`, `
+package main
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+widen :: proc(v: u64) -> int {
+	r := fold(u128(u8(v))) + fold(u128(i8(v))) * 3
+	r = r * 31 + fold(u128(u16(v))) + fold(u128(i16(v))) * 3
+	r = r * 31 + fold(u128(u32(v))) + fold(u128(i32(v))) * 3
+	r = r * 31 + fold(u128(v)) + fold(u128(i64(v))) * 3
+	r = r * 31 + fold(u128(uint(v))) + fold(u128(int(v))) * 3 + fold(u128(uintptr(v))) * 5
+	r = r * 31 + fold(u128(i128(i8(v)))) + fold(u128(i128(i64(v)))) * 3
+	r = r * 31 + fold(u128(i128(u8(v)))) + fold(u128(i128(bool(v != 0)))) * 3
+	return r
+}
+
+narrow :: proc(w: i128) -> int {
+	r := int(u8(w)) + int(i8(w)) * 3 + int(u16(w)) * 5 + int(i16(w)) * 7
+	r = r * 31 + int(u32(w)) + int(i32(w)) * 3 + int(u64(w)) * 5 + int(i64(w)) * 7
+	r = r * 31 + int(uint(w)) + int(uintptr(w)) * 3 + int(bool(w)) * 5 + int(bool(u128(w))) * 7
+	r = r * 31 + int(u8(u128(w))) + int(i32(u128(w))) * 3
+	return r
+}
+
+main :: proc() -> int {
+	vals := [6]u64 {
+		0x0,
+		0x7f,
+		0x80,
+		0xffff_8000,
+		0x8000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff,
+	}
+	wides := [5]i128 {
+		0x0,
+		-0x1,
+		0x1_0000_0000_0000_0000,
+		-0x1234_5678_9abc_def0_8765_4321,
+		0x7fff_ffff_ffff_ffff_8000_0000_0000_0080,
+	}
+
+	r := 0
+	for v in vals do r = r * 31 + widen(v)
+	for w in wides do r = r * 31 + narrow(w)
+	return r
+}
+`, main_())
+}
+@(test) int128_globals_constants_fields_arrays_params_and_returns :: proc(t: ^testing.T) {
+
+
+
+BIG :: u128(0xfedc_ba98_7654_3210_0123_4567_89ab_cdef)
+NEG :: i128(-0x1_0000_0000_0000_0001)
+SUM :: BIG + 1 << 100
+
+@(static) counter: u128 = 0xffff_ffff_ffff_ffff
+@(static) table := [3]i128{-1, 0x1_0000_0000_0000_0000, NEG}
+
+Acc :: struct {
+	lo:  u8,
+	sum: u128,
+	all: [2]i128,
+}
+
+Small :: struct {
+	v: i128,
+}
+
+bump :: proc(acc: ^Acc, by: u128) {
+	acc.sum += by
+	acc.all[1] -= i128(by)
+}
+
+pair :: proc(a: u128, b: i128) -> (u128, i128) {
+	return a + 1, b - 1
+}
+
+many :: proc(a, b, c, d: i128, e: u8) -> i128 {
+	return a + b * 2 + c * 3 + d * 4 + i128(e)
+}
+
+wrap :: proc(v: i128) -> Small {
+	return Small{v * 3}
+}
+
+pick :: proc(c: bool, a, b: u128) -> u128 {
+	return c ? a : b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main_ :: proc() -> int {
+	counter += 1
+	table[2] += 5
+
+	acc: Acc
+	acc.all = {NEG, 0}
+	bump(&acc, BIG)
+	bump(&acc, counter)
+
+	a, b := pair(BIG, NEG)
+	s := wrap(-0x5_0000_0000_0000_0003)
+	arr: [4]u128
+	for i in 0 ..< 4 do arr[i] = u128(i) << u128(i * 40)
+
+	r := fold(counter) + fold(u128(table[2])) * 3 + fold(SUM) * 5
+	r = r * 31 + fold(acc.sum) + fold(u128(acc.all[0])) + fold(u128(acc.all[1]))
+	r = r * 31 + fold(a) + fold(u128(b)) + fold(u128(s.v))
+	r = r * 31 + fold(u128(many(NEG, 0x7, -0x9_0000_0000_0000_0000, 0x3, 0xff)))
+	r = r * 31 + fold(arr[0] + arr[1] + arr[2] + arr[3])
+	r = r * 31 + fold(pick(true, BIG, 0)) + fold(pick(false, BIG, 9)) * 3
+	return r
+}
+
+run_test(t, `int128_globals_constants_fields_arrays_params_and_returns`, `
+package main
+
+BIG :: u128(0xfedc_ba98_7654_3210_0123_4567_89ab_cdef)
+NEG :: i128(-0x1_0000_0000_0000_0001)
+SUM :: BIG + 1 << 100
+
+@(static) counter: u128 = 0xffff_ffff_ffff_ffff
+@(static) table := [3]i128{-1, 0x1_0000_0000_0000_0000, NEG}
+
+Acc :: struct {
+	lo:  u8,
+	sum: u128,
+	all: [2]i128,
+}
+
+Small :: struct {
+	v: i128,
+}
+
+bump :: proc(acc: ^Acc, by: u128) {
+	acc.sum += by
+	acc.all[1] -= i128(by)
+}
+
+pair :: proc(a: u128, b: i128) -> (u128, i128) {
+	return a + 1, b - 1
+}
+
+many :: proc(a, b, c, d: i128, e: u8) -> i128 {
+	return a + b * 2 + c * 3 + d * 4 + i128(e)
+}
+
+wrap :: proc(v: i128) -> Small {
+	return Small{v * 3}
+}
+
+pick :: proc(c: bool, a, b: u128) -> u128 {
+	return c ? a : b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main :: proc() -> int {
+	counter += 1
+	table[2] += 5
+
+	acc: Acc
+	acc.all = {NEG, 0}
+	bump(&acc, BIG)
+	bump(&acc, counter)
+
+	a, b := pair(BIG, NEG)
+	s := wrap(-0x5_0000_0000_0000_0003)
+	arr: [4]u128
+	for i in 0 ..< 4 do arr[i] = u128(i) << u128(i * 40)
+
+	r := fold(counter) + fold(u128(table[2])) * 3 + fold(SUM) * 5
+	r = r * 31 + fold(acc.sum) + fold(u128(acc.all[0])) + fold(u128(acc.all[1]))
+	r = r * 31 + fold(a) + fold(u128(b)) + fold(u128(s.v))
+	r = r * 31 + fold(u128(many(NEG, 0x7, -0x9_0000_0000_0000_0000, 0x3, 0xff)))
+	r = r * 31 + fold(arr[0] + arr[1] + arr[2] + arr[3])
+	r = r * 31 + fold(pick(true, BIG, 0)) + fold(pick(false, BIG, 9)) * 3
+	return r
+}
+`, main_())
+}
+@(test) int128_constant_folding :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	A :: i128(-0x25)
+	B :: i128(0x7)
+	#assert(A / B == -5)
+	#assert(A % B == -2)
+	#assert(A %% B == 5)
+	#assert(u128(0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff) / 3 == 0x5555_5555_5555_5555_5555_5555_5555_5555)
+	#assert(u128(0xffff_ffff_ffff_ffff) + 1 == 0x1_0000_0000_0000_0000)
+	#assert(i128(-1) >> 127 == -1 && i128(-1) >> 200 == -1)
+	#assert(u128(1) << 127 == 0x8000_0000_0000_0000_0000_0000_0000_0000)
+	#assert(i128(-0x8000_0000_0000_0000_0000_0000_0000_0000) < i128(0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff))
+	#assert(u128(0x8000_0000_0000_0000_0000_0000_0000_0000) > u128(0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff))
+	#assert(~u128(0) == 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff)
+	#assert(i128(i64(-3)) == -3 && u128(u64(0xffff_ffff_ffff_ffff)) == 0xffff_ffff_ffff_ffff)
+	#assert(i128(-1) * i128(-1) == 1)
+	#assert(f64(u128(1) << 100) == 1267650600228229401496703205376.0)
+	#assert(i128(-1208925819614629174706176.0) == -(1 << 80))
+	C :: 1 << 100
+	c: u128 = C
+	d := i128(C >> 36)
+	big := [2]u128{1 << 70, C}
+	e := big[1] >> 99
+	return int(c >> 98) + int(d >> 60) * 3 + int(big[0] >> 68) * 5 + int(e) * 7
+}
+
+run_test(t, `int128_constant_folding`, `
+package main
+
+main :: proc() -> int {
+	A :: i128(-0x25)
+	B :: i128(0x7)
+	#assert(A / B == -5)
+	#assert(A % B == -2)
+	#assert(A %% B == 5)
+	#assert(u128(0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff) / 3 == 0x5555_5555_5555_5555_5555_5555_5555_5555)
+	#assert(u128(0xffff_ffff_ffff_ffff) + 1 == 0x1_0000_0000_0000_0000)
+	#assert(i128(-1) >> 127 == -1 && i128(-1) >> 200 == -1)
+	#assert(u128(1) << 127 == 0x8000_0000_0000_0000_0000_0000_0000_0000)
+	#assert(i128(-0x8000_0000_0000_0000_0000_0000_0000_0000) < i128(0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff))
+	#assert(u128(0x8000_0000_0000_0000_0000_0000_0000_0000) > u128(0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff))
+	#assert(~u128(0) == 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff)
+	#assert(i128(i64(-3)) == -3 && u128(u64(0xffff_ffff_ffff_ffff)) == 0xffff_ffff_ffff_ffff)
+	#assert(i128(-1) * i128(-1) == 1)
+	#assert(f64(u128(1) << 100) == 1267650600228229401496703205376.0)
+	#assert(i128(-1208925819614629174706176.0) == -(1 << 80))
+	C :: 1 << 100
+	c: u128 = C
+	d := i128(C >> 36)
+	big := [2]u128{1 << 70, C}
+	e := big[1] >> 99
+	return int(c >> 98) + int(d >> 60) * 3 + int(big[0] >> 68) * 5 + int(e) * 7
+}
+`, main_())
+}
+@(test) int128_divide_and_modulo_through_libgcc :: proc(t: ^testing.T) {
+
+
+
+div :: proc(a, b: i128) -> i128 {
+	return a / b
+}
+
+rem :: proc(a, b: i128) -> i128 {
+	return a % b
+}
+
+divu :: proc(a, b: u128) -> u128 {
+	return a / b
+}
+
+remu :: proc(a, b: u128) -> u128 {
+	return a % b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main_ :: proc() -> int {
+	vals := [6]i128 {
+		0x1,
+		-0x1,
+		0x7,
+		-0x3_0000_0000_0000_0005,
+		0x1234_5678_9abc_def0_0fed_cba9_8765_4321,
+		-0x8000_0000_0000_0000_0000_0000_0000_0000,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + fold(u128(div(a, b)))
+			r = r * 31 + fold(u128(rem(a, b)))
+			r = r * 31 + fold(divu(u128(a), u128(b)))
+			r = r * 31 + fold(remu(u128(a), u128(b)))
+		}
+	}
+
+	x: u128 = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff
+	x /= 0x1_0000_0000
+	x %= 0x1_0000_0000_0000_0007
+	y: i128 = -0x100_0000_0000_0000_0000
+	y /= 3
+	y %= 0x7_0000_0000_0001
+	r = r * 31 + fold(x) + fold(u128(y))
+	return r
+}
+
+run_test(t, `int128_divide_and_modulo_through_libgcc`, `
+package main
+
+div :: proc(a, b: i128) -> i128 {
+	return a / b
+}
+
+rem :: proc(a, b: i128) -> i128 {
+	return a % b
+}
+
+divu :: proc(a, b: u128) -> u128 {
+	return a / b
+}
+
+remu :: proc(a, b: u128) -> u128 {
+	return a % b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main :: proc() -> int {
+	vals := [6]i128 {
+		0x1,
+		-0x1,
+		0x7,
+		-0x3_0000_0000_0000_0005,
+		0x1234_5678_9abc_def0_0fed_cba9_8765_4321,
+		-0x8000_0000_0000_0000_0000_0000_0000_0000,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + fold(u128(div(a, b)))
+			r = r * 31 + fold(u128(rem(a, b)))
+			r = r * 31 + fold(divu(u128(a), u128(b)))
+			r = r * 31 + fold(remu(u128(a), u128(b)))
+		}
+	}
+
+	x: u128 = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff
+	x /= 0x1_0000_0000
+	x %= 0x1_0000_0000_0000_0007
+	y: i128 = -0x100_0000_0000_0000_0000
+	y /= 3
+	y %= 0x7_0000_0000_0001
+	r = r * 31 + fold(x) + fold(u128(y))
+	return r
+}
+`, main_())
+}
+@(test) int128_float_conversions_through_libgcc :: proc(t: ^testing.T) {
+
+
+
+to_f64 :: proc(a: i128) -> f64 {
+	return f64(a)
+}
+
+to_f32 :: proc(a: u128) -> f32 {
+	return f32(a)
+}
+
+from_f64 :: proc(a: f64) -> i128 {
+	return i128(a)
+}
+
+from_f32 :: proc(a: f32) -> u128 {
+	return u128(a)
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main_ :: proc() -> int {
+	ints := [5]i128 {
+		0x0,
+		-0x1,
+		0x1_0000_0000_0000_0001,
+		-0x1234_5678_9abc_def0_0fed_cba9_8765,
+		0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+	}
+	floats := [5]f64{0.0, -1.5, 18446744073709551616.0, -3.25e30, 1.0e38}
+
+	r := 0
+	for a in ints {
+		r = r * 31 + int(to_f64(a) / 1.0e20)
+		r = r * 31 + int(f64(to_f32(u128(a))) / 1.0e20)
+		r = r * 31 + int(u64(transmute(u64)to_f64(a) >> 40))
+	}
+	for f in floats {
+		r = r * 31 + fold(u128(from_f64(f)))
+		if f >= 0 do r = r * 31 + fold(from_f32(f32(f)))
+	}
+
+	w: u128 = 0xffff_ffff_ffff_ffff_ffff
+	g := f64(w)
+	h := u128(g * 4)
+	r = r * 31 + int(g / 1.0e10) + fold(h)
+	return r
+}
+
+run_test(t, `int128_float_conversions_through_libgcc`, `
+package main
+
+to_f64 :: proc(a: i128) -> f64 {
+	return f64(a)
+}
+
+to_f32 :: proc(a: u128) -> f32 {
+	return f32(a)
+}
+
+from_f64 :: proc(a: f64) -> i128 {
+	return i128(a)
+}
+
+from_f32 :: proc(a: f32) -> u128 {
+	return u128(a)
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main :: proc() -> int {
+	ints := [5]i128 {
+		0x0,
+		-0x1,
+		0x1_0000_0000_0000_0001,
+		-0x1234_5678_9abc_def0_0fed_cba9_8765,
+		0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+	}
+	floats := [5]f64{0.0, -1.5, 18446744073709551616.0, -3.25e30, 1.0e38}
+
+	r := 0
+	for a in ints {
+		r = r * 31 + int(to_f64(a) / 1.0e20)
+		r = r * 31 + int(f64(to_f32(u128(a))) / 1.0e20)
+		r = r * 31 + int(u64(transmute(u64)to_f64(a) >> 40))
+	}
+	for f in floats {
+		r = r * 31 + fold(u128(from_f64(f)))
+		if f >= 0 do r = r * 31 + fold(from_f32(f32(f)))
+	}
+
+	w: u128 = 0xffff_ffff_ffff_ffff_ffff
+	g := f64(w)
+	h := u128(g * 4)
+	r = r * 31 + int(g / 1.0e10) + fold(h)
+	return r
+}
+`, main_())
+}
+@(test) fail_int128_literals_and_unsupported_uses :: proc(t: ^testing.T) {
+run_test(t, `fail_int128_literals_and_unsupported_uses`, `
+package main
+
+Wide_Enum :: enum i128 {
+	A,
+}
+
+Wide_Set :: bit_set[0 ..< 100; u128]
+
+Wide_Bits :: bit_field u128 {
+	a: u8 | 8,
+}
+
+main :: proc() -> int {
+	too_big: i128 = 0x8000_0000_0000_0000_0000_0000_0000_0001
+	too_wide: u128 = 0x1_0000_0000_0000_0000_0000_0000_0000_0000
+	not_int: int = 0x1_0000_0000_0000_0000
+	arr: [4]int
+	idx: i128 = 1
+	v := arr[idx]
+	for i in idx ..< 4 {
+	}
+	c := intrinsics.count_ones(u128(3))
+	return v
+}
+`, 0)
+}
 @(test) fuzz_0092546c2ab7b49f :: proc(t: ^testing.T) {
 run_test(t, "fuzz_0092546c2ab7b49f", string(#load("../fuzz/crashes/0092546c2ab7b49f.odin")), 0,
 				diff = false, no_run = true)
@@ -24912,6 +26305,21 @@ NAMES := []string{
 `bit_field_through_pointers_and_nested_containers`,
 `bit_field_constants_literals_and_conversions`,
 `fail_bit_field_declarations_and_accesses`,
+`field_tags`,
+`field_tags_in_struct_conversions`,
+`fail_field_tags_in_struct_conversions`,
+`unsigned_fixed_point_multiply_of_every_integer_width`,
+`int128_add_and_sub_carry_across_the_halves`,
+`int128_comparisons_around_the_sign_bit_and_equal_high_halves`,
+`int128_shifts_by_constant_and_runtime_counts`,
+`int128_multiply_overflowing_into_the_high_half`,
+`int128_transmute_and_memory_layout`,
+`int128_conversions_to_and_from_every_integer_width`,
+`int128_globals_constants_fields_arrays_params_and_returns`,
+`int128_constant_folding`,
+`int128_divide_and_modulo_through_libgcc`,
+`int128_float_conversions_through_libgcc`,
+`fail_int128_literals_and_unsupported_uses`,
 `fuzz_0092546c2ab7b49f`,
 `fuzz_00f1be4a1ea4c499`,
 `fuzz_0203aad88c140351`,
@@ -36327,6 +37735,725 @@ main :: proc() -> int {
 	return int(g.c)
 }
 `,
+`
+package main
+
+Tagged :: struct {
+	a:    int "json:\"a\"",
+	b, c: u8 "x\ty",
+	d:    u16,
+}
+
+Plain :: struct {
+	a:    int,
+	b, c: u8,
+	d:    u16,
+}
+
+Tagged_Union :: struct #raw_union {
+	whole: u32 "whole",
+	half:  u16 "half",
+}
+
+Tagged_Bits :: bit_field u16 {
+	lo:  u8   | 4 "lo",
+	mid: u8   | 7 "mid\x41",
+	on:  bool | 1,
+}
+
+Pair :: struct($T: typeid) {
+	first:  T "first",
+	second: T "second",
+}
+
+main :: proc() -> int {
+	t := Tagged{0x10, 0x2, 0x3, 0x400}
+	p := Plain{0x10, 0x2, 0x3, 0x400}
+	#assert(size_of(Tagged) == size_of(Plain))
+
+	u: Tagged_Union
+	u.whole = 0x1234_5678
+
+	bits := Tagged_Bits{lo = 0x5, mid = 0x41, on = true}
+	bits.mid += 1
+
+	pair := Pair(u16){0x7, 0x8}
+	return(
+		t.a + int(t.b) + int(t.c) + int(t.d) - p.a - int(p.d) +
+		int(u.half) +
+		int(bits.lo) + int(bits.mid) + int(bits.on) +
+		int(pair.first) * 0x10 + int(pair.second) \
+	)
+}
+`,
+`
+package main
+
+Raw :: struct {
+	a: int "t",
+	b: u8 "a\\n",
+}
+
+Quoted :: struct {
+	a: int "\x74",
+	b: u8 "a\x5cn",
+}
+
+Raw_Union :: struct #raw_union {
+	whole: u32 "w",
+	half:  u16,
+}
+
+Quoted_Union :: struct #raw_union {
+	whole: u32 "\u0077",
+	half:  u16,
+}
+
+Pair :: struct($T: typeid) {
+	first:  T "first",
+	second: T "second",
+}
+
+Int_Pair :: struct {
+	first:  int "first",
+	second: int "second",
+}
+
+main :: proc() -> int {
+	q := Quoted(Raw{0x10, 0x2})
+	u := Quoted_Union(Raw_Union{whole = 0x30})
+	ip := Int_Pair(Pair(int){0x400, 0x500})
+	return q.a + int(q.b) + int(u.whole) + ip.first + ip.second
+}
+`,
+`
+package main
+
+Raw :: struct {
+	a: int "a\\n",
+}
+
+Quoted :: struct {
+	a: int "a\n",
+}
+
+Untagged :: struct {
+	a: int,
+}
+
+Pair :: struct($T: typeid) {
+	first: T "first",
+}
+
+Other_Pair :: struct {
+	first: int "second",
+}
+
+Raw_Union :: struct #raw_union {
+	whole: u32 "w",
+}
+
+Other_Union :: struct #raw_union {
+	whole: u32 "v",
+}
+
+Bad_Escape :: struct {
+	a: int "\q",
+}
+
+Bad_Bits :: bit_field u8 {
+	a: u8 | 3 "\q",
+}
+
+main :: proc() -> int {
+	q := Quoted(Raw{1})
+	n := Untagged(Raw{1})
+	o := Other_Pair(Pair(int){1})
+	u := Other_Union(Raw_Union{whole = 1})
+	e: Bad_Escape
+	b: Bad_Bits
+	return q.a + n.a + o.first + int(u.whole) + e.a + int(b.a)
+}
+`,
+`
+package main
+
+mh8 :: proc(a, b: u8) -> u8 {
+	return intrinsics.fixed_point_mul(a + 1, b, 8)
+}
+
+mh16 :: proc(a, b: u16) -> u16 {
+	return intrinsics.fixed_point_mul(a, b + 1, 16)
+}
+
+mh32 :: proc(a, b: u32) -> u32 {
+	return intrinsics.fixed_point_mul(a, b, 32)
+}
+
+mh64 :: proc(a, b: u64) -> u64 {
+	return intrinsics.fixed_point_mul(a, b, 64)
+}
+
+mh8_wide :: proc(a, b: u8) -> u64 {
+	return u64(intrinsics.fixed_point_mul(a, b, 8))
+}
+
+mh16_wide :: proc(a, b: u16) -> u64 {
+	return u64(intrinsics.fixed_point_mul(a, b, 16))
+}
+
+fix32 :: proc(a, b: u32) -> u32 {
+	return intrinsics.fixed_point_mul(a, b, 13)
+}
+
+fix64 :: proc(a, b: u64) -> u64 {
+	return intrinsics.fixed_point_mul(a, b, 37)
+}
+
+trivia :: proc(a: u64) -> u64 {
+	z, o: u64 = 0, 1
+	return intrinsics.fixed_point_mul(a, z, 64) + intrinsics.fixed_point_mul(o, a, 64)
+}
+
+main :: proc() -> int {
+	vals := [10]u64 {
+		0x0000000000000000,
+		0x0000000000000001,
+		0x00000000000000ff,
+		0x0000000000008000,
+		0x000000000000ffff,
+		0x00000000deadbeef,
+		0x00000000ffffffff,
+		0x8000000000000000,
+		0xffffffffffffffff,
+		0x123456789abcdef0,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + int(mh8(u8(a), u8(b)))
+			r = r * 31 + int(mh16(u16(a), u16(b)))
+			r = r * 31 + int(mh32(u32(a), u32(b)))
+			r = r * 31 + int(mh64(a, b))
+			r = r * 31 + int(mh8_wide(u8(a), u8(b)))
+			r = r * 31 + int(mh16_wide(u16(a), u16(b)))
+			r = r * 31 + int(fix32(u32(a), u32(b)))
+			r = r * 31 + int(fix64(a, b))
+		}
+		r = r * 31 + int(trivia(a))
+	}
+
+	c8: u8 = 0xc8
+	c16: u16 = 0xfffe
+	c32: u32 = 0xfffffffe
+	c64: u64 = 0xdeadbeefcafebabe
+	r = r * 31 + int(intrinsics.fixed_point_mul(c8, 0xfa, 8))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c16, 0xfffd, 16))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c32, 0xffffffff, 32))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c64, 0x123456789abcdef0, 64))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c64, 0xffffffffffffffff, 64))
+	r = r * 31 + int(intrinsics.fixed_point_mul(c64, 0x123456789abcdef0, 21))
+	return r
+}
+`,
+`
+package main
+
+add :: proc(a, b: u128) -> u128 {
+	return a + b
+}
+
+sub :: proc(a, b: i128) -> i128 {
+	return a - b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main :: proc() -> int {
+	vals := [6]u128 {
+		0x0,
+		0x1,
+		0xffff_ffff_ffff_ffff,
+		0x1_0000_0000_0000_0000,
+		0x8000_0000_0000_0000_0000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + fold(add(a, b))
+			r = r * 31 + fold(u128(sub(i128(a), i128(b))))
+		}
+	}
+
+	x: u128 = 0xffff_ffff_ffff_ffff
+	x += 1
+	y: i128 = 0
+	y -= 1
+	z := -i128(x)
+	w := ~x
+	r = r * 31 + fold(x) + fold(u128(y)) + fold(u128(z)) + fold(w)
+	return r
+}
+`,
+`
+package main
+
+cmp_s :: proc(a, b: i128) -> int {
+	return int(a < b) | int(a <= b) << 1 | int(a > b) << 2 | int(a >= b) << 3 | int(a == b) << 4 | int(a != b) << 5
+}
+
+cmp_u :: proc(a, b: u128) -> int {
+	return int(a < b) | int(a <= b) << 1 | int(a > b) << 2 | int(a >= b) << 3 | int(a == b) << 4 | int(a != b) << 5
+}
+
+main :: proc() -> int {
+	vals := [8]u128 {
+		0x0,
+		0x1,
+		0x8000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff,
+		0x5_0000_0000_0000_0001,
+		0x5_ffff_ffff_ffff_ffff,
+		0x8000_0000_0000_0000_0000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 7 + cmp_s(i128(a), i128(b))
+			r = r * 7 + cmp_u(a, b)
+		}
+	}
+
+	big: u128 = 0x7_0000_0000_0000_0000
+	switch big {
+	case 0x7:
+		r += 1
+	case 0x7_0000_0000_0000_0000:
+		r += 2
+	case:
+		r += 3
+	}
+	if big > 0xffff_ffff_ffff_ffff do r += 5
+	return r
+}
+`,
+`
+package main
+
+shl :: proc(a: u128, n: uint) -> u128 {
+	return a << n
+}
+
+shr :: proc(a: i128, n: uint) -> i128 {
+	return a >> n
+}
+
+shru :: proc(a: u128, n: uint) -> u128 {
+	return a >> n
+}
+
+shw :: proc(a: u128, n: u128) -> u128 {
+	return a << n ~ a >> n
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+consts :: proc(a: u128) -> int {
+	s := i128(a)
+	r := fold(a << 0) + fold(a << 1) + fold(a << 63) + fold(a << 64) + fold(a << 65) + fold(a << 127) + fold(a << 128)
+	r = r * 31 + fold(a >> 0) + fold(a >> 1) + fold(a >> 63) + fold(a >> 64) + fold(a >> 65) + fold(a >> 127) + fold(a >> 128)
+	r = r * 31 + fold(u128(s >> 0)) + fold(u128(s >> 1)) + fold(u128(s >> 63)) + fold(u128(s >> 64))
+	r = r * 31 + fold(u128(s >> 65)) + fold(u128(s >> 127)) + fold(u128(s >> 128))
+	return r
+}
+
+main :: proc() -> int {
+	vals := [3]u128 {
+		0x8000_0000_0000_0001_8000_0000_0000_0001,
+		0x7123_4567_89ab_cdef_fedc_ba98_7654_3210,
+		0x1,
+	}
+	counts := [10]uint{0, 1, 63, 64, 65, 127, 128, 129, 200, 0xffff_ffff_ffff_ffff}
+
+	r := 0
+	for a in vals {
+		for n in counts {
+			r = r * 31 + fold(shl(a, n))
+			r = r * 31 + fold(u128(shr(i128(a), n)))
+			r = r * 31 + fold(shru(a, n))
+		}
+		r = r * 31 + fold(shw(a, 3)) + fold(shw(a, 0x1_0000_0000_0000_0000))
+		r = r * 31 + consts(a)
+	}
+
+	x: i128 = -5
+	x <<= 70
+	x >>= 3
+	y: u128 = 0x1234
+	y <<= 100
+	y >>= 90
+	r = r * 31 + fold(u128(x)) + fold(y)
+	return r
+}
+`,
+`
+package main
+
+mul :: proc(a, b: i128) -> i128 {
+	return a * b
+}
+
+mulu :: proc(a, b: u128) -> u128 {
+	return a * b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main :: proc() -> int {
+	vals := [7]i128 {
+		0x0,
+		0x1,
+		-0x1,
+		0xffff_ffff_ffff_ffff,
+		-0x1234_5678_9abc_def0_1234,
+		0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+		0x3_0000_0000_0000_0007,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + fold(u128(mul(a, b)))
+			r = r * 31 + fold(mulu(u128(a), u128(b)))
+		}
+	}
+
+	x: u128 = 0xdead_beef_cafe_babe
+	x *= x
+	x *= 0x1_0000_0001
+	r = r * 31 + fold(x)
+
+	p, q: u128 = 0x1_0000_0000_0000_0003, 0x5
+	for _ in 0 ..< 6 do p, q = q, p * q + 1
+	r = r * 31 + fold(p) + fold(q) * 3
+	for v in vals do r = r * 31 + fold(u128(v * v))
+	return r
+}
+`,
+`
+package main
+
+Pair :: struct {
+	tag: u8,
+	v:   i128,
+	w:   u128,
+}
+
+swap_halves :: proc(x: u128) -> u128 {
+	h := transmute([2]u64)x
+	return transmute(u128)[2]u64{h[1], h[0]}
+}
+
+main :: proc() -> int {
+	x: i128 = -2
+	h := transmute([2]u64)x
+	b := transmute([16]u8)u128(0x0f0e_0d0c_0b0a_0908_0706_0504_0302_0100)
+	r := int(h[0] & 0xff) + int(h[1] >> 60) + int(b[3]) * 3 + int(b[15]) * 5
+	r = r * 31 + size_of(i128) + align_of(u128) * 2 + size_of(Pair) * 3 + align_of(Pair) * 5
+	r = r * 31 + int(u64(swap_halves(0x1_0000_0000_0000_0002)))
+	p := Pair{3, -7, 0x9_0000_0000_0000_0000}
+	q := p
+	q.v += 1
+	r = r * 31 + int(u64(q.v)) + int(u64(q.w >> 64)) + int(q.tag)
+	return r
+}
+`,
+`
+package main
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+widen :: proc(v: u64) -> int {
+	r := fold(u128(u8(v))) + fold(u128(i8(v))) * 3
+	r = r * 31 + fold(u128(u16(v))) + fold(u128(i16(v))) * 3
+	r = r * 31 + fold(u128(u32(v))) + fold(u128(i32(v))) * 3
+	r = r * 31 + fold(u128(v)) + fold(u128(i64(v))) * 3
+	r = r * 31 + fold(u128(uint(v))) + fold(u128(int(v))) * 3 + fold(u128(uintptr(v))) * 5
+	r = r * 31 + fold(u128(i128(i8(v)))) + fold(u128(i128(i64(v)))) * 3
+	r = r * 31 + fold(u128(i128(u8(v)))) + fold(u128(i128(bool(v != 0)))) * 3
+	return r
+}
+
+narrow :: proc(w: i128) -> int {
+	r := int(u8(w)) + int(i8(w)) * 3 + int(u16(w)) * 5 + int(i16(w)) * 7
+	r = r * 31 + int(u32(w)) + int(i32(w)) * 3 + int(u64(w)) * 5 + int(i64(w)) * 7
+	r = r * 31 + int(uint(w)) + int(uintptr(w)) * 3 + int(bool(w)) * 5 + int(bool(u128(w))) * 7
+	r = r * 31 + int(u8(u128(w))) + int(i32(u128(w))) * 3
+	return r
+}
+
+main :: proc() -> int {
+	vals := [6]u64 {
+		0x0,
+		0x7f,
+		0x80,
+		0xffff_8000,
+		0x8000_0000_0000_0000,
+		0xffff_ffff_ffff_ffff,
+	}
+	wides := [5]i128 {
+		0x0,
+		-0x1,
+		0x1_0000_0000_0000_0000,
+		-0x1234_5678_9abc_def0_8765_4321,
+		0x7fff_ffff_ffff_ffff_8000_0000_0000_0080,
+	}
+
+	r := 0
+	for v in vals do r = r * 31 + widen(v)
+	for w in wides do r = r * 31 + narrow(w)
+	return r
+}
+`,
+`
+package main
+
+BIG :: u128(0xfedc_ba98_7654_3210_0123_4567_89ab_cdef)
+NEG :: i128(-0x1_0000_0000_0000_0001)
+SUM :: BIG + 1 << 100
+
+@(static) counter: u128 = 0xffff_ffff_ffff_ffff
+@(static) table := [3]i128{-1, 0x1_0000_0000_0000_0000, NEG}
+
+Acc :: struct {
+	lo:  u8,
+	sum: u128,
+	all: [2]i128,
+}
+
+Small :: struct {
+	v: i128,
+}
+
+bump :: proc(acc: ^Acc, by: u128) {
+	acc.sum += by
+	acc.all[1] -= i128(by)
+}
+
+pair :: proc(a: u128, b: i128) -> (u128, i128) {
+	return a + 1, b - 1
+}
+
+many :: proc(a, b, c, d: i128, e: u8) -> i128 {
+	return a + b * 2 + c * 3 + d * 4 + i128(e)
+}
+
+wrap :: proc(v: i128) -> Small {
+	return Small{v * 3}
+}
+
+pick :: proc(c: bool, a, b: u128) -> u128 {
+	return c ? a : b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main :: proc() -> int {
+	counter += 1
+	table[2] += 5
+
+	acc: Acc
+	acc.all = {NEG, 0}
+	bump(&acc, BIG)
+	bump(&acc, counter)
+
+	a, b := pair(BIG, NEG)
+	s := wrap(-0x5_0000_0000_0000_0003)
+	arr: [4]u128
+	for i in 0 ..< 4 do arr[i] = u128(i) << u128(i * 40)
+
+	r := fold(counter) + fold(u128(table[2])) * 3 + fold(SUM) * 5
+	r = r * 31 + fold(acc.sum) + fold(u128(acc.all[0])) + fold(u128(acc.all[1]))
+	r = r * 31 + fold(a) + fold(u128(b)) + fold(u128(s.v))
+	r = r * 31 + fold(u128(many(NEG, 0x7, -0x9_0000_0000_0000_0000, 0x3, 0xff)))
+	r = r * 31 + fold(arr[0] + arr[1] + arr[2] + arr[3])
+	r = r * 31 + fold(pick(true, BIG, 0)) + fold(pick(false, BIG, 9)) * 3
+	return r
+}
+`,
+`
+package main
+
+main :: proc() -> int {
+	A :: i128(-0x25)
+	B :: i128(0x7)
+	#assert(A / B == -5)
+	#assert(A % B == -2)
+	#assert(A %% B == 5)
+	#assert(u128(0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff) / 3 == 0x5555_5555_5555_5555_5555_5555_5555_5555)
+	#assert(u128(0xffff_ffff_ffff_ffff) + 1 == 0x1_0000_0000_0000_0000)
+	#assert(i128(-1) >> 127 == -1 && i128(-1) >> 200 == -1)
+	#assert(u128(1) << 127 == 0x8000_0000_0000_0000_0000_0000_0000_0000)
+	#assert(i128(-0x8000_0000_0000_0000_0000_0000_0000_0000) < i128(0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff))
+	#assert(u128(0x8000_0000_0000_0000_0000_0000_0000_0000) > u128(0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff))
+	#assert(~u128(0) == 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff)
+	#assert(i128(i64(-3)) == -3 && u128(u64(0xffff_ffff_ffff_ffff)) == 0xffff_ffff_ffff_ffff)
+	#assert(i128(-1) * i128(-1) == 1)
+	#assert(f64(u128(1) << 100) == 1267650600228229401496703205376.0)
+	#assert(i128(-1208925819614629174706176.0) == -(1 << 80))
+	C :: 1 << 100
+	c: u128 = C
+	d := i128(C >> 36)
+	big := [2]u128{1 << 70, C}
+	e := big[1] >> 99
+	return int(c >> 98) + int(d >> 60) * 3 + int(big[0] >> 68) * 5 + int(e) * 7
+}
+`,
+`
+package main
+
+div :: proc(a, b: i128) -> i128 {
+	return a / b
+}
+
+rem :: proc(a, b: i128) -> i128 {
+	return a % b
+}
+
+divu :: proc(a, b: u128) -> u128 {
+	return a / b
+}
+
+remu :: proc(a, b: u128) -> u128 {
+	return a % b
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main :: proc() -> int {
+	vals := [6]i128 {
+		0x1,
+		-0x1,
+		0x7,
+		-0x3_0000_0000_0000_0005,
+		0x1234_5678_9abc_def0_0fed_cba9_8765_4321,
+		-0x8000_0000_0000_0000_0000_0000_0000_0000,
+	}
+
+	r := 0
+	for a in vals {
+		for b in vals {
+			r = r * 31 + fold(u128(div(a, b)))
+			r = r * 31 + fold(u128(rem(a, b)))
+			r = r * 31 + fold(divu(u128(a), u128(b)))
+			r = r * 31 + fold(remu(u128(a), u128(b)))
+		}
+	}
+
+	x: u128 = 0xffff_ffff_ffff_ffff_ffff_ffff_ffff_ffff
+	x /= 0x1_0000_0000
+	x %= 0x1_0000_0000_0000_0007
+	y: i128 = -0x100_0000_0000_0000_0000
+	y /= 3
+	y %= 0x7_0000_0000_0001
+	r = r * 31 + fold(x) + fold(u128(y))
+	return r
+}
+`,
+`
+package main
+
+to_f64 :: proc(a: i128) -> f64 {
+	return f64(a)
+}
+
+to_f32 :: proc(a: u128) -> f32 {
+	return f32(a)
+}
+
+from_f64 :: proc(a: f64) -> i128 {
+	return i128(a)
+}
+
+from_f32 :: proc(a: f32) -> u128 {
+	return u128(a)
+}
+
+fold :: proc(x: u128) -> int {
+	return int(u64(x) ~ u64(x >> 64) * 3)
+}
+
+main :: proc() -> int {
+	ints := [5]i128 {
+		0x0,
+		-0x1,
+		0x1_0000_0000_0000_0001,
+		-0x1234_5678_9abc_def0_0fed_cba9_8765,
+		0x7fff_ffff_ffff_ffff_ffff_ffff_ffff_ffff,
+	}
+	floats := [5]f64{0.0, -1.5, 18446744073709551616.0, -3.25e30, 1.0e38}
+
+	r := 0
+	for a in ints {
+		r = r * 31 + int(to_f64(a) / 1.0e20)
+		r = r * 31 + int(f64(to_f32(u128(a))) / 1.0e20)
+		r = r * 31 + int(u64(transmute(u64)to_f64(a) >> 40))
+	}
+	for f in floats {
+		r = r * 31 + fold(u128(from_f64(f)))
+		if f >= 0 do r = r * 31 + fold(from_f32(f32(f)))
+	}
+
+	w: u128 = 0xffff_ffff_ffff_ffff_ffff
+	g := f64(w)
+	h := u128(g * 4)
+	r = r * 31 + int(g / 1.0e10) + fold(h)
+	return r
+}
+`,
+`
+package main
+
+Wide_Enum :: enum i128 {
+	A,
+}
+
+Wide_Set :: bit_set[0 ..< 100; u128]
+
+Wide_Bits :: bit_field u128 {
+	a: u8 | 8,
+}
+
+main :: proc() -> int {
+	too_big: i128 = 0x8000_0000_0000_0000_0000_0000_0000_0001
+	too_wide: u128 = 0x1_0000_0000_0000_0000_0000_0000_0000_0000
+	not_int: int = 0x1_0000_0000_0000_0000
+	arr: [4]int
+	idx: i128 = 1
+	v := arr[idx]
+	for i in idx ..< 4 {
+	}
+	c := intrinsics.count_ones(u128(3))
+	return v
+}
+`,
 `#load("../fuzz/crashes/0092546c2ab7b49f.odin")`,
 `#load("../fuzz/crashes/00f1be4a1ea4c499.odin")`,
 `#load("../fuzz/crashes/0203aad88c140351.odin")`,
@@ -36729,6 +38856,21 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
+false,
 false,
 false,
 false,

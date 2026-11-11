@@ -83,7 +83,7 @@ fold_bin_op_lattice :: proc(
 		l, r := sext(a.min, op_ty), b.min
 		if op != .Shl && op != .Shr && op != .U_Shr do r = sext(r, op_ty)
 		#partial switch op {
-		case .U_Div, .U_Rem, .U_Shr, .U_Lt, .U_Le, .U_Gt, .U_Ge:
+		case .U_Div, .U_Rem, .U_Shr, .U_Mul_Hi, .U_Lt, .U_Le, .U_Gt, .U_Ge:
 			l = i64(u64(l) & mask)
 			if op != .U_Shr do r = i64(u64(r) & mask)
 		}
@@ -101,7 +101,7 @@ fold_bin_op_lattice :: proc(
 	amin, amax := a.min, a.max
 	bmin, bmax := b.min, b.max
 	switch op {
-	case .U_Div, .U_Rem, .U_Lt, .U_Le, .U_Gt, .U_Ge, .U_Shr:
+	case .U_Div, .U_Rem, .U_Lt, .U_Le, .U_Gt, .U_Ge, .U_Shr, .U_Mul_Hi:
 		amin, amax := unsigned_bounds(a, mask)
 		bmin, bmax := unsigned_bounds(b, mask)
 		lo, hi: u64
@@ -128,6 +128,9 @@ fold_bin_op_lattice :: proc(
 			smin, smax := u64(b.min), min(u64(b.max), bits - 1)
 			lo, hi = amin >> smax, amax >> smin
 			if b.max >= i64(bits) do lo = 0
+		case .U_Mul_Hi:
+			lo = u64(fold_bin_op(i64(amin), op, i64(bmin), op_ty))
+			hi = u64(fold_bin_op(i64(amax), op, i64(bmax), op_ty))
 		}
 		if comparison do return {type = .Int, min = i64(lo), max = i64(hi)}
 		sign := u64(1) << (bits - 1)

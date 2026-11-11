@@ -120,6 +120,7 @@ Node_Type :: enum u16 {
 	U_Div,
 	Rem,
 	U_Rem,
+	U_Mul_Hi,
 	And_Not,
 	Split,
 	Local_Addr,

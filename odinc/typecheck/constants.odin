@@ -1,5 +1,6 @@
 package typecheck
 
+import "base:intrinsics"
 import "core:mem"
 import "core:odin/ast"
 import "core:odin/tokenizer"
@@ -9,6 +10,18 @@ import "core:strconv"
 constant_base_type :: proc(ty: Type) -> Type {
 	if e, ok := unpack_type(ty).(^Enum); ok do return strip_named(e.backing)
 	return strip_named(ty)
+}
+
+// constant_int extends an integer constant to the full width, a constant that
+// committed to a narrower type only has its low bits kept meaningful
+constant_int :: proc(meta: ^Check_Meta) -> i128 {
+	base := constant_base_type(meta.type)
+	if meta.untyped || !in_set(base, INTEGER_TYPES) || in_set(base, WIDE_TYPES) {
+		return meta.int
+	}
+	shift := uint(128 - type_size(base) * 8)
+	if in_set(base, SIGNED_TYPES) do return meta.int << shift >> shift
+	return i128(meta.uint << shift >> shift)
 }
 
 constant_string :: proc(ctx: ^Gen_Ctx, meta: ^Check_Meta) -> string {
@@ -31,6 +44,9 @@ constant_binary :: proc(
 	op := node.op.kind
 	comparison := .B_Comparison_Begin < op && op < .B_Comparison_End
 	base := constant_base_type(lhs.type)
+	// untyped constants did not commit to a width yet, so they are folded at
+	// the widest one, which lets them still become a 128-bit value
+	wide := in_set(base, WIDE_TYPES) || lhs.untyped && rhs.untyped
 	if comparison {
 		value: bool
 		switch {
@@ -55,10 +71,14 @@ constant_binary :: proc(
 			value = constant_compare(lhs.uint, rhs.uint, op)
 		case in_set(base, FLOAT_TYPES):
 			value = constant_compare(lhs.float, rhs.float, op)
-		case in_set(base, UNSIGNED_TYPES):
+		case in_set(base, UNSIGNED_TYPES) && wide:
 			value = constant_compare(lhs.uint, rhs.uint, op)
-		case in_set(base, SIGNED_TYPES):
+		case in_set(base, SIGNED_TYPES) && wide:
 			value = constant_compare(lhs.int, rhs.int, op)
+		case in_set(base, UNSIGNED_TYPES):
+			value = constant_compare(u64(lhs.uint), u64(rhs.uint), op)
+		case in_set(base, SIGNED_TYPES):
+			value = constant_compare(i64(lhs.int), i64(rhs.int), op)
 		case is_data_pointer(base):
 			left, right := lhs.dest, rhs.dest
 			left_global, right_global :=
@@ -93,7 +113,7 @@ constant_binary :: proc(
 				lhs.type,
 			)
 		}
-		res := tcmeta(ctx, .Bool, {int = i64(value)})
+		res := tcmeta(ctx, .Bool, {int = i128(value)})
 		res.untyped = true
 		return res
 	}
@@ -136,62 +156,83 @@ constant_binary :: proc(
 	}
 
 	signed := in_set(base, SIGNED_TYPES)
-	#partial switch op {
-	case .Add:
-		result.uint += rhs.uint
-	case .Sub:
-		result.uint -= rhs.uint
-	case .Mul:
-		result.uint *= rhs.uint
-	case .Quo, .Mod, .Mod_Mod:
-		if rhs.uint == 0 do return error(ctx, node.right, "division by zero")
-		if signed {
-			if lhs.int == min(i64) && rhs.int == -1 {
-				if op == .Quo do return error(ctx, node, "constant integer overflow")
-				result.int = 0
-			} else if op == .Quo {
-				result.int /= rhs.int
-			} else {
-				result.int %= rhs.int
-				if op == .Mod_Mod &&
-				   result.int != 0 &&
-				   (result.int < 0) != (rhs.int < 0) {
-					result.int += rhs.int
-				}
-			}
-		} else if op == .Quo {
-			result.uint /= rhs.uint
-		} else {
-			result.uint %= rhs.uint
-		}
-	case .And:
-		result.uint &= rhs.uint
-	case .Or:
-		result.uint |= rhs.uint
-	case .Xor:
-		result.uint ~= rhs.uint
-	case .And_Not:
-		result.uint &~= rhs.uint
-	case .Shl, .Shr:
-		if in_set(constant_base_type(rhs.type), SIGNED_TYPES) && rhs.int < 0 {
-			return error(ctx, node.right, "shift count must be non negative")
-		}
-		if op == .Shl {
-			result.uint = rhs.uint < 64 ? lhs.uint << rhs.uint : 0
-		} else if signed {
-			result.int = rhs.uint < 64 ? lhs.int >> rhs.uint : (lhs.int < 0 ? -1 : 0)
-		} else {
-			result.uint = rhs.uint < 64 ? lhs.uint >> rhs.uint : 0
-		}
-	case:
+	if in_set(constant_base_type(rhs.type), SIGNED_TYPES) &&
+	   (op == .Shl || op == .Shr) &&
+	   constant_int(rhs) < 0 {
+		return error(ctx, node.right, "shift count must be non negative")
+	}
+
+	err: string
+	if wide {
+		result.int, err = constant_integer(op, constant_int(lhs), constant_int(rhs), signed)
+	} else {
+		value: i64
+		value, err = constant_integer(op, i64(lhs.int), i64(rhs.int), signed)
+		result.int = signed ? i128(value) : i128(u64(value))
+	}
+
+	switch err {
+	case "":
+	case "division by zero":
+		return error(ctx, node.right, err)
+	case "unsupported":
 		return error(
 			ctx,
 			node,
 			"constant operation not supported: %v",
 			node.op.text,
 		)
+	case:
+		return error(ctx, node, err)
 	}
 	return result
+
+	constant_integer :: proc(
+		op: tokenizer.Token_Kind,
+		lhs, rhs: $S,
+		signed: bool,
+	) -> (
+		res: S,
+		err: string,
+	) {
+		U :: intrinsics.type_integer_to_unsigned(S)
+		BITS :: size_of(S) * 8
+		ulhs, urhs := U(lhs), U(rhs)
+
+		#partial switch op {
+		case .Add:
+			return S(ulhs + urhs), ""
+		case .Sub:
+			return S(ulhs - urhs), ""
+		case .Mul:
+			return S(ulhs * urhs), ""
+		case .Quo, .Mod, .Mod_Mod:
+			if rhs == 0 do return 0, "division by zero"
+			if !signed do return S(op == .Quo ? ulhs / urhs : ulhs % urhs), ""
+			if lhs == min(S) && rhs == -1 {
+				if op == .Quo do return 0, "constant integer overflow"
+				return 0, ""
+			}
+			if op == .Quo do return lhs / rhs, ""
+			res = lhs % rhs
+			if op == .Mod_Mod && res != 0 && (res < 0) != (rhs < 0) do res += rhs
+			return res, ""
+		case .And:
+			return lhs & rhs, ""
+		case .Or:
+			return lhs | rhs, ""
+		case .Xor:
+			return lhs ~ rhs, ""
+		case .And_Not:
+			return lhs &~ rhs, ""
+		case .Shl:
+			return urhs < BITS ? S(ulhs << urhs) : 0, ""
+		case .Shr:
+			if signed do return urhs < BITS ? lhs >> urhs : (lhs < 0 ? -1 : 0), ""
+			return urhs < BITS ? S(ulhs >> urhs) : 0, ""
+		}
+		return 0, "unsupported"
+	}
 
 	constant_compare :: proc(lhs, rhs: $T, op: tokenizer.Token_Kind) -> bool {
 		#partial switch op {
@@ -239,7 +280,9 @@ identical_core :: proc(a, b: Type) -> bool {
 		if len(x.fields) != len(y.fields) || x.size != y.size do return false
 		for f, i in x.fields {
 			g := y.fields[i]
-			if f.name != g.name || f.ty != g.ty || f.offset != g.offset do return false
+			if f.name != g.name || f.ty != g.ty || f.offset != g.offset || f.tag != g.tag {
+				return false
+			}
 		}
 		return x.align == y.align && x.raw_union == y.raw_union && x.packed == y.packed
 	case ^Union:
@@ -271,7 +314,7 @@ typecheck_conversion :: proc(
 		backing := new_clone(src^, ctx.types.allocator)
 		backing.type = bf.backing
 		if src.known && in_set(bf.backing, SIGNED_TYPES) {
-			shift := uint(64 - type_size(bf.backing) * 8)
+			shift := uint(128 - type_size(bf.backing) * 8)
 			backing.int = (backing.int << shift) >> shift
 		}
 		return typecheck_conversion(ctx, node, dst, backing, strict)
@@ -283,7 +326,7 @@ typecheck_conversion :: proc(
 		res = new_clone(res^, ctx.types.allocator)
 		res.type = dst
 		if res.known && type_size(dst) < 8 {
-			res.uint &= u64(1) << uint(type_size(dst) * 8) - 1
+			res.uint &= u128(1) << uint(type_size(dst) * 8) - 1
 		}
 		return res
 	}
@@ -298,11 +341,16 @@ typecheck_conversion :: proc(
 		)
 	}
 
-	if !src.known do return tmeta(ctx, dst)
+	if !src.known {
+		if call, ok := float_libcall(dst, src.type); ok {
+			require_libcall(ctx, node, call)
+		}
+		return tmeta(ctx, dst)
+	}
 
 	if is_data_pointer(dst) {
 		if is_data_pointer(src.type) do return tcmeta(ctx, dst, src.lit)
-		return global_pointer(ctx, dst, src.uint)
+		return global_pointer(ctx, dst, u64(src.uint))
 	}
 
 	if is_data_pointer(src.type) {
@@ -317,7 +365,7 @@ typecheck_conversion :: proc(
 
 		value: Lit
 		copy(mem.ptr_to_bytes(&value), global.bytes)
-		value.uint += u64(src.offset)
+		value.uint += u128(src.offset)
 		return tcmeta(ctx, dst, value)
 	}
 
@@ -331,16 +379,26 @@ typecheck_conversion :: proc(
 		value = src.lit
 	} else if in_set(to, FLOAT_TYPES) {
 		if in_set(from, FLOAT_TYPES) do value.float = src.float
-		else if in_set(from, UNSIGNED_TYPES) do value.float = f64(src.uint)
-		else do value.float = f64(src.int)
+		else if from_unsigned do value.float = f64(u128(constant_int(src)))
+		else do value.float = f64(constant_int(src))
 		if to == .F32 do value.float = f64(f32(value.float))
 	} else if to == .Bool {
-		value.int = i64(
-			bool(in_set(from, FLOAT_TYPES) ? src.float != 0 : src.uint != 0),
+		value.int = i128(
+			bool(in_set(from, FLOAT_TYPES) ? src.float != 0 : constant_int(src) != 0),
 		)
 	} else if in_set(from, FLOAT_TYPES) {
-		if to_unsigned do value.uint = u64(src.float)
-		else do value.int = i64(src.float)
+		switch {
+		case to == .U128:
+			value.uint = u128(src.float)
+		case to == .I128:
+			value.int = i128(src.float)
+		case to_unsigned:
+			value.uint = u128(u64(src.float))
+		case:
+			value.int = i128(i64(src.float))
+		}
+	} else if in_set(to, WIDE_TYPES) {
+		value.int = constant_int(src)
 	} else {
 		value = src.lit
 	}
@@ -352,9 +410,9 @@ constant_scalar_bytes :: proc(meta: ^Check_Meta, bytes: []u8) -> bool {
 	if !meta.known || !valid_conversion_type(meta.type) do return false
 
 	value := meta.int
-	if strip_named(meta.type) == .F32 do value = i64(transmute(u32)f32(meta.float))
+	if strip_named(meta.type) == .F32 do value = i128(transmute(u32)f32(meta.float))
 
-	data := transmute([8]u8)value
+	data := transmute([16]u8)value
 	assert(len(bytes) <= len(data))
 	copy(bytes, data[:len(bytes)])
 

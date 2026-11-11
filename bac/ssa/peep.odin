@@ -178,6 +178,10 @@ fold_bin_op :: proc(
 	case .U_Shr:
 		if u64(rhs) >= u64(bac.DT_SIZE[op_ty] * 8) do return 0
 		value = i64(u64(lhs) >> u64(rhs))
+	case .U_Mul_Hi:
+		bits := uint(bac.DT_SIZE[op_ty] * 8)
+		mask := max(u64) >> (64 - bits)
+		value = i64((u128(u64(lhs) & mask) * u128(u64(rhs) & mask)) >> bits)
 	}
 	return
 
@@ -797,6 +801,10 @@ peep :: proc(
 			if op in ONE_IS_NEUTRAL && crhs.value == 1 {
 				return node.inps[0]
 			}
+
+			if op == .U_Mul_Hi && (crhs.value == 0 || crhs.value == 1) {
+				return bac.add_c_int(ctx, "umhz", node.dt, 0)
+			}
 		}
 
 		if is_integer && lhs.node == rhs.node {
@@ -854,6 +862,7 @@ peep :: proc(
 		COMUTATIVE_OR_SWAPPABLE :: bit_set[Bin_Op] {
 			.Add,
 			.Mul,
+			.U_Mul_Hi,
 			.Ne,
 			.Eq,
 			.Or,

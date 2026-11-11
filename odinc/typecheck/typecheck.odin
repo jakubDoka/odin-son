@@ -4,6 +4,7 @@ import "../../bac"
 import "../../bac/intel_xelp"
 import ra "../../bac/regalloc"
 import "../../bac/ssa"
+import "../../bac/wasm"
 import "../../utils/arna"
 import "base:intrinsics"
 import "base:runtime"
@@ -112,8 +113,8 @@ Lit :: struct #raw_union {
 	module:     Module_ID,
 	typeida:    Type,
 	intrinsic:  Intrinsic,
-	int:        i64,
-	uint:       u64,
+	int:        i128,
+	uint:       u128,
 	rune:       rune,
 	float:      f64,
 	float32:    f32,
@@ -180,6 +181,8 @@ Type :: enum u64 {
 	String,
 	F32,
 	F64,
+	I128,
+	U128,
 }
 
 @(rodata)
@@ -202,6 +205,8 @@ TYPE_SIZES := #partial [Type]int {
 	.String  = 16,
 	.F32     = 4,
 	.F64     = 8,
+	.I128    = 16,
+	.U128    = 16,
 }
 
 Ast_Field :: struct {
@@ -209,6 +214,7 @@ Ast_Field :: struct {
 	name:     ^ast.Ident,
 	type:     ^ast.Expr,
 	default:  ^ast.Expr,
+	tag:      string,
 }
 
 preprocess_list :: proc(
@@ -228,13 +234,16 @@ preprocess_list :: proc(
 		if len(l.names) == 0 {
 			@(rodata, static)
 			SENTINEL := ast.Ident{}
-			append(&listr, Ast_Field{false, &SENTINEL, type, dv})
+			append(&listr, Ast_Field{false, &SENTINEL, type, dv, l.tag.text})
 		}
 		for n in l.names {
 			if poly, ok := n.derived.(^ast.Poly_Type); ok {
-				append(&listr, Ast_Field{true, poly.type, type, dv})
+				append(&listr, Ast_Field{true, poly.type, type, dv, l.tag.text})
 			} else {
-				append(&listr, Ast_Field{false, n.derived.(^ast.Ident), type, dv})
+				append(
+					&listr,
+					Ast_Field{false, n.derived.(^ast.Ident), type, dv, l.tag.text},
+				)
 			}
 			if !broadcast_type {
 				type = nil
@@ -389,7 +398,7 @@ type_size :: proc(ty: Type) -> (res: int) {
 	case ^Simd:
 		return int(min(uint(type_size(t.elem) * t.len), uint(max(int))))
 	}
-	assert(ty <= .F64)
+	assert(ty <= .U128)
 	return TYPE_SIZES[ty]
 }
 
@@ -507,6 +516,8 @@ TYPE_NAMES := #partial [Type]string {
 	.String       = "string",
 	.F32          = "f32",
 	.F64          = "f64",
+	.I128         = "i128",
+	.U128         = "u128",
 }
 
 type_to_dt :: proc(ty: Type) -> bac.Node_Datatype {
@@ -549,7 +560,7 @@ type_to_dt :: proc(ty: Type) -> bac.Node_Datatype {
 		return simd_dt(type_size(t.elem) * t.len)
 	}
 
-	fmt.assertf(ty <= .F64, "%v", u64(ty))
+	fmt.assertf(ty <= .U128, "%v", u64(ty))
 	return TYPE_TO_DT[ty]
 }
 
@@ -557,11 +568,18 @@ type_to_dt :: proc(ty: Type) -> bac.Node_Datatype {
 // small enum members can ever be inside one of the sets below
 in_set :: proc(ty: Type, set: bit_set[Type]) -> bool {
 	ty := strip_named(ty)
-	return ty <= .F64 && ty in set
+	return ty <= .U128 && ty in set
 }
 
-UNSIGNED_TYPES :: bit_set[Type]{.Uint, .U64, .U32, .U16, .U8, .Bool, .Uintptr}
-SIGNED_TYPES :: bit_set[Type]{.Int, .I64, .I32, .I16, .I8}
+UNSIGNED_TYPES :: bit_set[Type]{.Uint, .U64, .U32, .U16, .U8, .Bool, .Uintptr, .U128}
+SIGNED_TYPES :: bit_set[Type]{.Int, .I64, .I32, .I16, .I8, .I128}
+// the 128-bit integers have no backend datatype, they live in memory as a
+// pair of 64-bit halves, low half first
+WIDE_TYPES :: bit_set[Type]{.I128, .U128}
+
+is_wide :: proc(ty: Type) -> bool {
+	return in_set(constant_base_type(ty), WIDE_TYPES)
+}
 INTEGER_TYPES :: UNSIGNED_TYPES | SIGNED_TYPES
 FLOAT_TYPES :: bit_set[Type]{.F32, .F64}
 NUMBER_TYPES :: INTEGER_TYPES | FLOAT_TYPES
@@ -596,6 +614,8 @@ Rawptr_Type :: struct {}
 String_Type :: struct {}
 F32_Type :: struct {}
 F64_Type :: struct {}
+I128_Type :: struct {}
+U128_Type :: struct {}
 
 Type_Data :: union #no_nil {
 	Void_Type,
@@ -619,6 +639,8 @@ Type_Data :: union #no_nil {
 	String_Type,
 	F32_Type,
 	F64_Type,
+	I128_Type,
+	U128_Type,
 	Pointer,
 	Multi_Pointer,
 	^Proc_Type,
@@ -776,7 +798,7 @@ type_display :: proc(w: io.Writer, ty: Type) {
 		}
 	case:
 		norm := Type(u16(ty))
-		fmt.assertf(norm <= .F64, "%v", u64(ty))
+		fmt.assertf(norm <= .U128, "%v", u64(ty))
 		fmt.wprint(w, TYPE_NAMES[norm])
 	}
 }
@@ -897,12 +919,13 @@ bit_field_signed :: proc(f: Bit_Field_Member) -> bool {
 }
 
 bit_field_extract :: proc(f: Bit_Field_Member, packed: u64) -> (value: Lit) {
-	value.uint = packed >> u64(f.offset) & bit_field_mask(f)
+	bits := packed >> u64(f.offset) & bit_field_mask(f)
+	value.uint = u128(bits)
 	if bit_field_signed(f) {
 		shift := u64(64 - f.size)
-		value.int = i64(value.uint << shift) >> shift
+		value.int = i128(i64(bits << shift) >> shift)
 	} else if strip_named(f.ty) == .Bool {
-		value.uint = u64(value.uint != 0)
+		value.uint = u128(bits != 0)
 	}
 	return
 }
@@ -920,16 +943,16 @@ bit_field_fits :: proc(
 	fits: bool
 	if bit_field_signed(f) {
 		shift := u64(64 - f.size)
-		fits = (value.int << shift) >> shift == value.int
+		fits = (i64(value.int) << shift) >> shift == i64(value.int)
 	} else {
-		fits = value.uint & ~bit_field_mask(f) == 0
+		fits = u64(value.uint) & ~bit_field_mask(f) == 0
 	}
 	if !fits {
 		error(
 			ctx,
 			node,
 			"%v does not fit into the %v bits of the bit_field field %q",
-			bit_field_signed(f) ? value.int : i64(value.uint),
+			bit_field_signed(f) ? i64(value.int) : i64(value.uint),
 			f.size,
 			f.name,
 		)
@@ -1102,6 +1125,13 @@ resolve_struct_fields :: proc(
 	}
 
 	finish_layout(ctx, node, ty, &structa.layout)
+}
+
+field_tag :: proc(ctx: ^Gen_Ctx, node: ^ast.Node, text: string) -> string {
+	if text == "" do return ""
+	tag, _, ok := strconv.unquote_string(text, ctx.types.allocator)
+	if !ok do error(ctx, node, "invalid field tag %v", text)
+	return tag
 }
 
 tmeta :: proc(ctx: ^Gen_Ctx, ty: Type) -> ^Check_Meta {
@@ -1497,7 +1527,7 @@ extract_polys :: proc(
 					extract_polys(
 						ctx,
 						slots,
-						{type = .Int, int = i64(simd.len)},
+						{type = .Int, int = i128(simd.len)},
 						d.len,
 					) &&
 					extract_polys(
@@ -1598,13 +1628,17 @@ call_sig :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> (v: ^Proc_Type, ok: bool) {
 	return prc, true
 }
 
-expect_integer :: proc(ctx: ^Gen_Ctx, node: ^ast.Node) -> ^Check_Meta {
+expect_integer :: proc(
+	ctx: ^Gen_Ctx,
+	node: ^ast.Node,
+	allow_wide := false,
+) -> ^Check_Meta {
 	got := typecheck(ctx, {inferred_ty = .Int}, node)
-	if node == nil ||
-	   got.type == .Invalid_Type ||
-	   in_set(got.type, INTEGER_TYPES) {
-		return got
+	if node == nil || got.type == .Invalid_Type do return got
+	if is_wide(got.type) && !allow_wide {
+		return error(ctx, node, "TODO: %v as an index", got.type)
 	}
+	if in_set(got.type, INTEGER_TYPES) do return got
 	return error(ctx, node, "expected an integer, found %v", got.type)
 }
 
@@ -1685,6 +1719,24 @@ Intrinsic :: enum int {
 	simd_reduce_add_bisect,
 	count_trailing_zeros,
 	count_ones,
+	fixed_point_mul,
+}
+
+// the libgcc helpers the 128-bit integers lower to, each is declared as a
+// foreign procedure on its first use, the order is what the pickers index
+Libcall :: enum {
+	udivti3,
+	divti3,
+	umodti3,
+	modti3,
+	floattidf,
+	floatuntidf,
+	floattisf,
+	floatuntisf,
+	fixdfti,
+	fixunsdfti,
+	fixsfti,
+	fixunssfti,
 }
 
 Builtin_Proc :: enum int {
@@ -1787,6 +1839,7 @@ Types :: struct {
 	open_types:     int,
 	open_distincts: [dynamic]Open_Distinct,
 	owns_scratch:   bool,
+	libcalls:       [Libcall]Proc_ID,
 }
 
 types_init :: proc(types: ^Types) {
@@ -1932,6 +1985,8 @@ Struct_Field :: struct {
 		ty_ast: ^ast.Expr,
 	},
 	offset:  int,
+	// interpreted like the string literal it is written as
+	tag:     string,
 }
 
 Enum :: struct {
@@ -1963,6 +2018,7 @@ Bit_Field_Member :: struct {
 	ty:     Type,
 	offset: int,
 	size:   int,
+	tag:    string,
 }
 
 Proc_Type :: struct {
@@ -2117,6 +2173,7 @@ typecheck :: proc(
 			ast_field := fields[i]
 			field.name = ast_field.name.name
 			field.ty_ast = ast_field.type
+			field.tag = field_tag(ctx, ast_field.name, ast_field.tag)
 		}
 
 		structa.align_ast = d.align
@@ -2136,6 +2193,10 @@ typecheck :: proc(
 		set_node_data(node, ty)
 
 		e.backing = d.base_type != nil ? emit_type(ctx, d.base_type) : .Int
+		if in_set(e.backing, WIDE_TYPES) {
+			ty = error(ctx, d.base_type, "TODO: enums backed by %v", e.backing)
+			break match
+		}
 		e.variants = make([]Enum_Variant, len(d.fields), ctx.types.allocator)
 		next := i64(0)
 		for f, i in d.fields {
@@ -2160,7 +2221,7 @@ typecheck :: proc(
 					)
 					break match
 				}
-				vval = cv.int
+				vval = i64(cv.int)
 			case:
 				ty = error(ctx, f, "expected an enum variant")
 				break match
@@ -2195,8 +2256,8 @@ typecheck :: proc(
 				break match
 			}
 			bs.elem = lhs.type
-			bs.lower = lhs.int
-			bs.upper = rhs.int - i64(interval.op.kind == .Range_Half)
+			bs.lower = i64(lhs.int)
+			bs.upper = i64(rhs.int) - i64(interval.op.kind == .Range_Half)
 			if bs.upper < bs.lower {
 				ty = error(ctx, d.elem, "a bit_set range can not be empty")
 				break match
@@ -2234,6 +2295,10 @@ typecheck :: proc(
 			)
 		} else {
 			bs.underlying = emit_type(ctx, d.underlying)
+			if is_wide(bs.underlying) {
+				ty = error(ctx, d.underlying, "TODO: bit_sets backed by %v", bs.underlying)
+				break match
+			}
 			if !in_set(bs.underlying, INTEGER_TYPES) ||
 			   strip_named(bs.underlying) == .Bool {
 				ty = error(
@@ -2271,6 +2336,10 @@ typecheck :: proc(
 			ty = error(ctx, d.backing_type, "TODO: bit_fields backed by an array")
 			break match
 		}
+		if is_wide(bf.backing) {
+			ty = error(ctx, d.backing_type, "TODO: bit_fields backed by %v", bf.backing)
+			break match
+		}
 		if !in_set(bf.backing, INTEGER_TYPES) || strip_named(bf.backing) == .Bool {
 			ty = error(
 				ctx,
@@ -2293,6 +2362,10 @@ typecheck :: proc(
 			field_ty := emit_type(ctx, f.type)
 			if field_ty == .Invalid_Type {
 				ty = &INVALID
+				break match
+			}
+			if is_wide(field_ty) {
+				ty = error(ctx, f.type, "TODO: bit_field fields of %v", field_ty)
 				break match
 			}
 			if !in_set(field_ty, INTEGER_TYPES) && !is_of(field_ty, ^Enum) {
@@ -2323,7 +2396,7 @@ typecheck :: proc(
 				)
 				break match
 			}
-			if size.int > i64(type_size(field_ty) * 8) {
+			if size.int > i128(type_size(field_ty) * 8) {
 				ty = error(
 					ctx,
 					f.bit_size,
@@ -2335,7 +2408,13 @@ typecheck :: proc(
 				break match
 			}
 
-			bf.fields[i] = {name.name, field_ty, offset, int(size.int)}
+			bf.fields[i] = {
+				name.name,
+				field_ty,
+				offset,
+				int(size.int),
+				field_tag(ctx, f, f.tag.text),
+			}
 			offset += int(size.int)
 		}
 
@@ -2607,6 +2686,22 @@ typecheck :: proc(
 				break match
 			}
 
+			if in_set(tp, WIDE_TYPES) {
+				vl, ok := strconv.parse_u128(d.tok.text)
+				if !ok {
+					ty = error(ctx, node, "malformed integer literal")
+					break match
+				}
+				// the magnitude of the minimum is let through, the literal can
+				// still be negated
+				if strip_named(tp) == .I128 && vl > u128(1) << 127 {
+					ty = error(ctx, node, "%v does not fit into %v", d.tok.text, tp)
+					break match
+				}
+				value.uint = vl
+				break
+			}
+
 			vl, ok := strconv.parse_u64(d.tok.text)
 			if !ok {
 				ty = error(ctx, node, "malformed integer literal")
@@ -2614,7 +2709,7 @@ typecheck :: proc(
 			}
 
 			if in_set(tp, INTEGER_TYPES) {
-				value.uint = vl
+				value.uint = u128(vl)
 			} else {
 				value.float = f64(vl)
 			}
@@ -2684,7 +2779,7 @@ typecheck :: proc(
 					known = false
 					continue
 				}
-				if res.int < bs.lower || res.int > bs.upper {
+				if i64(res.int) < bs.lower || i64(res.int) > bs.upper {
 					error(
 						ctx,
 						elem,
@@ -2696,9 +2791,9 @@ typecheck :: proc(
 					)
 					continue
 				}
-				mask |= 1 << u64(res.int - bs.lower)
+				mask |= 1 << u64(i64(res.int) - bs.lower)
 			}
-			ty = known ? tcmeta(ctx, set_ty, {uint = mask}) : tmeta(ctx, set_ty)
+			ty = known ? tcmeta(ctx, set_ty, {uint = u128(mask)}) : tmeta(ctx, set_ty)
 			break match
 		}
 
@@ -2729,13 +2824,13 @@ typecheck :: proc(
 						continue fields
 					}
 					if bit_field_fits(ctx, fv.value, f, res) {
-						packed |= (res.uint & bit_field_mask(f)) << u64(f.offset)
+						packed |= (u64(res.uint) & bit_field_mask(f)) << u64(f.offset)
 					}
 					continue fields
 				}
 				error(ctx, fv.field, "%v has no field %q", set_ty, name)
 			}
-			ty = known ? tcmeta(ctx, set_ty, {uint = packed}) : tmeta(ctx, set_ty)
+			ty = known ? tcmeta(ctx, set_ty, {uint = u128(packed)}) : tmeta(ctx, set_ty)
 			break match
 		}
 
@@ -2833,7 +2928,7 @@ typecheck :: proc(
 			gi_ensure_stored(ctx, prop, data)
 
 			gi_set_offset(&prop, 8)
-			gi_ensure_stored(ctx, prop, tcmeta(ctx, .Int, {int = i64(len(d.elems))}))
+			gi_ensure_stored(ctx, prop, tcmeta(ctx, .Int, {int = i128(len(d.elems))}))
 		case:
 			ty = error(
 				ctx,
@@ -2849,7 +2944,7 @@ typecheck :: proc(
 		base := typecheck(ctx, {referencing = prop.referencing}, d.expr)
 		index := expect_integer(ctx, d.index)
 		if should_be_known && base.known && index.known {
-			ty = global_index(ctx, node, base, index.int)
+			ty = global_index(ctx, node, base, i64(index.int))
 			lvalue = ty.lvalue
 			break match
 		}
@@ -2977,7 +3072,7 @@ typecheck :: proc(
 			for v in t.variants {
 				if v.name == f.name {
 					set_node_data(d.field, int(v.value))
-					ty = tcmeta(ctx, base_ty, {int = v.value})
+					ty = tcmeta(ctx, base_ty, {int = i128(v.value)})
 					break match
 				}
 			}
@@ -3015,7 +3110,7 @@ typecheck :: proc(
 
 				if base.known && (should_be_known || !base.lvalue && !through_ptr) {
 					packed := global_load(ctx, base)
-					ty = tcmeta(ctx, member.ty, bit_field_extract(member, packed.uint))
+					ty = tcmeta(ctx, member.ty, bit_field_extract(member, u64(packed.uint)))
 					break match
 				}
 
@@ -3037,7 +3132,7 @@ typecheck :: proc(
 		for v in e.variants {
 			if v.name == d.field.name {
 				set_node_data(d.field, int(v.value))
-				ty = tcmeta(ctx, prop.inferred_ty, {int = v.value})
+				ty = tcmeta(ctx, prop.inferred_ty, {int = i128(v.value)})
 				break match
 			}
 		}
@@ -3078,7 +3173,7 @@ typecheck :: proc(
 			} else if lhs.known && rhs.known {
 				value :=
 					d.op.kind == .Cmp_And ? lhs.int != 0 && rhs.int != 0 : lhs.int != 0 || rhs.int != 0
-				ty = tcmeta(ctx, res_ty, {int = i64(value)})
+				ty = tcmeta(ctx, res_ty, {int = i128(value)})
 				ty.untyped = lhs.untyped && rhs.untyped
 			} else {
 				ty = tmeta(ctx, res_ty)
@@ -3100,9 +3195,9 @@ typecheck :: proc(
 			if elem.type == .Invalid_Type {
 				ty = &INVALID
 			} else if elem.known && set.known {
-				bit := u64(elem.int - bs.lower)
+				bit := u64(i64(elem.int) - bs.lower)
 				present := bit < 64 && set.uint >> bit & 1 != 0
-				ty = tcmeta(ctx, bool_ty, {int = i64(present == (d.op.kind == .In))})
+				ty = tcmeta(ctx, bool_ty, {int = i128(present == (d.op.kind == .In))})
 				ty.untyped = true
 			} else {
 				ty = tmeta(ctx, bool_ty)
@@ -3156,7 +3251,7 @@ typecheck :: proc(
 		if rhs_ty == nil {
 			lhs_ty = typecheck(ctx, prop, d.left)
 			if d.op.kind == .Shl || d.op.kind == .Shr {
-				rhs_ty = expect_integer(ctx, d.right)
+				rhs_ty = expect_integer(ctx, d.right, allow_wide = true)
 			} else {
 				rhs_ty = typecheck_as(ctx, lhs_ty.type, d.right)
 			}
@@ -3188,6 +3283,9 @@ typecheck :: proc(
 			ty = constant_binary(ctx, d, lhs_ty, rhs_ty)
 			if is_comparison && ty != &INVALID do ty.type = bool_ty
 		} else {
+			if call, ok := division_libcall(lhs_ty.type, d.op.kind); ok {
+				require_libcall(ctx, node, call)
+			}
 			ty = tmeta(ctx, is_comparison ? bool_ty : lhs_ty.type)
 		}
 	case ^ast.Unary_Expr:
@@ -3229,13 +3327,13 @@ typecheck :: proc(
 			ty = new_clone(vl^, ctx.types.allocator)
 			ty.type = bool_ty
 			ty.lvalue = false
-			if vl.known do ty.int = i64(vl.int == 0)
+			if vl.known do ty.int = i128(vl.int == 0)
 		case .Xor:
 			vl := typecheck(ctx, prop, d.expr)
 			if bs, is_bs := unpack_type(vl.type).(^Bit_Set); is_bs {
 				if vl.known {
 					vl = new_clone(vl^, ctx.types.allocator)
-					vl.uint = ~vl.uint & bit_set_mask(bs)
+					vl.uint = ~vl.uint & u128(bit_set_mask(bs))
 				}
 				ty = vl
 				break match
@@ -3248,7 +3346,7 @@ typecheck :: proc(
 				vl = new_clone(vl^, ctx.types.allocator)
 				vl.int ~= -1
 				if in_set(vl.type, UNSIGNED_TYPES) && type_size(vl.type) < 8 {
-					vl.uint &= (u64(1) << uint(type_size(vl.type) * 8)) - 1
+					vl.uint &= (u128(1) << uint(type_size(vl.type) * 8)) - 1
 				}
 			}
 			ty = vl
@@ -3463,6 +3561,10 @@ typecheck :: proc(
 				)
 				break match
 			}
+			if is_wide(lhs.type) {
+				ty = error(ctx, d.expr, "TODO: ranging over %v", lhs.type)
+				break match
+			}
 			elem = lhs.type
 			set_node_data(d.expr, tmeta(ctx, elem))
 		} else {
@@ -3654,7 +3756,7 @@ typecheck :: proc(
 			res := integrate_inferrence(ctx, ctx.module, decl, prop.inferred_ty)
 			if !decl.is_mutable {
 				meta.kind = .Const
-				meta.value = res.int
+				meta.value = i64(res.int)
 			} else {
 				lvalue = true
 			}
@@ -3667,7 +3769,7 @@ typecheck :: proc(
 			meta.value = i64(d.name == "true")
 			bool_ty :=
 				strip_named(prop.inferred_ty) == .Bool ? prop.inferred_ty : .Bool
-			ty = tcmeta(ctx, bool_ty, {int = meta.value})
+			ty = tcmeta(ctx, bool_ty, {int = i128(meta.value)})
 			ty.untyped = true
 			break match
 		}
@@ -3712,7 +3814,7 @@ typecheck :: proc(
 			arg_ty := typecheck(ctx, {}, args[0])
 			#partial switch t in unpack_type(arg_ty.type) {
 			case ^Array:
-				ty = tcmeta(ctx, .Int, {int = i64(t.len)})
+				ty = tcmeta(ctx, .Int, {int = i128(t.len)})
 				break match
 			case String_Type:
 				if arg_ty.known {
@@ -3722,7 +3824,7 @@ typecheck :: proc(
 						ty = tcmeta(
 							ctx,
 							.Int,
-							{int = i64(len(constant_string(ctx, arg_ty)))},
+							{int = i128(len(constant_string(ctx, arg_ty)))},
 						)
 					}
 				} else {
@@ -3772,7 +3874,7 @@ typecheck :: proc(
 			ty = tcmeta(
 				ctx,
 				prop.inferred_ty != .Void ? prop.inferred_ty : .Int,
-				{int = i64(bprc == .size_of ? type_size(tp) : type_align(tp))},
+				{int = i128(bprc == .size_of ? type_size(tp) : type_align(tp))},
 			)
 			break match
 		case .card:
@@ -3788,7 +3890,7 @@ typecheck :: proc(
 			) or_break match
 			ty = tmeta(ctx, .Int)
 			if set.known {
-				ty = tcmeta(ctx, .Int, {int = i64(intrinsics.count_ones(set.uint))})
+				ty = tcmeta(ctx, .Int, {int = i128(intrinsics.count_ones(u64(set.uint)))})
 			}
 			break match
 		}
@@ -3849,6 +3951,26 @@ typecheck :: proc(
 				a := typecheck(ctx, {inferred_ty = prop.inferred_ty}, args[0])
 				if !in_set(a.type, INTEGER_TYPES) {
 					ty = error(ctx, args[0], "expected an integer, found %v", a.type)
+					break match
+				}
+				if is_wide(a.type) {
+					ty = error(ctx, args[0], "TODO: %v of %v", callee.lit.intrinsic, a.type)
+					break match
+				}
+				ty = tmeta(ctx, a.type)
+				break match
+			case .fixed_point_mul:
+				args := expect_args(ctx, node, d.args, 3, &ty) or_break match
+				a := typecheck(ctx, {inferred_ty = prop.inferred_ty}, args[0])
+				typecheck_as(ctx, a.type, args[1])
+				scale := typecheck_as(ctx, .Uint, args[2])
+				if !in_set(a.type, UNSIGNED_TYPES) || is_wide(a.type) {
+					ty = error(ctx, args[0], "TODO: fixed_point_mul of %v", a.type)
+					break match
+				}
+				bits := u64(type_size(a.type) * 8)
+				if !scale.known || scale.uint == 0 || scale.uint > u128(bits) {
+					ty = error(ctx, args[2], "expected a constant scale in 1..=%v", bits)
 					break match
 				}
 				ty = tmeta(ctx, a.type)
@@ -4158,6 +4280,9 @@ typecheck :: proc(
 			}
 			ty = valid_binop(ctx, lhs_ty.type, node, d.op.kind)
 			if ty != nil do break match
+			if call, ok := division_libcall(lhs_ty.type, d.op.kind); ok {
+				require_libcall(ctx, node, call)
+			}
 		}
 	case:
 		ty = error(
@@ -4438,7 +4563,7 @@ typecheck_program :: proc(ctx: ^Gen_Ctx) {
 	has_shader_entry := false
 	for i := 1; i < len(ctx.procs); i += 1 {
 		prc := ctx.procs[i]
-		if prc.sig == nil do continue
+		if prc.sig == nil || prc.hidden do continue
 
 		ctx.prc_id = auto_cast i
 		ctx.module = prc.module
@@ -4657,7 +4782,7 @@ tok_to_binop :: proc(
 	}
 	ty = strip_named(ty)
 
-	if type_to_dt(ty) == .Void {
+	if type_to_dt(ty) == .Void && !in_set(ty, WIDE_TYPES) {
 		return
 	}
 
@@ -4778,6 +4903,86 @@ tok_to_binop :: proc(
 	return info.kind, info.name, lane, valid
 }
 
+division_libcall :: proc(
+	ty: Type,
+	op: tokenizer.Token_Kind,
+) -> (
+	call: Libcall,
+	ok: bool,
+) {
+	is_mod := op == .Mod || op == .Mod_Eq
+	if !is_wide(ty) || !is_mod && op != .Quo && op != .Quo_Eq do return
+	signed := in_set(constant_base_type(ty), SIGNED_TYPES)
+	return Libcall(int(Libcall.udivti3) + int(signed) + 2 * int(is_mod)), true
+}
+
+float_libcall :: proc(dst, src: Type) -> (call: Libcall, ok: bool) {
+	to_float := in_set(dst, FLOAT_TYPES)
+	float, wide := to_float ? dst : src, to_float ? src : dst
+	if !is_wide(wide) || !in_set(float, FLOAT_TYPES) do return
+
+	base := to_float ? Libcall.floattidf : .fixdfti
+	unsigned := in_set(constant_base_type(wide), UNSIGNED_TYPES)
+	is_f32 := strip_named(float) == .F32
+	return Libcall(int(base) + int(unsigned) + 2 * int(is_f32)), true
+}
+
+require_libcall :: proc(ctx: ^Gen_Ctx, node: ^ast.Node, call: Libcall) {
+	if ctx.libcalls[call] != 0 do return
+
+	if ctx.target.spec == &wasm.SPEC {
+		error(
+			ctx,
+			node,
+			"TODO: this 128-bit operation calls __%v from libgcc, wasm can not link it",
+			call,
+		)
+		return
+	}
+
+	@(static, rodata)
+	SIGS := [Libcall]struct {
+		param, ret: Type,
+	} {
+		.udivti3     = {.U128, .U128},
+		.divti3      = {.I128, .I128},
+		.umodti3     = {.U128, .U128},
+		.modti3      = {.I128, .I128},
+		.floattidf   = {.I128, .F64},
+		.floatuntidf = {.U128, .F64},
+		.floattisf   = {.I128, .F32},
+		.floatuntisf = {.U128, .F32},
+		.fixdfti     = {.F64, .I128},
+		.fixunsdfti  = {.F64, .U128},
+		.fixsfti     = {.F32, .I128},
+		.fixunssfti  = {.F32, .U128},
+	}
+
+	sig := SIGS[call]
+	params := []Type{sig.param, sig.param}
+	param_count := call <= .modti3 ? 2 : 1
+
+	append(
+		&ctx.procs,
+		Proc {
+			name = fmt.aprintf("__%v", call, allocator = ctx.types.allocator),
+			hidden = true,
+			lit = new_clone(
+				ast.Proc_Lit{type = new(ast.Proc_Type, ctx.types.allocator)},
+				ctx.types.allocator,
+			),
+			sig = intern_proc_type(
+				ctx,
+				&{
+					params = intern_type_slice(ctx, params[:param_count]),
+					rets = intern_type_slice(ctx, {sig.ret}),
+				},
+			),
+		},
+	)
+	ctx.libcalls[call] = Proc_ID(len(ctx.procs) - 1)
+}
+
 extract_var_ident :: proc(
 	ctx: ^Gen_Ctx,
 	name: ^ast.Node,
@@ -4839,7 +5044,7 @@ gi_init :: proc(
 		gi_ensure_stored(
 			ctx,
 			res,
-			&Check_Meta{type = uni.tag_ty, known = true, lit = {int = i64(tag)}},
+			&Check_Meta{type = uni.tag_ty, known = true, lit = {int = i128(tag)}},
 		)
 		gi_set_offset(&res, 0)
 	}

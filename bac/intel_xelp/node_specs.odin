@@ -12,8 +12,8 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 	spill_boundary = {128, 4},
 	collect_meta = collect_meta,
 	emit_function = emit_function,
-	peep = peep_inst,
-	post_schedule_peep = post_schedule_peep_inst,
+	peep = peep,
+	post_schedule_peep = post_schedule_peep,
 	inheritance_table = intrinsics.concatenate(bac.INHERITANCE_TABLE, []u16{
 		0b10, // Inv
 		0b10, // Value_Eq
@@ -188,25 +188,9 @@ Node_Type :: enum u16 {
 	Mul_Hi16,
 }
 
-peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
-	res := peep(ctx, node, struct{}{})
-	#assert(type_of(res) == Maybe(bac.Node_ID))
-	return res
-}
-post_schedule_peep_inst :: proc(
-	ctx: bac.PS_Peep_Ctx, node: bac.Expanded_Node) -> bac.Node_ID {
-	return post_schedule_peep(ctx, node, struct{}{})
-}
-
-
 collect_meta :: proc(ctx: ^bac.Proc,
 	ra: ^bac.Regalloc, sched: ^bac.Schedule) -> ([]bac.Regalloc_Node_Meta, int) {
-
-	meta_of_ :: proc(ctx: ^bac.Proc, ra: ^bac.Regalloc,
-		node: bac.Expanded_Node) -> bac.Regalloc_Node_Meta {
-		return meta_of(ctx, ra, node, struct{}{})
-	}
-	return bac.regalloc_collect_meta(ctx, ra, sched, meta_of_)
+	return bac.regalloc_collect_meta(ctx, ra, sched, meta_of)
 }
 
 

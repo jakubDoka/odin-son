@@ -1,5 +1,5 @@
 package bac
-// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1056:2)
+// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1022:2)
 
 INHERITANCE_TABLE :: []u16{		0b1, // Nil
 		0b1, // Entry
@@ -423,6 +423,7 @@ Node_Type :: enum u16 {
 	Lane_Id,
 	Uniform_Addr,
 }
+
 add_entry :: #force_inline proc(prc: ^Proc, name: string) -> (_id: Node_ID) {
 	return add_raw(prc, name, u16(Node_Type.Entry), .Void, {}, extra = &Cfg{
 	})

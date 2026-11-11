@@ -1027,9 +1027,8 @@ putb :: #force_inline proc(b: ^[dynamic]u8, vl: $T) {
 
 normalize_ctz :: proc(
 	ctx: ^Proc,
-	node: Expanded_Node,
+	node: $N/Expanded_Node,
 	min_width: Node_Datatype,
-	_: $T,
 ) -> Maybe(Node_ID) {
 	assert(node.itype == .Ctz)
 	if node.dt < min_width {
@@ -1050,9 +1049,8 @@ normalize_ctz :: proc(
 
 normalize_popcnt :: proc(
 	ctx: ^Proc,
-	node: Expanded_Node,
+	node: $N/Expanded_Node,
 	min_width: Node_Datatype,
-	_: $T,
 ) -> Maybe(Node_ID) {
 	assert(node.itype == .Popcnt)
 	if get_node(ctx, node.inps[0]).dt < min_width {
@@ -1071,8 +1069,7 @@ normalize_popcnt :: proc(
 // at the wider width, and the narrowing left by normalize_ctz is lossless.
 fold_bit_count_conv :: proc(
 	ctx: ^Proc,
-	node: Expanded_Node,
-	_: $T,
+	node: $N/Expanded_Node,
 ) -> Maybe(Node_ID) {
 	assert(node.itype == .Conv || node.itype == .U_Conv)
 	if node.dt not_in INT_DTS do return nil
@@ -1101,7 +1098,7 @@ fold_bit_count_conv :: proc(
 	return add_un_op(ctx, "bcfc", .U_Conv, node.dt, inp.inps[0])
 }
 
-lsbs_to_msbs :: proc(ctx: ^Proc, node: Expanded_Node, _: $T) -> Node_ID {
+lsbs_to_msbs :: proc(ctx: ^Proc, node: $N/Expanded_Node) -> Node_ID {
 	assert(node.itype == .Simd_Extract_Lsbs)
 	lsbsmt := add_c_int(
 		ctx,

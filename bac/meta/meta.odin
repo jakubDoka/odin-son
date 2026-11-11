@@ -210,8 +210,8 @@ generate_spec :: proc(
 		}
 
 		fmt.fprintf(file, "\temit_function = emit_function,\n")
-		fmt.fprintf(file, "\tpeep = peep_inst,\n")
-		fmt.fprintf(file, "\tpost_schedule_peep = post_schedule_peep_inst,\n")
+		fmt.fprintf(file, "\tpeep = peep,\n")
+		fmt.fprintf(file, "\tpost_schedule_peep = post_schedule_peep,\n")
 	}
 
 	start := int(!spec.no_spec_tables)
@@ -396,50 +396,16 @@ generate_spec :: proc(
 			fmt.fprintfln(file, "\t%v,", field.name)
 		}
 	}
-	os.write_string(file, "}\n")
-
-	if !spec.no_spec_tables {
-		fmt.fprintfln(
-			file,
-			`
-peep_inst :: proc(ctx: %vPeep_Ctx, node: %vExpanded_Node) -> Maybe(%vNode_ID) {{
-	res := peep(ctx, node, struct{{}}{{}})
-	#assert(type_of(res) == Maybe(%vNode_ID))
-	return res
-}}
-post_schedule_peep_inst :: proc(
-	ctx: %vPS_Peep_Ctx, node: %vExpanded_Node) -> %vNode_ID {{
-	return post_schedule_peep(ctx, node, struct{{}}{{}})
-}}
-`,
-			qual,
-			qual,
-			qual,
-			qual,
-			qual,
-			qual,
-			qual,
-		)
-	}
+	os.write_string(file, "}\n\n")
 
 	if .collect_meta in active_opt_fns {
 		fmt.fprintfln(
 			file,
-			`
-collect_meta :: proc(ctx: ^%vProc,
+			`collect_meta :: proc(ctx: ^%vProc,
 	ra: ^%vRegalloc, sched: ^%vSchedule) -> ([]%vRegalloc_Node_Meta, int) {{
-
-	meta_of_ :: proc(ctx: ^%vProc, ra: ^%vRegalloc,
-		node: %vExpanded_Node) -> %vRegalloc_Node_Meta {{
-		return meta_of(ctx, ra, node, struct{{}}{{}})
-	}}
-	return %vregalloc_collect_meta(ctx, ra, sched, meta_of_)
+	return %vregalloc_collect_meta(ctx, ra, sched, meta_of)
 }}
 `,
-			qual,
-			qual,
-			qual,
-			qual,
 			qual,
 			qual,
 			qual,

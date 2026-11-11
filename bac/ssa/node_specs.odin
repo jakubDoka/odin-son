@@ -11,8 +11,8 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 	spill_boundary = {},
 	sccp_compute = sccp_compute,
 	emit_function = emit_function,
-	peep = peep_inst,
-	post_schedule_peep = post_schedule_peep_inst,
+	peep = peep,
+	post_schedule_peep = post_schedule_peep,
 	inheritance_table = intrinsics.concatenate(bac.INHERITANCE_TABLE, []u16{
 		0b10000000, // Scope
 		0b10, // Lazy_Phi
@@ -110,16 +110,6 @@ Node_Type :: enum u16 {
 	Uniform_Addr,
 	Scope,
 	Lazy_Phi,
-}
-
-peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
-	res := peep(ctx, node, struct{}{})
-	#assert(type_of(res) == Maybe(bac.Node_ID))
-	return res
-}
-post_schedule_peep_inst :: proc(
-	ctx: bac.PS_Peep_Ctx, node: bac.Expanded_Node) -> bac.Node_ID {
-	return post_schedule_peep(ctx, node, struct{}{})
 }
 
 @(tag = "api")

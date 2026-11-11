@@ -158,8 +158,7 @@ emit_op :: proc(code: ^arna.Allocator, instr: Op) {
 
 peep :: proc(
 	ctx: bac.Peep_Ctx,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> Maybe(bac.Node_ID) {
 	id := bac.get_node_id(ctx, node)
 	kind := atype(node)
@@ -261,10 +260,10 @@ peep :: proc(
 		bac.worklist_add(ctx, ctx.worklist, guard)
 		return guard
 	case .Ctz:
-		return bac.normalize_ctz(ctx, node, .I32, struct{}{})
+		return bac.normalize_ctz(ctx, node, .I32)
 	case .Popcnt:
 		// fmov d, x does not clear garbage above a narrow operand
-		ext := bac.normalize_popcnt(ctx, node, .I64, struct{}{})
+		ext := bac.normalize_popcnt(ctx, node, .I64)
 		if ext != nil do return ext
 
 		vec := bac.add_un_op(ctx, "pcv", .Cast, .F64, node.inps[0])
@@ -272,7 +271,7 @@ peep :: proc(
 		sum := add_addv128(ctx, "pcs", .F64, cnt, lane = .I8)
 		return bac.add_un_op(ctx, "pcr", .Cast, node.dt, sum)
 	case .Conv, .U_Conv:
-		return bac.fold_bit_count_conv(ctx, node, struct{}{})
+		return bac.fold_bit_count_conv(ctx, node)
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -367,8 +366,7 @@ peep :: proc(
 
 post_schedule_peep :: proc(
 	ctx: bac.PS_Peep_Ctx,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> bac.Node_ID {
 	return 0
 }
@@ -376,8 +374,7 @@ post_schedule_peep :: proc(
 meta_of :: #force_inline proc(
 	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> bac.Regalloc_Node_Meta {
 	IOUT :: bac.INVALID_RM_INDEX
 
@@ -618,7 +615,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 			ctx.bbs[i + 1].head == last.outs[0].id
 
 		for instr in bb.instrs {
-			emit_instr(&ctx, instr, is_consecutive, struct{}{})
+			emit_instr(&ctx, instr, is_consecutive)
 		}
 	}
 
@@ -650,10 +647,9 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 
 @(disabled = SPEC_NOT_PRESENT)
 emit_instr :: proc(
-	ctx: ^Ctx,
+	ctx: ^$C/Ctx,
 	instr: bac.Node_ID,
 	is_consecutive: bool,
-	_: $T,
 ) {
 	Cond :: enum u8 {
 		EQ,

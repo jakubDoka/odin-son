@@ -92,8 +92,7 @@ when SPEC_NOT_PRESENT {
 
 peep :: proc(
 	ctx: bac.Peep_Ctx,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> Maybe(bac.Node_ID) {
 	inp: bac.Expanded_Node
 	if 0 < len(node.inps) {
@@ -224,11 +223,11 @@ peep :: proc(
 			in_range,
 		)
 	case .Ctz:
-		return bac.normalize_ctz(ctx, node, .I32, struct{}{})
+		return bac.normalize_ctz(ctx, node, .I32)
 	case .Popcnt:
-		return bac.normalize_popcnt(ctx, node, .I32, struct{}{})
+		return bac.normalize_popcnt(ctx, node, .I32)
 	case .Conv, .U_Conv:
-		if res := bac.fold_bit_count_conv(ctx, node, struct{}{}); res != nil do return res
+		if res := bac.fold_bit_count_conv(ctx, node); res != nil do return res
 
 		if inp.dt not_in bac.INT_DTS ||
 		   node.dt not_in bac.INT_DTS ||
@@ -353,8 +352,7 @@ peep :: proc(
 
 post_schedule_peep :: proc(
 	ctx: bac.PS_Peep_Ctx,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> bac.Node_ID {
 	return 0
 }
@@ -362,8 +360,7 @@ post_schedule_peep :: proc(
 meta_of :: #force_inline proc(
 	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> bac.Regalloc_Node_Meta {
 	out := bac.INVALID_RM_INDEX
 
@@ -589,7 +586,7 @@ pre_regalloc_hook :: proc(
 		input_count: u8,
 	}
 
-	meta_of :: proc(ctx: ^Ctx, node: bac.Expanded_Node, _: $T) -> Meta {
+	meta_of :: proc(ctx: ^Ctx, node: $N/bac.Expanded_Node) -> Meta {
 		// TODO: this is uselss to be strongly typed, we anyway just use the
 		// length, and wether the out is invalid
 		switch wtype(node) {
@@ -692,7 +689,7 @@ pre_regalloc_hook :: proc(
 				when SPEC_NOT_PRESENT {
 					meta: Meta
 				} else {
-					meta := meta_of(ctx, inode, struct{}{})
+					meta := meta_of(ctx, inode)
 				}
 				meta.input_count += meta.input_start
 
@@ -979,7 +976,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 		}
 
 		for instr in bb.instrs {
-			emit_instr(&ctx, instr, i, struct{}{})
+			emit_instr(&ctx, instr, i)
 		}
 
 		if bac.cfg_blocks_end_block(&ctx.cfg_blocks) {
@@ -1001,7 +998,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 }
 
 @(disabled = SPEC_NOT_PRESENT)
-emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
+emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, block_idx: int) {
 	node := expand_node(ctx, instr)
 	kind := wtype(node)
 	op := NODE_TO_OP[kind][node.dt]

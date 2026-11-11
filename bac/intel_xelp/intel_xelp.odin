@@ -104,8 +104,7 @@ CC_TABLE := [1]bac.Call_Conv {
 
 peep :: proc(
 	ctx: bac.Peep_Ctx,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> Maybe(bac.Node_ID) {
 	#partial switch xtype(node) {
 	case .Lane_Id:
@@ -229,8 +228,7 @@ peep :: proc(
 
 post_schedule_peep :: proc(
 	_: bac.PS_Peep_Ctx,
-	_: bac.Expanded_Node,
-	_: $T,
+	_: $N/bac.Expanded_Node,
 ) -> bac.Node_ID {
 	return 0
 }
@@ -238,8 +236,7 @@ post_schedule_peep :: proc(
 meta_of :: proc(
 	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> bac.Regalloc_Node_Meta {
 	IOUT :: bac.INVALID_RM_INDEX
 
@@ -426,7 +423,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 		}
 
 		for instr in bb.instrs {
-			emit_instr(&ctx, instr, bidx, struct{}{})
+			emit_instr(&ctx, instr, bidx)
 		}
 	}
 
@@ -451,7 +448,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 }
 
 @(disabled = SPEC_NOT_PRESENT)
-emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
+emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, block_idx: int) {
 	node := expand_node(ctx, instr)
 
 	#partial switch xtype(node) {

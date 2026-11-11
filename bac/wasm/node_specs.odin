@@ -16,8 +16,8 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 	collect_meta = collect_meta,
 	pre_regalloc_hook = pre_regalloc_hook,
 	emit_function = emit_function,
-	peep = peep_inst,
-	post_schedule_peep = post_schedule_peep_inst,
+	peep = peep,
+	post_schedule_peep = post_schedule_peep,
 	inheritance_table = intrinsics.concatenate(bac.INHERITANCE_TABLE, []u16{
 		0b10000000, // WASM_Store
 		0b10000000, // WASM_Load
@@ -162,25 +162,9 @@ Node_Type :: enum u16 {
 	WASM_U_Shr,
 }
 
-peep_inst :: proc(ctx: bac.Peep_Ctx, node: bac.Expanded_Node) -> Maybe(bac.Node_ID) {
-	res := peep(ctx, node, struct{}{})
-	#assert(type_of(res) == Maybe(bac.Node_ID))
-	return res
-}
-post_schedule_peep_inst :: proc(
-	ctx: bac.PS_Peep_Ctx, node: bac.Expanded_Node) -> bac.Node_ID {
-	return post_schedule_peep(ctx, node, struct{}{})
-}
-
-
 collect_meta :: proc(ctx: ^bac.Proc,
 	ra: ^bac.Regalloc, sched: ^bac.Schedule) -> ([]bac.Regalloc_Node_Meta, int) {
-
-	meta_of_ :: proc(ctx: ^bac.Proc, ra: ^bac.Regalloc,
-		node: bac.Expanded_Node) -> bac.Regalloc_Node_Meta {
-		return meta_of(ctx, ra, node, struct{}{})
-	}
-	return bac.regalloc_collect_meta(ctx, ra, sched, meta_of_)
+	return bac.regalloc_collect_meta(ctx, ra, sched, meta_of)
 }
 
 add_extract_lane_u :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, laneidx: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {

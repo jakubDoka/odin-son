@@ -223,8 +223,7 @@ UN_OP_OFFSET :: transmute(u16)(i16(Node_Type.AMD64_Neg) -
 
 peep :: proc(
 	ctx: bac.Peep_Ctx,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> Maybe(Node_ID) {
 	node := node
 
@@ -409,9 +408,9 @@ peep :: proc(
 		bac.worklist_add(ctx, ctx.worklist, guard)
 		return guard
 	case .Simd_Extract_Lsbs:
-		return bac.lsbs_to_msbs(ctx, node, struct{}{})
+		return bac.lsbs_to_msbs(ctx, node)
 	case .Conv, .U_Conv:
-		if res := bac.fold_bit_count_conv(ctx, node, struct{}{}); res != nil do return res
+		if res := bac.fold_bit_count_conv(ctx, node); res != nil do return res
 
 		inp := expand_node(ctx, node.inps[0])
 		assert(inp.dt != node.dt)
@@ -494,9 +493,9 @@ peep :: proc(
 		_, res := add_node(ctx, "ufrs", .AMD64_Padd, node.dt, {converted, delta})
 		return res
 	case .Ctz:
-		return bac.normalize_ctz(ctx, node, .I16, struct{}{})
+		return bac.normalize_ctz(ctx, node, .I16)
 	case .Popcnt:
-		return bac.normalize_popcnt(ctx, node, .I16, struct{}{})
+		return bac.normalize_popcnt(ctx, node, .I16)
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -958,8 +957,7 @@ make_node :: proc(
 
 post_schedule_peep :: proc(
 	ctx: bac.PS_Peep_Ctx,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> Node_ID {
 	id := bac.get_node_id(ctx, node)
 	#partial matchx: switch atype(node) {
@@ -1036,10 +1034,9 @@ post_schedule_peep :: proc(
 meta_of :: proc(
 	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> bac.Regalloc_Node_Meta {
-	meta := meta_of_raw(prc, ra, node, 0)
+	meta := meta_of_raw(prc, ra, node)
 	@(static, rodata)
 	CLOBBERS := [RK_COUNT]i64 {
 		RK_GENERAL = 1 << uint(FLAGS),
@@ -1077,8 +1074,7 @@ meta_of :: proc(
 meta_of_raw :: proc(
 	prc: ^bac.Proc,
 	ra: ^bac.Regalloc,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> bac.Regalloc_Node_Meta {
 
 	@(static, rodata)
@@ -1530,7 +1526,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 		//}
 
 		for instr in bb.instrs {
-			emit_instr(&ctx, instr, is_consecutive, 0)
+			emit_instr(&ctx, instr, is_consecutive)
 		}
 
 		//prev_is_if = last.itype == .If
@@ -1572,7 +1568,7 @@ emit_cfi :: proc(ctx: ^Ctx, kind: bac.Cfi_Kind, reg: u8 = 0, arg: u32 = 0) {
 }
 
 @(disabled = SPEC_NOT_PRESENT)
-emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
+emit_instr :: proc(ctx: ^$C/Ctx, instr: Node_ID, is_consecutive: bool) {
 
 	@(static, rodata)
 	OPCODE_TABLE := #partial [Node_Type]Instr_Info {
@@ -1992,7 +1988,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 		rx := rex(a, b, NO_INDEX, bac.DT_SIZE[node.dt] == 8)
 		emit(ctx.code, {0x66, rx, 0x0f, op, mod_rm(.Direct, a, b)})
 	case .If:
-		cc, unordered := condition_for(ctx, node.inps[1], 0)
+		cc, unordered := condition_for(ctx, node.inps[1])
 		if is_consecutive do cc ~= 1
 		dest := get_node(ctx, node.outs[int(is_consecutive)].id).gvn - block_base
 		if unordered {
@@ -2389,7 +2385,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 	case .Select:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
-		cc, unordered := condition_for(ctx, node.inps[2], 0)
+		cc, unordered := condition_for(ctx, node.inps[2])
 		if unordered && cc == 4 {
 			// jp $after_cmov
 			emit(ctx.code, {0x7A, 4})
@@ -2570,7 +2566,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 			break
 		}
 		if src == FLAGS {
-			cc, unordered := condition_for(ctx, node.inps[0], 0)
+			cc, unordered := condition_for(ctx, node.inps[0])
 			if d_spill {
 				// mov qword [rsp + $dst_off], 0
 				emit(ctx.code, {0x48, 0xC7})
@@ -2737,9 +2733,8 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 }
 
 condition_for :: proc(
-	ctx: ^Ctx,
+	ctx: ^$C/Ctx,
 	id: Node_ID,
-	_: $T,
 ) -> (
 	cc: u8,
 	unordered: bool,

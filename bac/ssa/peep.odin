@@ -211,8 +211,7 @@ fold_bin_op :: proc(
 
 peep :: proc(
 	ctx: bac.Peep_Ctx,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> (
 	res: Maybe(Node_ID),
 ) {
@@ -1423,8 +1422,7 @@ can_speculate_select_value :: proc(
 
 post_schedule_peep :: proc(
 	ctx: bac.PS_Peep_Ctx,
-	node: bac.Expanded_Node,
-	_: $T,
+	node: $N/bac.Expanded_Node,
 ) -> Node_ID {
 	return 0
 }

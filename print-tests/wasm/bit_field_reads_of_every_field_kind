@@ -1,0 +1,1261 @@
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i64 i64) (result i64)))
+  (type (;1;) (func (param i32) (result i64)))
+  (type (;2;) (func (param i32) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $mix (type 0) (param i64 i64) (result i64)
+    local.get 0
+    i64.const 256
+    i64.mul
+    local.get 1
+    i64.const 255
+    i64.and
+    i64.add
+    return
+    end
+  )
+  (func $read_flags (type 1) (param i32) (result i64)
+    (local i64 i32)
+    i32.const 7
+    local.set 2
+    local.get 0
+    i32.const 7
+    i32.and
+    i32.const 255
+    i32.and
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    local.get 0
+    i32.const 24
+    i32.shl
+    i32.const 27
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    i64.extend_i32_s
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 8
+    i32.shr_u
+    i32.const 1
+    i32.and
+    i32.const 0
+    i32.ne
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 9
+    i32.shr_u
+    local.get 2
+    i32.and
+    i32.const 255
+    i32.and
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 12
+    i32.shr_u
+    i32.const 1048575
+    i32.and
+    i64.extend_i32_u
+    i64.const 32
+    i64.shl
+    i64.xor
+    return
+    end
+  )
+  (func $read_mixed (type 2) (param i32) (result i64)
+    (local i64 i32 i32 i32 i32)
+    i32.const 0
+    local.set 2
+    i32.const 32
+    local.set 3
+    local.get 0
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.const 14
+    i32.const 65535
+    i32.and
+    local.tee 4
+    i32.shl
+    i32.const 0
+    local.get 4
+    i32.const 32
+    i32.lt_u
+    local.tee 5
+    select
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    local.get 4
+    i32.const 31
+    local.get 5
+    select
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.and
+    i32.extend8_s
+    i64.extend_i32_s
+    local.get 0
+    i32.const 10
+    i32.const 65535
+    i32.and
+    local.tee 4
+    i32.shl
+    i32.const 0
+    local.get 4
+    i32.const 32
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    i32.const 12
+    i32.const 65535
+    i32.and
+    local.tee 4
+    i32.const 31
+    local.get 4
+    i32.const 32
+    i32.lt_u
+    select
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.and
+    i32.extend8_s
+    i64.extend_i32_s
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 6
+    i32.const 65535
+    i32.and
+    local.tee 4
+    i32.shr_u
+    i32.const 0
+    local.get 4
+    i32.const 32
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 3
+    i32.const 65535
+    i32.and
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 0
+    i32.const 65535
+    i32.and
+    i32.ne
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 8
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shr_u
+    local.get 2
+    local.get 0
+    local.get 3
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.const 65535
+    i32.and
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    i32.const -1412567059
+    call $read_flags
+    local.set 0
+    i32.const 3195
+    call $read_flags
+    local.set 1
+    i32.const 42466
+    call $read_mixed
+    local.set 2
+    i32.const 433
+    call $read_mixed
+    local.set 3
+    local.get 0
+    local.get 1
+    i64.const 3
+    i64.mul
+    i64.xor
+    local.get 2
+    i64.const 8
+    i64.shl
+    i64.xor
+    local.get 3
+    i64.xor
+    i64.const 1688850046473546
+    i64.xor
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 16)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048576
+ "")
+)
+=========== OPT LEVEL: none ===========
+(module
+  (type (;0;) (func (param i64 i64) (result i64)))
+  (type (;1;) (func (param i32) (result i64)))
+  (type (;2;) (func (param i32) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $mix (type 0) (param i64 i64) (result i64)
+    local.get 0
+    i64.const 256
+    i64.mul
+    local.get 1
+    i64.const 255
+    i64.and
+    i64.add
+    return
+    end
+  )
+  (func $read_flags (type 1) (param i32) (result i64)
+    (local i64 i32)
+    i32.const 7
+    local.set 2
+    local.get 0
+    i32.const 7
+    i32.and
+    i32.const 255
+    i32.and
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    local.get 0
+    i32.const 24
+    i32.shl
+    i32.const 27
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    i64.extend_i32_s
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 8
+    i32.shr_u
+    i32.const 1
+    i32.and
+    i32.const 0
+    i32.ne
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 9
+    i32.shr_u
+    local.get 2
+    i32.and
+    i32.const 255
+    i32.and
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 12
+    i32.shr_u
+    i32.const 1048575
+    i32.and
+    i64.extend_i32_u
+    i64.const 32
+    i64.shl
+    i64.xor
+    return
+    end
+  )
+  (func $read_mixed (type 2) (param i32) (result i64)
+    (local i64 i32 i32 i32 i32)
+    i32.const 0
+    local.set 5
+    i32.const 32
+    local.set 4
+    local.get 0
+    i32.const 65535
+    i32.and
+    local.tee 3
+    i32.const 14
+    i32.const 65535
+    i32.and
+    local.tee 2
+    i32.shl
+    i32.const 0
+    local.get 2
+    i32.const 32
+    i32.lt_u
+    local.tee 0
+    select
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    local.get 2
+    i32.const 31
+    local.get 0
+    select
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.and
+    i32.extend8_s
+    i64.extend_i32_s
+    local.get 3
+    i32.const 10
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shl
+    i32.const 0
+    local.get 0
+    i32.const 32
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    i32.const 12
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.const 31
+    local.get 0
+    i32.const 32
+    i32.lt_u
+    select
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.and
+    i32.extend8_s
+    i64.extend_i32_s
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 3
+    i32.const 6
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shr_u
+    i32.const 0
+    local.get 0
+    i32.const 32
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 3
+    i32.const 65535
+    i32.and
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 0
+    i32.const 65535
+    i32.and
+    i32.ne
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 3
+    i32.const 8
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shr_u
+    local.get 5
+    local.get 0
+    local.get 4
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.const 65535
+    i32.and
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    i32.const -1412567059
+    call $read_flags
+    local.set 3
+    i32.const 3195
+    call $read_flags
+    local.set 2
+    i32.const 42466
+    call $read_mixed
+    local.set 1
+    i32.const 433
+    call $read_mixed
+    local.set 0
+    local.get 3
+    local.get 2
+    i64.const 3
+    i64.mul
+    i64.xor
+    local.get 1
+    i64.const 8
+    i64.shl
+    i64.xor
+    local.get 0
+    i64.xor
+    i64.const 1688850046473546
+    i64.xor
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 16)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048576
+ "")
+)
+=========== OPT LEVEL: moderate-quick ===========
+(module
+  (type (;0;) (func (param i64 i64) (result i64)))
+  (type (;1;) (func (param i32) (result i64)))
+  (type (;2;) (func (param i32) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $mix (type 0) (param i64 i64) (result i64)
+    local.get 0
+    i64.const 256
+    i64.mul
+    local.get 1
+    i64.const 255
+    i64.and
+    i64.add
+    return
+    end
+  )
+  (func $read_flags (type 1) (param i32) (result i64)
+    (local i64 i32)
+    i32.const 7
+    local.set 2
+    local.get 0
+    i32.const 7
+    i32.and
+    i32.const 255
+    i32.and
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    local.get 0
+    i32.const 24
+    i32.shl
+    i32.const 27
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    i64.extend_i32_s
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 8
+    i32.shr_u
+    i32.const 1
+    i32.and
+    i32.const 0
+    i32.ne
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 9
+    i32.shr_u
+    local.get 2
+    i32.and
+    i32.const 255
+    i32.and
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 12
+    i32.shr_u
+    i32.const 1048575
+    i32.and
+    i64.extend_i32_u
+    i64.const 32
+    i64.shl
+    i64.xor
+    return
+    end
+  )
+  (func $read_mixed (type 2) (param i32) (result i64)
+    (local i64 i32 i32 i32 i32)
+    i32.const 0
+    local.set 2
+    i32.const 32
+    local.set 3
+    local.get 0
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.const 14
+    i32.const 65535
+    i32.and
+    local.tee 4
+    i32.shl
+    i32.const 0
+    local.get 4
+    i32.const 32
+    i32.lt_u
+    local.tee 5
+    select
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    local.get 4
+    i32.const 31
+    local.get 5
+    select
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.and
+    i32.extend8_s
+    i64.extend_i32_s
+    local.get 0
+    i32.const 10
+    i32.const 65535
+    i32.and
+    local.tee 4
+    i32.shl
+    i32.const 0
+    local.get 4
+    i32.const 32
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    i32.const 12
+    i32.const 65535
+    i32.and
+    local.tee 4
+    i32.const 31
+    local.get 4
+    i32.const 32
+    i32.lt_u
+    select
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.and
+    i32.extend8_s
+    i64.extend_i32_s
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 6
+    i32.const 65535
+    i32.and
+    local.tee 4
+    i32.shr_u
+    i32.const 0
+    local.get 4
+    i32.const 32
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 3
+    i32.const 65535
+    i32.and
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 0
+    i32.const 65535
+    i32.and
+    i32.ne
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 8
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shr_u
+    local.get 2
+    local.get 0
+    local.get 3
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.const 65535
+    i32.and
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    i32.const -1412567059
+    call $read_flags
+    local.set 0
+    i32.const 3195
+    call $read_flags
+    local.set 1
+    i32.const 42466
+    call $read_mixed
+    local.set 2
+    i32.const 433
+    call $read_mixed
+    local.set 3
+    local.get 0
+    local.get 1
+    i64.const 3
+    i64.mul
+    i64.xor
+    local.get 2
+    i64.const 8
+    i64.shl
+    i64.xor
+    local.get 3
+    i64.xor
+    i64.const 1688850046473546
+    i64.xor
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 16)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048576
+ "")
+)
+=========== OPT LEVEL: moderate ===========
+(module
+  (type (;0;) (func (param i64 i64) (result i64)))
+  (type (;1;) (func (param i32) (result i64)))
+  (type (;2;) (func (param i32) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $mix (type 0) (param i64 i64) (result i64)
+    local.get 0
+    i64.const 256
+    i64.mul
+    local.get 1
+    i64.const 255
+    i64.and
+    i64.add
+    return
+    end
+  )
+  (func $read_flags (type 1) (param i32) (result i64)
+    (local i64 i32)
+    i32.const 7
+    local.set 2
+    local.get 0
+    i32.const 7
+    i32.and
+    i32.const 255
+    i32.and
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    local.get 0
+    i32.const 24
+    i32.shl
+    i32.const 27
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    i64.extend_i32_s
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 8
+    i32.shr_u
+    i32.const 1
+    i32.and
+    i32.const 0
+    i32.ne
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 9
+    i32.shr_u
+    local.get 2
+    i32.and
+    i32.const 255
+    i32.and
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 12
+    i32.shr_u
+    i32.const 1048575
+    i32.and
+    i64.extend_i32_u
+    i64.const 32
+    i64.shl
+    i64.xor
+    return
+    end
+  )
+  (func $read_mixed (type 2) (param i32) (result i64)
+    (local i64 i32 i32 i32 i32)
+    i32.const 0
+    local.set 5
+    i32.const 32
+    local.set 4
+    local.get 0
+    i32.const 65535
+    i32.and
+    local.tee 3
+    i32.const 14
+    i32.const 65535
+    i32.and
+    local.tee 2
+    i32.shl
+    i32.const 0
+    local.get 2
+    i32.const 32
+    i32.lt_u
+    local.tee 0
+    select
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    local.get 2
+    i32.const 31
+    local.get 0
+    select
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.and
+    i32.extend8_s
+    i64.extend_i32_s
+    local.get 3
+    i32.const 10
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shl
+    i32.const 0
+    local.get 0
+    i32.const 32
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    i32.const 12
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.const 31
+    local.get 0
+    i32.const 32
+    i32.lt_u
+    select
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.and
+    i32.extend8_s
+    i64.extend_i32_s
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 3
+    i32.const 6
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shr_u
+    i32.const 0
+    local.get 0
+    i32.const 32
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 3
+    i32.const 65535
+    i32.and
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 0
+    i32.const 65535
+    i32.and
+    i32.ne
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 3
+    i32.const 8
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shr_u
+    local.get 5
+    local.get 0
+    local.get 4
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.const 65535
+    i32.and
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    i32.const -1412567059
+    call $read_flags
+    local.set 3
+    i32.const 3195
+    call $read_flags
+    local.set 2
+    i32.const 42466
+    call $read_mixed
+    local.set 1
+    i32.const 433
+    call $read_mixed
+    local.set 0
+    local.get 3
+    local.get 2
+    i64.const 3
+    i64.mul
+    i64.xor
+    local.get 1
+    i64.const 8
+    i64.shl
+    i64.xor
+    local.get 0
+    i64.xor
+    i64.const 1688850046473546
+    i64.xor
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 16)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048576
+ "")
+)
+=========== OPT LEVEL: all ===========
+(module
+  (type (;0;) (func (param i64 i64) (result i64)))
+  (type (;1;) (func (param i32) (result i64)))
+  (type (;2;) (func (param i32) (result i64)))
+  (type (;3;) (func (result i64)))
+  (func $mix (type 0) (param i64 i64) (result i64)
+    local.get 0
+    i64.const 256
+    i64.mul
+    local.get 1
+    i64.const 255
+    i64.and
+    i64.add
+    return
+    end
+  )
+  (func $read_flags (type 1) (param i32) (result i64)
+    (local i64 i32)
+    i32.const 7
+    local.set 2
+    local.get 0
+    i32.const 7
+    i32.and
+    i32.const 255
+    i32.and
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    local.get 0
+    i32.const 24
+    i32.shl
+    i32.const 27
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    i64.extend_i32_s
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 8
+    i32.shr_u
+    i32.const 1
+    i32.and
+    i32.const 0
+    i32.ne
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 9
+    i32.shr_u
+    local.get 2
+    i32.and
+    i32.const 255
+    i32.and
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 0
+    i32.const 12
+    i32.shr_u
+    i32.const 1048575
+    i32.and
+    i64.extend_i32_u
+    i64.const 32
+    i64.shl
+    i64.xor
+    return
+    end
+  )
+  (func $read_mixed (type 2) (param i32) (result i64)
+    (local i64 i32 i32 i32 i32)
+    i32.const 0
+    local.set 5
+    i32.const 32
+    local.set 4
+    local.get 0
+    i32.const 65535
+    i32.and
+    local.tee 3
+    i32.const 14
+    i32.const 65535
+    i32.and
+    local.tee 2
+    i32.shl
+    i32.const 0
+    local.get 2
+    i32.const 32
+    i32.lt_u
+    local.tee 0
+    select
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    local.get 2
+    i32.const 31
+    local.get 0
+    select
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.and
+    i32.extend8_s
+    i64.extend_i32_s
+    local.get 3
+    i32.const 10
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shl
+    i32.const 0
+    local.get 0
+    i32.const 32
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.extend16_s
+    i32.const 12
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.const 31
+    local.get 0
+    i32.const 32
+    i32.lt_u
+    select
+    i32.shr_s
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.and
+    i32.extend8_s
+    i64.extend_i32_s
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 3
+    i32.const 6
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shr_u
+    i32.const 0
+    local.get 0
+    i32.const 32
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 3
+    i32.const 65535
+    i32.and
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 0
+    i32.const 65535
+    i32.and
+    i32.ne
+    i32.const 255
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    local.get 3
+    i32.const 8
+    i32.const 65535
+    i32.and
+    local.tee 0
+    i32.shr_u
+    local.get 5
+    local.get 0
+    local.get 4
+    i32.lt_u
+    select
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 255
+    i32.const 65535
+    i32.and
+    i32.and
+    i32.const 65535
+    i32.and
+    i32.const 65535
+    i32.and
+    i64.extend_i32_u
+    call $mix
+    local.set 1
+    local.get 1
+    return
+    end
+  )
+  (func $main (type 3) (result i64)
+    (local i64 i64 i64 i64)
+    i32.const -1412567059
+    call $read_flags
+    local.set 3
+    i32.const 3195
+    call $read_flags
+    local.set 2
+    i32.const 42466
+    call $read_mixed
+    local.set 1
+    i32.const 433
+    call $read_mixed
+    local.set 0
+    local.get 3
+    local.get 2
+    i64.const 3
+    i64.mul
+    i64.xor
+    local.get 1
+    i64.const 8
+    i64.shl
+    i64.xor
+    local.get 0
+    i64.xor
+    i64.const 1688850046473546
+    i64.xor
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 16)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (export "main" (func 3))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048576
+ "")
+)
+=========== OPT LEVEL: aggresive ===========

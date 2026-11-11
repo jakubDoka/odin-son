@@ -1,0 +1,1239 @@
+=========== OPT LEVEL: none-quick ===========
+paint:
+    ldrb w2, [x0]
+    uxtb w2, w2
+    uxtb w3, w1
+    uxtb w3, w3
+    movz x4, #2
+    add x4, x4, x0
+    movz x5, #1
+    uxtb w5, w5
+    lsl w5, w5, w3
+    movz x6, #0
+    movz x7, #32
+    movz x8, #4
+    add x8, x8, x0
+    uxth w1, w1
+    uxth w1, w1
+    movz x9, #1
+    uxth w9, w9
+    lsl w9, w9, w1
+    cmp w3, w7
+    csel w3, w5, w6, cc
+    uxtb w3, w3
+    uxtb w3, w3
+    orr w2, w2, w3
+    uxtb w2, w2
+    strb w2, [x0]
+    ldrh w0, [x4]
+    uxth w0, w0
+    cmp w1, w7
+    csel w1, w9, w6, cc
+    uxth w1, w1
+    uxth w1, w1
+    orr w0, w0, w1
+    uxth w0, w0
+    strh w0, [x4]
+    ldr w0, [x8]
+    movz x1, #8
+    eor w0, w0, w1
+    str w0, [x8]
+    ret
+pack:
+    sub sp, sp, #16
+    add x2, sp, #0
+    str x0, [x2]
+    movz x0, #8
+    add x0, x0, x2
+    mov w1, w1
+    str w1, [x0]
+    ldrb w1, [x2]
+    uxtb w1, w1
+    movz x3, #0
+    movk x3, #1, lsl #16
+    madd x1, x1, x3, xzr
+    movz x3, #256
+    movz x4, #2
+    add x4, x4, x2
+    ldrh w4, [x4]
+    uxth w4, w4
+    add x1, x1, x4
+    madd x1, x1, x3, xzr
+    movz x4, #4
+    add x2, x4, x2
+    ldr w2, [x2]
+    mov w2, w2
+    add x1, x1, x2
+    madd x1, x1, x3, xzr
+    ldrb w0, [x0]
+    uxtb w0, w0
+    add x0, x1, x0
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #80
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
+    movz x19, #1
+    movz x20, #0
+    movz x21, #0
+    add x0, sp, #65
+    add x0, x0, x19
+    strb w21, [x0]
+    movz x22, #2
+    movz x23, #1
+    movz x1, #4
+    add x0, sp, #65
+    add x0, x0, x22
+    strh w20, [x0]
+    add x0, sp, #65
+    add x0, x0, x1
+    movz x2, #8
+    add x3, sp, #65
+    add x24, x2, x3
+    movz x2, #9
+    add x3, sp, #65
+    add x2, x2, x3
+    strb w21, [x2]
+    movz x2, #10
+    add x3, sp, #65
+    add x2, x2, x3
+    strh w20, [x2]
+    add x2, sp, #65
+    strb w23, [x2]
+    movz x2, #2
+    str w2, [x0]
+    movz x0, #90
+    strb w0, [x24]
+    add x0, sp, #65
+    bl 0xfffffeec
+    movz x1, #7
+    add x0, sp, #65
+    bl 0xfffffeec
+    add x0, sp, #65
+    ldr x0, [x0]
+    ldr w1, [x24]
+    mov w1, w1
+    bl 0xffffff88
+    add x1, sp, #64
+    adr x2, 0xe50
+    ldrb w3, [x2]
+    uxtb w3, w3
+    adr x4, 0xe50
+    movz x5, #256
+    uxtb w6, w23
+    orr w3, w3, w6
+    uxtb w3, w3
+    strb w3, [x2]
+    ldrb w2, [x4]
+    movz x3, #128
+    uxtb w3, w3
+    madd x0, x0, x5, xzr
+    adr x6, 0xe52
+    uxtb w2, w2
+    bic w2, w2, w3
+    uxtb w2, w2
+    strb w2, [x4]
+    movz x2, #136
+    strh w2, [x6]
+    adr x2, 0xe50
+    ldrb w2, [x2]
+    adr x4, 0xe52
+    ldrh w4, [x4]
+    strb w21, [x1]
+    ldrb w6, [x1]
+    movz x7, #7
+    uxth w7, w7
+    uxtb w6, w6
+    eor w3, w6, w3
+    uxtb w3, w3
+    uxtb w2, w2
+    add x0, x0, x2
+    uxth w2, w4
+    strb w3, [x1]
+    movz x1, #0
+    adr x4, 0xe52
+    ldrh w4, [x4]
+    uxth w4, w4
+    lsr w4, w4, w7
+    movz x6, #16
+    lsl x2, x2, x6
+    eor x0, x0, x2
+    madd x0, x0, x5, xzr
+    movz x2, #25
+    add x0, x0, x2
+    madd x0, x0, x5, xzr
+    movz x2, #32
+    cmp w7, w2
+    csel w1, w4, w1, cc
+    uxth w1, w1
+    uxth w1, w1
+    uxtb w2, w3
+    add x0, x0, x2
+    movz x2, #1
+    uxth w2, w2
+    and w1, w1, w2
+    uxth w1, w1
+    uxth w1, w1
+    uxth w2, w20
+    cmp w1, w2
+    b.ne 0x1c4
+    b 0x1c8
+3:
+    add x0, x0, x19
+4:
+    add x1, x0, x22
+    movz x2, #25
+    uxtb w2, w2
+    adr x3, 0xe50
+    ldrb w3, [x3]
+    uxtb w3, w3
+    bic w2, w2, w3
+    uxtb w2, w2
+    uxtb w2, w2
+    uxtb w3, w21
+    cmp w2, w3
+    csel x0, x1, x0, eq
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
+    add sp, sp, #80
+    ret
+=========== OPT LEVEL: none ===========
+paint:
+    ldrb w2, [x0]
+    uxtb w10, w2
+    uxtb w2, w1
+    uxtb w9, w2
+    movz x2, #2
+    add x3, x2, x0
+    movz x2, #1
+    uxtb w2, w2
+    lsl w8, w2, w9
+    movz x7, #0
+    movz x6, #32
+    movz x2, #4
+    add x2, x2, x0
+    uxth w1, w1
+    uxth w5, w1
+    movz x1, #1
+    uxth w1, w1
+    lsl w4, w1, w5
+    cmp w9, w6
+    csel w1, w8, w7, cc
+    uxtb w1, w1
+    uxtb w1, w1
+    orr w1, w10, w1
+    uxtb w1, w1
+    strb w1, [x0]
+    ldrh w0, [x3]
+    uxth w1, w0
+    cmp w5, w6
+    csel w0, w4, w7, cc
+    uxth w0, w0
+    uxth w0, w0
+    orr w0, w1, w0
+    uxth w0, w0
+    strh w0, [x3]
+    ldr w1, [x2]
+    movz x0, #8
+    eor w0, w1, w0
+    str w0, [x2]
+    ret
+pack:
+    sub sp, sp, #16
+    add x4, sp, #0
+    str x0, [x4]
+    movz x0, #8
+    add x3, x0, x4
+    mov w0, w1
+    str w0, [x3]
+    ldrb w0, [x4]
+    uxtb w1, w0
+    movz x0, #0
+    movk x0, #1, lsl #16
+    madd x1, x1, x0, xzr
+    movz x2, #256
+    movz x0, #2
+    add x0, x0, x4
+    ldrh w0, [x0]
+    uxth w0, w0
+    add x0, x1, x0
+    madd x1, x0, x2, xzr
+    movz x0, #4
+    add x0, x0, x4
+    ldr w0, [x0]
+    mov w0, w0
+    add x0, x1, x0
+    madd x1, x0, x2, xzr
+    ldrb w0, [x3]
+    uxtb w0, w0
+    add x0, x1, x0
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #80
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
+    movz x21, #1
+    movz x22, #0
+    movz x19, #0
+    add x0, sp, #65
+    add x0, x0, x21
+    strb w19, [x0]
+    movz x20, #2
+    movz x23, #1
+    movz x1, #4
+    add x0, sp, #65
+    add x0, x0, x20
+    strh w22, [x0]
+    add x0, sp, #65
+    add x3, x0, x1
+    movz x2, #8
+    add x0, sp, #65
+    add x24, x2, x0
+    movz x2, #9
+    add x0, sp, #65
+    add x0, x2, x0
+    strb w19, [x0]
+    movz x2, #10
+    add x0, sp, #65
+    add x0, x2, x0
+    strh w22, [x0]
+    add x0, sp, #65
+    strb w23, [x0]
+    movz x0, #2
+    str w0, [x3]
+    movz x0, #90
+    strb w0, [x24]
+    add x0, sp, #65
+    bl 0xfffffeec
+    movz x1, #7
+    add x0, sp, #65
+    bl 0xfffffeec
+    add x0, sp, #65
+    ldr x0, [x0]
+    ldr w1, [x24]
+    mov w1, w1
+    bl 0xffffff88
+    add x2, sp, #64
+    adr x6, 0xe6c
+    ldrb w1, [x6]
+    uxtb w4, w1
+    adr x5, 0xe6c
+    movz x1, #256
+    uxtb w3, w23
+    orr w3, w4, w3
+    uxtb w3, w3
+    strb w3, [x6]
+    ldrb w4, [x5]
+    movz x3, #128
+    uxtb w7, w3
+    madd x6, x0, x1, xzr
+    adr x3, 0xe6e
+    uxtb w0, w4
+    bic w0, w0, w7
+    uxtb w0, w0
+    strb w0, [x5]
+    movz x0, #136
+    strh w0, [x3]
+    adr x0, 0xe6c
+    ldrb w5, [x0]
+    adr x0, 0xe6e
+    ldrh w4, [x0]
+    strb w19, [x2]
+    ldrb w3, [x2]
+    movz x0, #7
+    uxth w0, w0
+    uxtb w3, w3
+    eor w3, w3, w7
+    uxtb w7, w3
+    uxtb w3, w5
+    add x6, x6, x3
+    uxth w3, w4
+    strb w7, [x2]
+    movz x5, #0
+    adr x2, 0xe6e
+    ldrh w2, [x2]
+    uxth w2, w2
+    lsr w4, w2, w0
+    movz x2, #16
+    lsl x2, x3, x2
+    eor x2, x6, x2
+    madd x3, x2, x1, xzr
+    movz x2, #25
+    add x2, x3, x2
+    madd x2, x2, x1, xzr
+    movz x1, #32
+    cmp w0, w1
+    csel w0, w4, w5, cc
+    uxth w0, w0
+    uxth w1, w0
+    uxtb w0, w7
+    add x3, x2, x0
+    movz x0, #1
+    uxth w0, w0
+    and w0, w1, w0
+    uxth w0, w0
+    uxth w1, w0
+    uxth w0, w22
+    cmp w1, w0
+    b.ne 0x1c4
+    b 0x1c8
+3:
+    add x3, x3, x21
+4:
+    add x2, x3, x20
+    movz x0, #25
+    uxtb w1, w0
+    adr x0, 0xe6c
+    ldrb w0, [x0]
+    uxtb w0, w0
+    bic w0, w1, w0
+    uxtb w0, w0
+    uxtb w1, w0
+    uxtb w0, w19
+    cmp w1, w0
+    csel x0, x2, x3, eq
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
+    add sp, sp, #80
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+paint:
+    ldrb w2, [x0]
+    uxtb w2, w2
+    uxtb w3, w1
+    uxtb w3, w3
+    movz x4, #2
+    add x4, x4, x0
+    movz x5, #1
+    uxtb w5, w5
+    lsl w5, w5, w3
+    movz x6, #0
+    movz x7, #32
+    movz x8, #4
+    add x8, x8, x0
+    uxth w1, w1
+    uxth w1, w1
+    movz x9, #1
+    uxth w9, w9
+    lsl w9, w9, w1
+    cmp w3, w7
+    csel w3, w5, w6, cc
+    uxtb w3, w3
+    uxtb w3, w3
+    orr w2, w2, w3
+    uxtb w2, w2
+    strb w2, [x0]
+    ldrh w0, [x4]
+    uxth w0, w0
+    cmp w1, w7
+    csel w1, w9, w6, cc
+    uxth w1, w1
+    uxth w1, w1
+    orr w0, w0, w1
+    uxth w0, w0
+    strh w0, [x4]
+    ldr w0, [x8]
+    movz x1, #8
+    eor w0, w0, w1
+    str w0, [x8]
+    ret
+pack:
+    sub sp, sp, #16
+    add x2, sp, #0
+    str x0, [x2]
+    movz x0, #8
+    add x0, x0, x2
+    mov w1, w1
+    str w1, [x0]
+    ldrb w1, [x2]
+    uxtb w1, w1
+    movz x3, #0
+    movk x3, #1, lsl #16
+    madd x1, x1, x3, xzr
+    movz x3, #256
+    movz x4, #2
+    add x4, x4, x2
+    ldrh w4, [x4]
+    uxth w4, w4
+    add x1, x1, x4
+    madd x1, x1, x3, xzr
+    movz x4, #4
+    add x2, x4, x2
+    ldr w2, [x2]
+    mov w2, w2
+    add x1, x1, x2
+    madd x1, x1, x3, xzr
+    ldrb w0, [x0]
+    uxtb w0, w0
+    add x0, x1, x0
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #80
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
+    movz x19, #1
+    movz x20, #0
+    movz x21, #0
+    add x0, sp, #65
+    add x0, x0, x19
+    strb w21, [x0]
+    movz x22, #2
+    movz x23, #1
+    movz x1, #4
+    add x0, sp, #65
+    add x0, x0, x22
+    strh w20, [x0]
+    add x0, sp, #65
+    add x0, x0, x1
+    movz x2, #8
+    add x3, sp, #65
+    add x24, x2, x3
+    movz x2, #9
+    add x3, sp, #65
+    add x2, x2, x3
+    strb w21, [x2]
+    movz x2, #10
+    add x3, sp, #65
+    add x2, x2, x3
+    strh w20, [x2]
+    add x2, sp, #65
+    strb w23, [x2]
+    movz x2, #2
+    str w2, [x0]
+    movz x0, #90
+    strb w0, [x24]
+    add x0, sp, #65
+    bl 0xfffffeec
+    movz x1, #7
+    add x0, sp, #65
+    bl 0xfffffeec
+    add x0, sp, #65
+    ldr x0, [x0]
+    ldr w1, [x24]
+    mov w1, w1
+    bl 0xffffff88
+    add x1, sp, #64
+    adr x2, 0xe50
+    ldrb w3, [x2]
+    uxtb w3, w3
+    adr x4, 0xe50
+    movz x5, #256
+    uxtb w6, w23
+    orr w3, w3, w6
+    uxtb w3, w3
+    strb w3, [x2]
+    ldrb w2, [x4]
+    movz x3, #128
+    uxtb w3, w3
+    madd x0, x0, x5, xzr
+    adr x6, 0xe52
+    uxtb w2, w2
+    bic w2, w2, w3
+    uxtb w2, w2
+    strb w2, [x4]
+    movz x2, #136
+    strh w2, [x6]
+    adr x2, 0xe50
+    ldrb w2, [x2]
+    adr x4, 0xe52
+    ldrh w4, [x4]
+    strb w21, [x1]
+    ldrb w6, [x1]
+    movz x7, #7
+    uxth w7, w7
+    uxtb w6, w6
+    eor w3, w6, w3
+    uxtb w3, w3
+    uxtb w2, w2
+    add x0, x0, x2
+    uxth w2, w4
+    strb w3, [x1]
+    movz x1, #0
+    adr x4, 0xe52
+    ldrh w4, [x4]
+    uxth w4, w4
+    lsr w4, w4, w7
+    movz x6, #16
+    lsl x2, x2, x6
+    eor x0, x0, x2
+    madd x0, x0, x5, xzr
+    movz x2, #25
+    add x0, x0, x2
+    madd x0, x0, x5, xzr
+    movz x2, #32
+    cmp w7, w2
+    csel w1, w4, w1, cc
+    uxth w1, w1
+    uxth w1, w1
+    uxtb w2, w3
+    add x0, x0, x2
+    movz x2, #1
+    uxth w2, w2
+    and w1, w1, w2
+    uxth w1, w1
+    uxth w1, w1
+    uxth w2, w20
+    cmp w1, w2
+    b.ne 0x1c4
+    b 0x1c8
+3:
+    add x0, x0, x19
+4:
+    add x1, x0, x22
+    movz x2, #25
+    uxtb w2, w2
+    adr x3, 0xe50
+    ldrb w3, [x3]
+    uxtb w3, w3
+    bic w2, w2, w3
+    uxtb w2, w2
+    uxtb w2, w2
+    uxtb w3, w21
+    cmp w2, w3
+    csel x0, x1, x0, eq
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
+    add sp, sp, #80
+    ret
+=========== OPT LEVEL: moderate ===========
+paint:
+    ldrb w2, [x0]
+    uxtb w10, w2
+    uxtb w2, w1
+    uxtb w9, w2
+    movz x2, #2
+    add x3, x2, x0
+    movz x2, #1
+    uxtb w2, w2
+    lsl w8, w2, w9
+    movz x7, #0
+    movz x6, #32
+    movz x2, #4
+    add x2, x2, x0
+    uxth w1, w1
+    uxth w5, w1
+    movz x1, #1
+    uxth w1, w1
+    lsl w4, w1, w5
+    cmp w9, w6
+    csel w1, w8, w7, cc
+    uxtb w1, w1
+    uxtb w1, w1
+    orr w1, w10, w1
+    uxtb w1, w1
+    strb w1, [x0]
+    ldrh w0, [x3]
+    uxth w1, w0
+    cmp w5, w6
+    csel w0, w4, w7, cc
+    uxth w0, w0
+    uxth w0, w0
+    orr w0, w1, w0
+    uxth w0, w0
+    strh w0, [x3]
+    ldr w1, [x2]
+    movz x0, #8
+    eor w0, w1, w0
+    str w0, [x2]
+    ret
+pack:
+    sub sp, sp, #16
+    add x4, sp, #0
+    str x0, [x4]
+    movz x0, #8
+    add x3, x0, x4
+    mov w0, w1
+    str w0, [x3]
+    ldrb w0, [x4]
+    uxtb w1, w0
+    movz x0, #0
+    movk x0, #1, lsl #16
+    madd x1, x1, x0, xzr
+    movz x2, #256
+    movz x0, #2
+    add x0, x0, x4
+    ldrh w0, [x0]
+    uxth w0, w0
+    add x0, x1, x0
+    madd x1, x0, x2, xzr
+    movz x0, #4
+    add x0, x0, x4
+    ldr w0, [x0]
+    mov w0, w0
+    add x0, x1, x0
+    madd x1, x0, x2, xzr
+    ldrb w0, [x3]
+    uxtb w0, w0
+    add x0, x1, x0
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #80
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
+    movz x21, #1
+    movz x22, #0
+    movz x19, #0
+    add x0, sp, #65
+    add x0, x0, x21
+    strb w19, [x0]
+    movz x20, #2
+    movz x23, #1
+    movz x1, #4
+    add x0, sp, #65
+    add x0, x0, x20
+    strh w22, [x0]
+    add x0, sp, #65
+    add x3, x0, x1
+    movz x2, #8
+    add x0, sp, #65
+    add x24, x2, x0
+    movz x2, #9
+    add x0, sp, #65
+    add x0, x2, x0
+    strb w19, [x0]
+    movz x2, #10
+    add x0, sp, #65
+    add x0, x2, x0
+    strh w22, [x0]
+    add x0, sp, #65
+    strb w23, [x0]
+    movz x0, #2
+    str w0, [x3]
+    movz x0, #90
+    strb w0, [x24]
+    add x0, sp, #65
+    bl 0xfffffeec
+    movz x1, #7
+    add x0, sp, #65
+    bl 0xfffffeec
+    add x0, sp, #65
+    ldr x0, [x0]
+    ldr w1, [x24]
+    mov w1, w1
+    bl 0xffffff88
+    add x2, sp, #64
+    adr x6, 0xe6c
+    ldrb w1, [x6]
+    uxtb w4, w1
+    adr x5, 0xe6c
+    movz x1, #256
+    uxtb w3, w23
+    orr w3, w4, w3
+    uxtb w3, w3
+    strb w3, [x6]
+    ldrb w4, [x5]
+    movz x3, #128
+    uxtb w7, w3
+    madd x6, x0, x1, xzr
+    adr x3, 0xe6e
+    uxtb w0, w4
+    bic w0, w0, w7
+    uxtb w0, w0
+    strb w0, [x5]
+    movz x0, #136
+    strh w0, [x3]
+    adr x0, 0xe6c
+    ldrb w5, [x0]
+    adr x0, 0xe6e
+    ldrh w4, [x0]
+    strb w19, [x2]
+    ldrb w3, [x2]
+    movz x0, #7
+    uxth w0, w0
+    uxtb w3, w3
+    eor w3, w3, w7
+    uxtb w7, w3
+    uxtb w3, w5
+    add x6, x6, x3
+    uxth w3, w4
+    strb w7, [x2]
+    movz x5, #0
+    adr x2, 0xe6e
+    ldrh w2, [x2]
+    uxth w2, w2
+    lsr w4, w2, w0
+    movz x2, #16
+    lsl x2, x3, x2
+    eor x2, x6, x2
+    madd x3, x2, x1, xzr
+    movz x2, #25
+    add x2, x3, x2
+    madd x2, x2, x1, xzr
+    movz x1, #32
+    cmp w0, w1
+    csel w0, w4, w5, cc
+    uxth w0, w0
+    uxth w1, w0
+    uxtb w0, w7
+    add x3, x2, x0
+    movz x0, #1
+    uxth w0, w0
+    and w0, w1, w0
+    uxth w0, w0
+    uxth w1, w0
+    uxth w0, w22
+    cmp w1, w0
+    b.ne 0x1c4
+    b 0x1c8
+3:
+    add x3, x3, x21
+4:
+    add x2, x3, x20
+    movz x0, #25
+    uxtb w1, w0
+    adr x0, 0xe6c
+    ldrb w0, [x0]
+    uxtb w0, w0
+    bic w0, w1, w0
+    uxtb w0, w0
+    uxtb w1, w0
+    uxtb w0, w19
+    cmp w1, w0
+    csel x0, x2, x3, eq
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
+    add sp, sp, #80
+    ret
+=========== OPT LEVEL: all ===========
+paint:
+    ldrb w2, [x0]
+    uxtb w10, w2
+    uxtb w2, w1
+    uxtb w9, w2
+    movz x2, #2
+    add x3, x2, x0
+    movz x2, #1
+    uxtb w2, w2
+    lsl w8, w2, w9
+    movz x7, #0
+    movz x6, #32
+    movz x2, #4
+    add x2, x2, x0
+    uxth w1, w1
+    uxth w5, w1
+    movz x1, #1
+    uxth w1, w1
+    lsl w4, w1, w5
+    cmp w9, w6
+    csel w1, w8, w7, cc
+    uxtb w1, w1
+    uxtb w1, w1
+    orr w1, w10, w1
+    uxtb w1, w1
+    strb w1, [x0]
+    ldrh w0, [x3]
+    uxth w1, w0
+    cmp w5, w6
+    csel w0, w4, w7, cc
+    uxth w0, w0
+    uxth w0, w0
+    orr w0, w1, w0
+    uxth w0, w0
+    strh w0, [x3]
+    ldr w1, [x2]
+    movz x0, #8
+    eor w0, w1, w0
+    str w0, [x2]
+    ret
+pack:
+    sub sp, sp, #16
+    add x4, sp, #0
+    str x0, [x4]
+    movz x0, #8
+    add x3, x0, x4
+    mov w0, w1
+    str w0, [x3]
+    ldrb w0, [x4]
+    uxtb w1, w0
+    movz x0, #0
+    movk x0, #1, lsl #16
+    madd x1, x1, x0, xzr
+    movz x2, #256
+    movz x0, #2
+    add x0, x0, x4
+    ldrh w0, [x0]
+    uxth w0, w0
+    add x0, x1, x0
+    madd x1, x0, x2, xzr
+    movz x0, #4
+    add x0, x0, x4
+    ldr w0, [x0]
+    mov w0, w0
+    add x0, x1, x0
+    madd x1, x0, x2, xzr
+    ldrb w0, [x3]
+    uxtb w0, w0
+    add x0, x1, x0
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #80
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    stp x29, x30, [xzr, #40]
+    movz x21, #0
+    movz x19, #0
+    movz x1, #1
+    add x0, sp, #56
+    add x0, x1, x0
+    strb w19, [x0]
+    movz x20, #2
+    movz x22, #1
+    movz x1, #4
+    add x0, sp, #56
+    add x0, x0, x20
+    strh w21, [x0]
+    add x0, sp, #56
+    add x3, x0, x1
+    movz x2, #8
+    add x0, sp, #56
+    add x23, x2, x0
+    movz x2, #9
+    add x0, sp, #56
+    add x0, x2, x0
+    strb w19, [x0]
+    movz x2, #10
+    add x0, sp, #56
+    add x0, x2, x0
+    strh w21, [x0]
+    add x0, sp, #56
+    strb w22, [x0]
+    movz x0, #2
+    str w0, [x3]
+    movz x0, #90
+    strb w0, [x23]
+    add x0, sp, #56
+    bl 0xfffffeec
+    movz x1, #7
+    add x0, sp, #56
+    bl 0xfffffeec
+    add x0, sp, #56
+    ldr x0, [x0]
+    ldr w1, [x23]
+    mov w1, w1
+    bl 0xffffff88
+    adr x3, 0xe6c
+    ldrb w1, [x3]
+    adr x5, 0xe6c
+    uxtb w2, w1
+    adr x4, 0xe6e
+    uxtb w1, w22
+    orr w1, w2, w1
+    uxtb w1, w1
+    strb w1, [x3]
+    ldrb w1, [x5]
+    uxtb w3, w1
+    movz x1, #256
+    madd x2, x0, x1, xzr
+    movz x0, #128
+    uxtb w0, w0
+    bic w0, w3, w0
+    uxtb w0, w0
+    strb w0, [x5]
+    movz x0, #136
+    strh w0, [x4]
+    movz x0, #7
+    uxth w6, w0
+    adr x0, 0xe6e
+    ldrh w0, [x0]
+    uxth w5, w0
+    movz x4, #0
+    adr x0, 0xe6e
+    ldrh w0, [x0]
+    uxth w0, w0
+    lsr w3, w0, w6
+    adr x0, 0xe6c
+    ldrb w0, [x0]
+    uxtb w0, w0
+    add x2, x2, x0
+    movz x0, #16
+    lsl x0, x5, x0
+    eor x0, x2, x0
+    madd x2, x0, x1, xzr
+    movz x0, #25
+    add x0, x2, x0
+    madd x2, x0, x1, xzr
+    movz x0, #32
+    cmp w6, w0
+    csel w0, w3, w4, cc
+    uxth w0, w0
+    uxth w1, w0
+    movz x0, #1
+    uxth w0, w0
+    and w0, w1, w0
+    uxth w0, w0
+    uxth w1, w0
+    uxth w0, w21
+    cmp w1, w0
+    b.ne 0x1a4
+    movz x0, #128
+    add x3, x0, x2
+    b 0x1ac
+3:
+    movz x0, #129
+    add x3, x0, x2
+4:
+    add x2, x3, x20
+    movz x0, #25
+    uxtb w1, w0
+    adr x0, 0xe6c
+    ldrb w0, [x0]
+    uxtb w0, w0
+    bic w0, w1, w0
+    uxtb w0, w0
+    uxtb w1, w0
+    uxtb w0, w19
+    cmp w1, w0
+    csel x0, x2, x3, eq
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldp x29, x30, [xzr, #40]
+    add sp, sp, #80
+    ret
+=========== OPT LEVEL: aggresive ===========
+paint:
+    ldrb w2, [x0]
+    uxtb w10, w2
+    uxtb w2, w1
+    uxtb w9, w2
+    movz x2, #2
+    add x3, x2, x0
+    movz x2, #1
+    uxtb w2, w2
+    lsl w8, w2, w9
+    movz x7, #0
+    movz x6, #32
+    movz x2, #4
+    add x2, x2, x0
+    uxth w1, w1
+    uxth w5, w1
+    movz x1, #1
+    uxth w1, w1
+    lsl w4, w1, w5
+    cmp w9, w6
+    csel w1, w8, w7, cc
+    uxtb w1, w1
+    uxtb w1, w1
+    orr w1, w10, w1
+    uxtb w1, w1
+    strb w1, [x0]
+    ldrh w0, [x3]
+    uxth w1, w0
+    cmp w5, w6
+    csel w0, w4, w7, cc
+    uxth w0, w0
+    uxth w0, w0
+    orr w0, w1, w0
+    uxth w0, w0
+    strh w0, [x3]
+    ldr w1, [x2]
+    movz x0, #8
+    eor w0, w1, w0
+    str w0, [x2]
+    ret
+main:
+    sub sp, sp, #96
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    str x22, [xzr, #24]
+    str x23, [xzr, #32]
+    str x24, [xzr, #40]
+    stp x29, x30, [xzr, #48]
+    movz x21, #0
+    movz x19, #0
+    movz x1, #1
+    add x0, sp, #64
+    add x0, x1, x0
+    strb w19, [x0]
+    movz x22, #1
+    movz x20, #2
+    add x0, sp, #64
+    add x0, x0, x20
+    strh w21, [x0]
+    add x1, sp, #64
+    movz x0, #4
+    add x2, x1, x0
+    movz x24, #8
+    add x0, sp, #64
+    add x23, x0, x24
+    movz x1, #9
+    add x0, sp, #64
+    add x0, x1, x0
+    strb w19, [x0]
+    movz x1, #10
+    add x0, sp, #64
+    add x0, x1, x0
+    strh w21, [x0]
+    add x0, sp, #64
+    strb w22, [x0]
+    movz x0, #2
+    str w0, [x2]
+    movz x0, #90
+    strb w0, [x23]
+    add x0, sp, #64
+    movz x1, #4
+    bl 0xffffff64
+    movz x1, #7
+    add x0, sp, #64
+    bl 0xffffff64
+    add x4, sp, #76
+    add x0, sp, #64
+    ldr x1, [x0]
+    add x3, x4, x24
+    ldr w0, [x23]
+    str x1, [x4]
+    adr x6, 0xee4
+    mov w0, w0
+    mov w0, w0
+    str w0, [x3]
+    ldrb w1, [x6]
+    ldrb w0, [x4]
+    uxtb w5, w0
+    uxtb w1, w1
+    adr x2, 0xee4
+    uxtb w0, w22
+    orr w0, w1, w0
+    uxtb w0, w0
+    strb w0, [x6]
+    adr x7, 0xee6
+    ldrb w0, [x2]
+    uxtb w1, w0
+    movz x0, #0
+    movk x0, #1, lsl #16
+    madd x5, x5, x0, xzr
+    movz x0, #128
+    uxtb w0, w0
+    bic w0, w1, w0
+    uxtb w0, w0
+    strb w0, [x2]
+    movz x1, #0
+    movz x2, #256
+    add x0, x4, x20
+    ldrh w0, [x0]
+    uxth w0, w0
+    add x0, x5, x0
+    madd x6, x0, x2, xzr
+    movz x0, #136
+    strh w0, [x7]
+    movz x0, #7
+    uxth w0, w0
+    movz x5, #4
+    add x4, x5, x4
+    ldr w4, [x4]
+    mov w4, w4
+    add x4, x6, x4
+    madd x4, x4, x2, xzr
+    ldrb w3, [x3]
+    uxtb w3, w3
+    add x3, x4, x3
+    madd x4, x3, x2, xzr
+    adr x3, 0xee6
+    ldrh w3, [x3]
+    uxth w3, w3
+    lsr w6, w3, w0
+    adr x3, 0xee6
+    ldrh w3, [x3]
+    uxth w5, w3
+    adr x3, 0xee4
+    ldrb w3, [x3]
+    uxtb w3, w3
+    add x4, x4, x3
+    movz x3, #16
+    lsl x3, x5, x3
+    eor x3, x4, x3
+    madd x4, x3, x2, xzr
+    movz x3, #25
+    add x3, x4, x3
+    madd x3, x3, x2, xzr
+    movz x2, #32
+    cmp w0, w2
+    csel w0, w6, w1, cc
+    uxth w0, w0
+    uxth w1, w0
+    movz x0, #1
+    uxth w0, w0
+    and w0, w1, w0
+    uxth w0, w0
+    uxth w1, w0
+    uxth w0, w21
+    cmp w1, w0
+    b.ne 0x208
+    movz x0, #128
+    add x3, x0, x3
+    b 0x210
+2:
+    movz x0, #129
+    add x3, x0, x3
+3:
+    add x2, x3, x20
+    movz x0, #25
+    uxtb w1, w0
+    adr x0, 0xee4
+    ldrb w0, [x0]
+    uxtb w0, w0
+    bic w0, w1, w0
+    uxtb w0, w0
+    uxtb w1, w0
+    uxtb w0, w19
+    cmp w1, w0
+    csel x0, x2, x3, eq
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldr x22, [xzr, #24]
+    ldr x23, [xzr, #32]
+    ldr x24, [xzr, #40]
+    ldp x29, x30, [xzr, #48]
+    add sp, sp, #96
+    ret

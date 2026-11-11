@@ -849,6 +849,73 @@ main :: proc() -> int {
 }
 ```
 
+#### if with initializer
+```odin
+package main
+
+next :: proc(v: ^int) -> int {
+	v^ += 0x10
+	return v^
+}
+
+classify :: proc(n: int) -> int {
+	if x := n * 3; x > 0x30 {
+		return x - 0x30
+	} else if y := x + n; y > 0x10 {
+		return y + x
+	} else if z := y - 1; z < 0 {
+		return z * x
+	} else {
+		return x + y + z
+	}
+}
+
+main :: proc() -> int {
+	@(static) seed := 0
+	r := 0
+	for i in seed - 2 ..< seed + 0x14 {
+		r += classify(i)
+	}
+
+	x := 0x100
+	if x := seed + 5; x != 0 {
+		r += x
+	}
+	r += x
+
+	counter := seed
+	if counter = next(&counter); counter == 0x10 {
+		r += 0x1000
+	}
+	if next(&counter); counter == 0x20 {
+		r += 0x2000
+	}
+	r += counter
+
+	if a := seed + 1; a > 0 {
+		if b := a * 2; b == 2 {
+			if a := b + 0x40; a == 0x42 {
+				r += a
+			}
+			r += a + b
+		}
+	}
+	return r
+}
+```
+
+#### fail if initializer scope
+```odin
+package main
+
+main :: proc() -> int {
+	if x := 1; x > 0 {
+	} else if y := x; y > 0 {
+	}
+	return x + y
+}
+```
+
 #### wasm if nested diamonds
 ```odin
 package main
@@ -8826,8 +8893,6 @@ main :: proc() -> int {
 	z := s[s]
 	w := cast(int)1
 	v := +s
-	if q := 1; q > 0 {
-	}
 	switch r := 1; 2 {
 	case:
 	}
@@ -9152,6 +9217,74 @@ ctz :: proc(x: u8) -> int {
 
 main :: proc() -> int {
 	return ctz(0)
+}
+```
+
+#### count ones of every integer width
+```odin
+package main
+
+pc8 :: proc(a, b: u8) -> u8 {
+	return intrinsics.count_ones(a + b)
+}
+
+pc16 :: proc(a, b: u16) -> u16 {
+	return intrinsics.count_ones(a + b)
+}
+
+pc32 :: proc(x: u32) -> u32 {
+	return intrinsics.count_ones(x)
+}
+
+pc64 :: proc(x: u64) -> u64 {
+	return intrinsics.count_ones(x)
+}
+
+pci8 :: proc(x: i8) -> i8 {
+	return intrinsics.count_ones(x)
+}
+
+pci16 :: proc(x: i16) -> i16 {
+	return intrinsics.count_ones(x)
+}
+
+pci32 :: proc(x: i32) -> i32 {
+	return intrinsics.count_ones(x)
+}
+
+pci64 :: proc(x: i64) -> i64 {
+	return intrinsics.count_ones(x)
+}
+
+main :: proc() -> int {
+	r := 0
+	r = r * 65 + int(pc8(0xf0, 0x20))
+	r = r * 65 + int(pc8(0xff, 0x00))
+	r = r * 65 + int(pc8(0x00, 0x00))
+	r = r * 65 + int(pc16(0xff00, 0x0200))
+	r = r * 65 + int(pc16(0xffff, 0x0000))
+	r = r * 65 + int(pc32(0x00000000))
+	r = r * 65 + int(pc32(0xffffffff))
+	r = r * 65 + int(pc32(0x80000001))
+	r = r * 65 + int(pc64(0x0000000000000000))
+	r = r * 65 + int(pc64(0xffffffffffffffff))
+	r = r * 65 + int(pc64(0x8000000100000001))
+	r = r * 65 + int(pci8(-0x01))
+	r = r * 65 + int(pci8(-0x80))
+	r = r * 65 + int(pci16(-0x01))
+	r = r * 65 + int(pci16(-0x8000))
+	r = r * 65 + int(pci32(-0x01))
+	r = r * 65 + int(pci32(0x0f0f0f0f))
+	r = r * 65 + int(pci64(-0x01))
+	r = r * 65 + int(pci64(-0x7fffffffffffffff - 1))
+
+	c8: u8 = 0xa5
+	c64: u64 = 0xdeadbeefcafebabe
+	ci16: i16 = -0x0100
+	r = r * 65 + int(intrinsics.count_ones(c8))
+	r = r * 65 + int(intrinsics.count_ones(c64))
+	r = r * 65 + int(intrinsics.count_ones(ci16))
+	return r
 }
 ```
 
@@ -10991,5 +11124,838 @@ main :: proc() -> int {
 	r := int((^[4]u8)(&h)[3])
 	for &e in arr do r += int((^[4]u8)(&e)[1])
 	return r
+}
+```
+
+#### address taken locals in switch clauses
+```odin
+package main
+
+V :: union {
+	int,
+	bool,
+}
+
+bump :: proc(p: ^int) {
+	p^ += 0x100
+}
+
+pick :: proc(k: int) -> int {
+	switch k {
+	case 1:
+		x := 0x10
+		p := &x
+		p^ += 0x1
+		return x
+	case 2:
+		y := 0x20
+		bump(&y)
+		return y
+	}
+	return 0
+}
+
+main :: proc() -> int {
+	r := pick(1) + pick(2)
+	v: V = 3
+	switch t in v {
+	case int:
+		z := t
+		p := &z
+		p^ += 0x1000
+		bump(&z)
+		r += z
+	case bool:
+		w := 0x5
+		bump(&w)
+		r += w
+	}
+	return r & 0xffff
+}
+```
+
+#### bit set enum operators
+```odin
+package main
+
+Color :: enum {
+	Red,
+	Green = 3,
+	Blue,
+	Black = 7,
+}
+
+Colors :: bit_set[Color]
+
+combine :: proc(a, b: Colors) -> int {
+	r := 0
+	r = r * 0x100 + int(transmute(u8)(a + b))
+	r = r * 0x100 + int(transmute(u8)(a - b))
+	r = r * 0x100 + int(transmute(u8)(a & b))
+	r = r * 0x100 + int(transmute(u8)(a | b))
+	r = r * 0x100 + int(transmute(u8)(a ~ b))
+	r = r * 0x100 + int(transmute(u8)(a &~ b))
+	return r
+}
+
+compare :: proc(a, b: Colors) -> int {
+	r := 0
+	if a == b do r |= 0x01
+	if a != b do r |= 0x02
+	if a <= b do r |= 0x04
+	if a < b do r |= 0x08
+	if a >= b do r |= 0x10
+	if a > b do r |= 0x20
+	return r
+}
+
+membership :: proc(s: Colors, c: Color) -> int {
+	r := 0
+	if c in s do r |= 0x1
+	if c not_in s do r |= 0x2
+	return r
+}
+
+invert :: proc(s: Colors) -> Colors {
+	return ~s
+}
+
+main :: proc() -> int {
+	#assert(size_of(Colors) == 1)
+	#assert(Colors{.Red, .Blue} + Colors{.Green} == Colors{.Red, .Green, .Blue})
+	#assert(Colors{.Red, .Blue} - Colors{.Blue, .Black} == Colors{.Red})
+	#assert(Colors{.Red, .Blue} & Colors{.Blue, .Black} == Colors{.Blue})
+	#assert(Colors{.Red, .Blue} | Colors{.Black} == Colors{.Red, .Blue, .Black})
+	#assert(Colors{.Red, .Blue} ~ Colors{.Blue, .Black} == Colors{.Red, .Black})
+	#assert(Colors{.Red, .Blue} &~ Colors{.Red} == Colors{.Blue})
+	#assert(Colors{.Red} != Colors{.Blue})
+	#assert(Colors{.Red} <= Colors{.Red, .Blue} && Colors{.Red} < Colors{.Red, .Blue})
+	#assert(Colors{.Red} <= Colors{.Red} && !(Colors{.Red} < Colors{.Red}))
+	#assert(Colors{.Red, .Blue} >= Colors{.Blue} && Colors{.Red, .Blue} > Colors{.Blue})
+	#assert(!(Colors{.Red} >= Colors{.Blue}))
+	#assert(.Green in Colors{.Green} && .Red not_in Colors{.Green})
+	#assert(~Colors{.Red, .Green} == Colors{.Blue, .Black})
+
+	r := card(Colors{.Red, .Blue, .Black}) * 0x10 + card(Colors{})
+	r = r * 0x1000000 + combine({.Red, .Blue}, {.Blue, .Black})
+	r ~= combine({}, {.Green})
+	r = r * 0x40 + compare({.Red}, {.Red, .Blue})
+	r = r * 0x40 + compare({.Red, .Blue}, {.Red})
+	r = r * 0x40 + compare({.Blue}, {.Blue})
+	r = r * 0x40 + compare({.Green}, {.Blue})
+	r = r * 0x4 + membership({.Green, .Black}, .Black)
+	r = r * 0x4 + membership({.Green, .Black}, .Red)
+	r = r * 0x4 + membership({}, .Green)
+
+	s := Colors{.Red}
+	s += {.Blue}
+	s |= {.Black}
+	s -= {.Red}
+	s ~= {.Green}
+	s &= Colors{.Green, .Blue}
+	s &~= {.Green}
+	r = r * 0x100 + int(transmute(u8)s)
+	r = r * 0x100 + int(transmute(u8)invert(s))
+	r = r * 0x100 + int(transmute(u8)invert({}))
+	r = r * 0x10 + card(s) + card(invert(s)) * 0x4
+	return r
+}
+```
+
+#### bit set integer ranges
+```odin
+package main
+
+Digits :: bit_set[3 ..< 10]
+Around :: bit_set[-2 ..= 5]
+Late :: bit_set[60 ..< 70]
+Nine :: bit_set[0 ..= 8]
+Huge :: bit_set[0 ..< 64]
+
+digits :: proc(a, b: int) -> Digits {
+	return Digits{3, a, b}
+}
+
+around :: proc(a: int) -> Around {
+	return {a, -2, a + 1}
+}
+
+late :: proc(a: int) -> Late {
+	return {a, 69}
+}
+
+huge :: proc(a, b: int) -> Huge {
+	return {a, b}
+}
+
+tests :: proc(s: Digits, e: int) -> int {
+	r := 0
+	if e in s do r |= 0x1
+	if e not_in s do r |= 0x2
+	if s <= (Digits{3, 5, 9}) do r |= 0x4
+	if s > (Digits{3}) do r |= 0x8
+	return r
+}
+
+main :: proc() -> int {
+	#assert(size_of(Digits) == 1)
+	#assert(size_of(Around) == 1)
+	#assert(size_of(Late) == 2)
+	#assert(size_of(Nine) == 2)
+	#assert(size_of(Huge) == 8)
+	#assert(~Digits{3, 5} == Digits{4, 6, 7, 8, 9})
+	#assert(4 in Digits{4} && 9 not_in Digits{4})
+	#assert(Around{-2, 5} - Around{5} == Around{-2})
+
+	r := card(~Digits{}) * 0x100 + card(~Huge{})
+	r = r * 0x100 + int(transmute(u8)digits(5, 9))
+	r = r * 0x100 + int(transmute(u8)around(0))
+	r = r * 0x100 + int(transmute(u8)around(4))
+	r = r * 0x10000 + int(transmute(u16)late(61))
+	r ~= int(transmute(u64)huge(63, 0) >> 0x30)
+	r ~= int(transmute(u64)huge(0x20, 7))
+	r = r * 0x10 + tests(digits(5, 9), 5)
+	r = r * 0x10 + tests(digits(4, 9), 6)
+	r = r * 0x10 + tests(Digits{3}, 3)
+	r = r * 0x100 + int(transmute(u8)~digits(4, 4))
+	r = r * 0x100 + int(transmute(u16)~Nine{8})
+	r = r * 0x10 + card(digits(6, 7)) + card(huge(1, 1))
+	return r
+}
+```
+
+#### bit set iteration
+```odin
+package main
+
+Color :: enum u8 {
+	Red = 2,
+	Green,
+	Blue = 6,
+	Black,
+}
+
+Colors :: bit_set[Color]
+Digits :: bit_set[3 ..< 10]
+Around :: bit_set[-2 ..= 5]
+Huge :: bit_set[0 ..< 64]
+
+colors :: proc(s: Colors) -> int {
+	r := 0
+	for c in s {
+		r = r * 0x10 + int(c)
+	}
+	return r
+}
+
+digits :: proc(s: Digits) -> int {
+	r := 0
+	for d in s {
+		if d == 7 do continue
+		if d > 8 do break
+		r = r * 0x10 + d
+	}
+	return r
+}
+
+around :: proc(s: Around) -> int {
+	r := 0
+	for e in s {
+		r = r * 0x10 + e + 2
+	}
+	return r
+}
+
+huge :: proc(s: Huge) -> int {
+	r := 0
+	for e in s {
+		r = r * 0x40 + e
+	}
+	return r
+}
+
+nested :: proc(a: Digits, b: Colors) -> int {
+	r := 0
+	for d in a {
+		for c in b {
+			r += d * int(c)
+		}
+	}
+	return r
+}
+
+main :: proc() -> int {
+	r := colors({.Red, .Blue, .Black})
+	r = r * 0x1000 + colors({})
+	r = r * 0x1000 + digits({3, 6, 7, 8, 9})
+	r ~= around({-2, 0, 5}) << 0x10
+	r ~= huge({0, 0x21, 63}) << 0x8
+	r ~= nested({3, 4}, {.Green, .Black})
+	return r
+}
+```
+
+#### bit set storage and conversions
+```odin
+package main
+
+Color :: enum {
+	Red,
+	Green = 3,
+	Blue,
+	Black = 7,
+}
+
+Colors :: bit_set[Color]
+Wide :: bit_set[Color; u16]
+Narrow :: bit_set[0 ..< 4; u32]
+PRIMARY :: Colors{.Red, .Green, .Blue}
+
+Pixel :: struct {
+	mask:  Colors,
+	wide:  Wide,
+	small: Narrow,
+	tag:   u8,
+}
+
+@(static) g_colors := Colors{.Green, .Black}
+@(static) g_wide: Wide
+
+paint :: proc(p: ^Pixel, c: Color) {
+	p.mask += {c}
+	p.wide |= {c}
+	p.small ~= {3}
+}
+
+pack :: proc(p: Pixel) -> int {
+	r := int(transmute(u8)p.mask)
+	r = r * 0x10000 + int(transmute(u16)p.wide)
+	r = r * 0x100 + int(transmute(u32)p.small)
+	return r * 0x100 + int(p.tag)
+}
+
+main :: proc() -> int {
+	#assert(size_of(Wide) == 2 && align_of(Wide) == 2)
+	#assert(size_of(Narrow) == 4)
+	#assert(size_of(Pixel) == 12)
+
+	p := Pixel{mask = {.Red}, small = {1}, tag = 0x5a}
+	paint(&p, .Blue)
+	paint(&p, .Black)
+	r := pack(p)
+
+	g_colors += {.Red}
+	g_colors -= {.Black}
+	g_wide = transmute(Wide)u16(0x88)
+	r = r * 0x100 + int(transmute(u8)g_colors)
+	r ~= int(transmute(u16)g_wide) << 0x10
+
+	c := PRIMARY
+	c &= transmute(Colors)u8(0x19)
+	z: Colors
+	z ~= {.Black}
+	r = r * 0x100 + int(transmute(u8)c)
+	r = r * 0x100 + int(transmute(u8)z)
+	if .Black in g_wide do r += 0x1
+	if PRIMARY <= g_colors do r += 0x2
+	return r
+}
+```
+
+#### fail bit set declarations and conversions
+```odin
+package main
+
+Color :: enum {
+	Red,
+	Green,
+}
+
+Colors :: bit_set[Color]
+Wide :: bit_set[0 ..< 65]
+Tight :: bit_set[0 ..< 10; u8]
+Floats :: bit_set[f32]
+
+main :: proc() -> int {
+	s := Colors{.Red}
+	x := u8(s)
+	y := Colors{1}
+	z := 3 in s
+	o := bit_set[0 ..< 4]{5}
+	return card(x)
+}
+```
+
+#### card and count ones converted to other widths
+```odin
+package main
+
+Small :: bit_set[0 ..< 8]
+Mid :: bit_set[0 ..< 16]
+Big :: bit_set[0 ..< 32]
+
+card8 :: proc(s: Small) -> int {
+	return card(s)
+}
+
+card16 :: proc(s: Mid) -> int {
+	return card(s)
+}
+
+card32 :: proc(s: Big) -> int {
+	return card(s)
+}
+
+card8_to_u16 :: proc(s: Small) -> u16 {
+	return u16(card(s))
+}
+
+pc8_int :: proc(x: u8) -> int {
+	return int(intrinsics.count_ones(x))
+}
+
+pc8_u32 :: proc(x: u8) -> u32 {
+	return u32(intrinsics.count_ones(x))
+}
+
+pc16_int :: proc(x: u16) -> int {
+	return int(intrinsics.count_ones(x))
+}
+
+pc16_u8 :: proc(x: u16) -> u8 {
+	return u8(intrinsics.count_ones(x))
+}
+
+pc32_int :: proc(x: u32) -> int {
+	return int(intrinsics.count_ones(x))
+}
+
+pc32_u8 :: proc(x: u32) -> u8 {
+	return u8(intrinsics.count_ones(x))
+}
+
+pc32_u16 :: proc(x: u32) -> u16 {
+	return u16(intrinsics.count_ones(x))
+}
+
+pci8_i64 :: proc(x: i8) -> i64 {
+	return i64(intrinsics.count_ones(x))
+}
+
+pc8_store :: proc(x: u8, buf: ^[4]u8, i: int) {
+	buf[i] = intrinsics.count_ones(x)
+}
+
+main :: proc() -> int {
+	r := 0
+	r = r * 65 + card8(transmute(Small)u8(0xa5))
+	r = r * 65 + card8(transmute(Small)u8(0xff))
+	r = r * 65 + card16(transmute(Mid)u16(0xf00f))
+	r = r * 65 + card16(transmute(Mid)u16(0xffff))
+	r = r * 65 + card32(transmute(Big)u32(0x80000001))
+	r = r * 65 + card32(transmute(Big)u32(0xffffffff))
+	r = r * 65 + int(card8_to_u16(transmute(Small)u8(0x7e)))
+	r = r * 65 + pc8_int(0xf1)
+	r = r * 65 + int(pc8_u32(0x81))
+	r = r * 65 + pc16_int(0xfffe)
+	r = r * 65 + int(pc16_u8(0x0f0f))
+	r = r * 65 + pc32_int(0xdeadbeef)
+	r = r * 65 + int(pc32_u8(0xffffffff))
+	r = r * 65 + int(pc32_u16(0x00ff00ff))
+	r = r * 65 + int(pci8_i64(-0x01))
+
+	buf := [4]u8{0x11, 0x22, 0x33, 0x44}
+	pc8_store(0xff, &buf, 1)
+	pc8_store(0x03, &buf, 2)
+	r ~= int(transmute(u32)buf) << 0x10
+	return r
+}
+```
+
+#### bit field reads of every field kind
+```odin
+package main
+
+Kind :: enum u8 {
+	Zero,
+	One,
+	Two,
+	Seven = 7,
+}
+
+Signed_Kind :: enum i8 {
+	Neg = -2,
+	Pos = 1,
+}
+
+Flags :: bit_field u32 {
+	low:   u8   | 3,
+	small: i16  | 5,
+	on:    bool | 1,
+	kind:  Kind | 3,
+	high:  u32  | 20,
+}
+
+Mixed :: bit_field u16 {
+	sk:   Signed_Kind | 2,
+	n:    i8          | 4,
+	b:    bool        | 2,
+	rest: u16         | 8,
+}
+
+Full :: bit_field u16 {
+	all: u16 | 16,
+}
+
+Wide :: bit_field u64 {
+	lo:  u32 | 31,
+	mid: i64 | 30,
+	hi:  u8  | 3,
+}
+
+Tiny :: bit_field i8 {
+	a: i8 | 4,
+	b: u8 | 4,
+}
+
+#assert(size_of(Flags) == 4 && align_of(Flags) == 4)
+#assert(size_of(Mixed) == 2 && size_of(Full) == 2)
+#assert(size_of(Wide) == 8 && align_of(Wide) == 8)
+#assert(size_of(Tiny) == 1)
+
+mix :: proc(r: int, v: int) -> int {
+	return r * 0x100 + (v & 0xff)
+}
+
+read_flags :: proc(f: Flags) -> int {
+	r := int(f.low)
+	r = mix(r, int(f.small))
+	r = mix(r, int(f.on))
+	r = mix(r, int(f.kind))
+	return r ~ int(f.high) << 0x20
+}
+
+read_mixed :: proc(m: Mixed) -> int {
+	r := int(m.sk)
+	r = mix(r, int(m.n))
+	r = mix(r, int(m.b))
+	return mix(r, int(m.rest))
+}
+
+main :: proc() -> int {
+	r := read_flags(transmute(Flags)u32(0xabcd_efed))
+	r ~= read_flags(transmute(Flags)u32(0x0000_0c7b)) * 0x3
+	r ~= read_mixed(transmute(Mixed)u16(0xa5e2)) << 0x8
+	r ~= read_mixed(transmute(Mixed)u16(0x01b1))
+
+	full := transmute(Full)u16(0xfedc)
+	r ~= int(full.all) << 0x4
+
+	w := transmute(Wide)u64(0xdead_beef_1234_5678)
+	r ~= int(w.lo) ~ int(w.mid) << 0x3 ~ int(w.hi) << 0x30
+	w = transmute(Wide)u64(0x4000_0000_8000_0000)
+	r ~= int(w.mid) << 0x1
+
+	t := transmute(Tiny)i8(-0x37)
+	r ~= int(t.a) << 0x10 ~ int(t.b) << 0x18
+	return r
+}
+```
+
+#### bit field writes and truncation
+```odin
+package main
+
+Kind :: enum u8 {
+	Zero,
+	One,
+	Two,
+	Seven = 7,
+}
+
+Flags :: bit_field u32 {
+	low:   u8   | 3,
+	small: i16  | 5,
+	on:    bool | 1,
+	kind:  Kind | 3,
+	high:  u32  | 20,
+}
+
+Byte :: bit_field u8 {
+	lo: u8 | 4,
+	hi: i8 | 4,
+}
+
+Wide :: bit_field u64 {
+	lo:  u32 | 31,
+	mid: i64 | 30,
+	hi:  u8  | 3,
+}
+
+pair :: proc(a, b: int) -> (u8, i16) {
+	return u8(a), i16(b)
+}
+
+main :: proc() -> int {
+	f: Flags
+	f.low = 5
+	f.small = -3
+	f.on = true
+	f.kind = .Seven
+	f.high = 0xabcde
+	r := int(transmute(u32)f)
+
+	wide := u8(0xff)
+	f.low = wide
+	big_small, big_high := i16(0x7ff1), u32(0x1234_5678)
+	f.small = big_small
+	f.high = big_high
+	r = r * 0x3 ~ int(transmute(u32)f)
+
+	f.low += 0x6
+	f.small -= 0x3
+	f.high *= 0x3
+	f.high |= 0x10
+	f.on = !f.on
+	r = r * 0x3 ~ int(transmute(u32)f)
+
+	f.low, f.small = u8(f.small), i16(f.low)
+	r = r * 0x3 ~ int(transmute(u32)f)
+
+	f.low, f.small = pair(0x1f, -0x9)
+	r = r * 0x3 ~ int(transmute(u32)f)
+
+	b: Byte
+	for i in 0 ..< 0x15 {
+		b.lo += 0x3
+		b.hi -= 0x5
+		r = r * 0x5 + int(transmute(u8)b) + int(b.hi)
+	}
+
+	w: Wide
+	w.mid = -1
+	w.hi = 0x5
+	r ~= int(transmute(u64)w) >> 0x4
+	w.lo = 0x7fff_ffff
+	w.mid >>= 0x2
+	r ~= int(transmute(u64)w)
+	return r
+}
+```
+
+#### bit field through pointers and nested containers
+```odin
+package main
+
+Reg :: bit_field u16 {
+	mode:  u8   | 3,
+	delta: i8   | 6,
+	en:    bool | 1,
+	id:    u16  | 6,
+}
+
+Device :: struct {
+	tag:  u8,
+	reg:  Reg,
+	regs: [3]Reg,
+	tail: u32,
+}
+
+@(static) g_reg: Reg
+@(static) g_device: Device
+@(static) g_init := Reg{mode = 0x5, id = 0x2a}
+
+poke :: proc(r: ^Reg, mode: u8, delta: i8) {
+	r.mode = mode
+	r^.delta = delta
+	r.id += 0x7
+	r.en = !r.en
+}
+
+poke_device :: proc(d: ^Device, i: int) {
+	d.reg.delta -= 0x11
+	d.regs[i].mode = u8(i) + 0x2
+	d.regs[i].id = u16(i) * 0x9
+	poke(&d.regs[(i + 1) % 3], 0x6, -0x4)
+}
+
+bits :: proc(r: Reg) -> int {
+	return int(transmute(u16)r)
+}
+
+main :: proc() -> int {
+	r: Reg
+	poke(&r, 0x3, -0x1f)
+	acc := bits(r)
+
+	p := &r
+	p.delta = 0x15
+	p^.mode |= 0x4
+	acc = acc * 0x3 ~ bits(r)
+
+	d: Device
+	d.tag = 0xaa
+	d.tail = 0xdead_beef
+	for i in 0 ..< 3 do poke_device(&d, i)
+	acc = acc * 0x3 ~ bits(d.reg)
+	for reg in d.regs {
+		acc = acc * 0x3 ~ bits(reg) + int(reg.delta)
+	}
+	acc = acc * 0x3 ~ int(d.tag) ~ int(d.tail)
+
+	arr: [4]Reg
+	for &a, i in arr {
+		a.id = u16(i) + 0x30
+		a.delta = i8(i) - 0x2
+	}
+	arr[2].en = true
+	for a in arr do acc = acc * 0x5 + bits(a)
+
+	g_reg.delta = -0x20
+	g_reg.id = 0x3f
+	poke(&g_reg, 0x1, 0x1f)
+	g_device.regs[1].mode = 0x7
+	g_device.reg.id = g_init.id + 0x1
+	acc = acc * 0x7 ~ bits(g_reg) ~ bits(g_device.regs[1]) << 0x10
+	acc = acc * 0x7 ~ bits(g_device.reg) + int(g_init.mode)
+
+	@(static) counter: Reg
+	for _ in 0 ..< 0x5 {
+		counter.id += 0xd
+		counter.delta -= 0x9
+	}
+	return acc * 0x7 ~ bits(counter)
+}
+```
+
+#### bit field constants literals and conversions
+```odin
+package main
+
+Kind :: enum i8 {
+	Neg = -2,
+	Pos = 1,
+}
+
+Packet :: bit_field u32 {
+	ver:   u8   | 4,
+	kind:  Kind | 2,
+	adj:   i16  | 7,
+	flag:  bool | 1,
+	len:   u32  | 18,
+}
+
+Pair :: bit_field u8 {
+	a: u8 | 4,
+	b: u8 | 4,
+}
+
+HEADER :: Packet{ver = 0x9, kind = .Neg, adj = -0x31, flag = true, len = 0x2_abcd}
+EMPTY :: Packet{}
+
+#assert(HEADER.ver == 0x9)
+#assert(HEADER.kind == .Neg)
+#assert(HEADER.adj == -0x31)
+#assert(HEADER.flag)
+#assert(HEADER.len == 0x2_abcd)
+
+make_packet :: proc(ver: u8, adj: i16, len: u32) -> Packet {
+	return Packet{ver = ver, kind = .Pos, adj = adj, len = len}
+}
+
+swap :: proc(p: Pair) -> Pair {
+	return Pair{a = p.b, b = p.a}
+}
+
+main :: proc() -> int {
+	h := HEADER
+	r := int(transmute(u32)h)
+	r = r * 0x3 + int(HEADER.adj) + int(HEADER.len)
+
+	p := make_packet(0x1f, -0x99, 0x7_ffff)
+	r = r * 0x3 ~ int(transmute(u32)p)
+	r = r * 0x3 ~ int(p.adj) ~ int(p.kind)
+
+	q := make_packet(0x3, -0x2, 0x10)
+	if p == q do r += 0x1
+	q.ver = 0xf
+	q.adj = 0x3f
+	q.len = 0x3_ffff
+	if p == q do r += 0x10
+	if p != h do r += 0x100
+
+	x := Pair{a = 0x5}
+	x.b = x.a + 0x6
+	y := swap(x)
+	r = r * 0x5 + int(transmute(u8)y) + int(y.a)
+
+	raw := u32(0x8765_4321)
+	t := transmute(Packet)raw
+	r = r * 0x3 ~ int(t.adj) ~ int(t.len) << 0x8
+	t = Packet(raw >> 0x4)
+	r = r * 0x3 ~ int(u32(t)) ~ int(i64(t))
+	wide := 0x1234
+	small := Pair{a = 0x9}
+	r = r * 0x3 ~ int(Pair(wide).b) ~ int(u16(small))
+	e := EMPTY
+	if e == EMPTY do r += 0x1000
+	if (x == Pair{b = 0xb, a = 0x5}) do r += 0x2000
+
+	vals := [3]Packet{HEADER, p, {ver = 0x2, flag = true}}
+	for v in vals {
+		r = r * 0x7 + int(v.ver) + int(v.adj) + int(v.flag)
+	}
+	return r
+}
+```
+
+#### fail bit field declarations and accesses
+```odin
+package main
+
+Kind :: enum u8 {
+	A,
+	B,
+}
+
+Good :: bit_field u16 {
+	a: u8   | 3,
+	k: Kind | 2,
+}
+
+Too_Wide_Field :: bit_field u32 {
+	a: u8 | 9,
+}
+
+Too_Wide_Total :: bit_field u8 {
+	a: u8 | 5,
+	b: u8 | 4,
+}
+
+Float_Field :: bit_field u32 {
+	a: f32 | 9,
+}
+
+Array_Backing :: bit_field [4]u8 {
+	a: u8 | 3,
+}
+
+Zero_Size :: bit_field u32 {
+	a: u8 | 0,
+}
+
+Bool_Backing :: bit_field bool {
+	a: bool | 1,
+}
+
+main :: proc() -> int {
+	g: Good
+	p := &g.a
+	g.a = 0x8
+	o := Good{0x1, .B}
+	q := Good{c = 0x1}
+	w := Good{a = 0x9}
+	if g < g do return 1
+	return int(g.c)
 }
 ```

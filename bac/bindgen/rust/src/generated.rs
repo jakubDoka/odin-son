@@ -94,6 +94,7 @@ impl NodeType {
     pub const U_Conv: Self = Self(sys::ssa_Node_Type_U_Conv);
     pub const Splat: Self = Self(sys::ssa_Node_Type_Splat);
     pub const Ctz: Self = Self(sys::ssa_Node_Type_Ctz);
+    pub const Popcnt: Self = Self(sys::ssa_Node_Type_Popcnt);
     pub const Simd_Extract_Lsbs: Self = Self(sys::ssa_Node_Type_Simd_Extract_Lsbs);
     pub const Simd_Extract_Msbs: Self = Self(sys::ssa_Node_Type_Simd_Extract_Msbs);
     pub const Simd_Reduce_Add_Bisect: Self = Self(sys::ssa_Node_Type_Simd_Reduce_Add_Bisect);
@@ -146,6 +147,7 @@ impl UnOp {
     pub const U_Conv: Self = Self(sys::Un_Op_U_Conv);
     pub const Splat: Self = Self(sys::Un_Op_Splat);
     pub const Ctz: Self = Self(sys::Un_Op_Ctz);
+    pub const Popcnt: Self = Self(sys::Un_Op_Popcnt);
     pub const Simd_Extract_Lsbs: Self = Self(sys::Un_Op_Simd_Extract_Lsbs);
     pub const Simd_Extract_Msbs: Self = Self(sys::Un_Op_Simd_Extract_Msbs);
     pub const Simd_Reduce_Add_Bisect: Self = Self(sys::Un_Op_Simd_Reduce_Add_Bisect);

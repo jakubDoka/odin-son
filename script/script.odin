@@ -1,15 +1,25 @@
 package script
 
+import "../utils/lane"
+import "base:runtime"
 import "core:fmt"
 import "core:math/bits"
 import "core:os"
 import "core:slice"
 import "core:strconv"
 import "core:strings"
+import "core:sync"
 
 TEMP_DIR :: ".tmp/build"
 
 main :: proc() {
+	lane.run_no_data(
+		max(nenv("JOBS") or_else os.get_processor_core_count() / 2, 1),
+		main_lane,
+	)
+}
+
+main_lane :: proc() {
 	context.allocator = context.temp_allocator
 
 	args := os.args
@@ -23,13 +33,16 @@ main :: proc() {
 		name:            string,
 		directory:       string,
 		expected_stdout: string,
+		config_flags:    []string,
+		ref_res:         Cmd_Out,
+		output:          strings.Builder,
 	}
 
 	tests: [dynamic]Program_Test
 	tests.allocator = context.allocator
 	selected := len(args) > 2 ? args[2] : ""
 
-	gen_wasm_control_flow: {
+	gen_wasm_control_flow: if lane.alloc() {
 		GENERATED_PROGRAM :: "wasm-control-flow"
 
 		if len(args) <= 2 || !strings.starts_with(args[2], GENERATED_PROGRAM) {
@@ -96,7 +109,11 @@ main :: proc() {
 			write(join(directory, "main.odin"), source)
 			append(
 				&tests,
-				Program_Test{name, directory, fmt.tprintf("%v\n", result)},
+				Program_Test {
+					name = name,
+					directory = directory,
+					expected_stdout = fmt.tprintf("%v\n", result),
+				},
 			)
 		}
 
@@ -279,7 +296,7 @@ main :: proc() {
 		}
 	}
 
-	gen_gen_big: {
+	gen_gen_big: if lane.alloc() {
 		file_count := nenv("FILE_COUNT") or_else 10
 		depth := nenv("DEPTH") or_else 5
 
@@ -373,7 +390,7 @@ main :: proc() -> int {
 		)
 	}
 
-	gen_wasm_blobs: {
+	gen_wasm_blobs: if lane.alloc() {
 		genned: strings.Builder
 		append(
 			&genned.buf,
@@ -439,7 +456,7 @@ run_generated :: proc() -> int {
 		)
 	}
 
-	gen_regalloc_stress: {
+	gen_regalloc_stress: if lane.alloc() {
 		genned: strings.Builder
 		FUNCTION_COUNT :: 4
 		BLOCK_COUNT :: 100
@@ -705,6 +722,10 @@ run_generated :: proc() -> int {
 		)
 	}
 
+	lane.sync()
+
+	if args[1] != "run-programs" && lane.idx() != 0 do return
+
 	switch args[1] {
 	case "gen-spec":
 		rm("bac/node_specs.odin")
@@ -769,17 +790,23 @@ run_generated :: proc() -> int {
 			"uitls/wabt/libwabt_runner.so",
 		)
 	case "run-programs":
-		failures := 0
+		failures_vl := 0
+		failures := &failures_vl
+
+		lane.sync_value(&failures)
+
 		jit_path := env("JIT")
 		if jit_path == "" {
-			cmd(
-				"odin",
-				"build",
-				"odinc",
-				"-out:jit",
-				"-debug",
-				extras = args[min(len(args), 3):],
-			)
+			if lane.alloc() {
+				cmd(
+					"odin",
+					"build",
+					"odinc",
+					"-out:jit",
+					"-debug",
+					extras = args[min(len(args), 3):],
+				)
+			}
 			jit_path = "./jit"
 		}
 
@@ -787,42 +814,45 @@ run_generated :: proc() -> int {
 
 		MOD_DIR :: TEMP_DIR + "/patched-tests"
 
-		mkdir(MOD_DIR)
+		if lane.idx() == 0 {
+			mkdir(MOD_DIR)
 
-		for item in list_dir(PROGRAMS_DIR) {
-			name := item.name
+			for item in list_dir(PROGRAMS_DIR) {
+				name := item.name
 
-			if 2 < len(args) && args[2] != strings.split(name, "/")[0] {
-				continue
-			}
+				if 2 < len(args) && args[2] != strings.split(name, "/")[0] {
+					continue
+				}
 
-			subdir := join(MOD_DIR, name)
-			mkdir(subdir)
+				subdir := join(MOD_DIR, name)
+				mkdir(subdir)
 
-			if exists(join(item.fullpath, "main.odin")) {
-				append(&tests, Program_Test{name = name, directory = item.fullpath})
+				if exists(join(item.fullpath, "main.odin")) {
+					append(&tests, Program_Test{name = name, directory = item.fullpath})
+				}
 			}
 		}
+
+		tests := &tests
+		lane.sync_value(&tests)
 
 		if len(tests) == 0 {
 			fmt.eprintfln("no program tests matched %v", selected)
 			os.exit(1)
 		}
-		for test in tests {
+
+		q := &lane.Queue{limit = len(tests)}
+		lane.sync_value(&q)
+
+		for idx in lane.next(q) {
+			test := &tests[idx]
+
 			name := test.name
-			fmt.println("===", name, "===")
-			config_flags := []string{}
-			if name == "module-imports" {
-				config_flags = {
-					"-define:MODULE_IMPORTS_BASE=0x20",
-					"-define:MODULE_IMPORTS_ENABLED=true",
-					"-define:MODULE_IMPORTS_LABEL=constants",
-				}
-			}
+			fmt.sbprintln(&test.output, "===", name, "===")
 			subdir := join(MOD_DIR, name)
 			mkdir(subdir)
+
 			entry := join(test.directory, "main.odin")
-			file_name, _ := strings.replace_all(name, "/", "_", context.allocator)
 
 			if !exists(entry) do continue
 
@@ -832,6 +862,14 @@ run_generated :: proc() -> int {
 
 			builder: strings.Builder
 			append(&builder.buf, content)
+
+			if name == "module-imports" {
+				test.config_flags = {
+					"-define:MODULE_IMPORTS_BASE=0x20",
+					"-define:MODULE_IMPORTS_ENABLED=true",
+					"-define:MODULE_IMPORTS_LABEL=constants",
+				}
+			}
 
 			strings.builder_replace(
 				&builder,
@@ -852,118 +890,178 @@ run_generated :: proc() -> int {
 			write(dest, strings.to_string(builder))
 
 			odin_bin := join(MOD_DIR, name, "ref-bin.bin")
-			if cmd("odin", "build", subdir, fmt.tprintf("-out:%v", odin_bin), extras = config_flags).exit_code !=
-			   0 {
-				failures += 1
+			cpres := cmd(
+				"odin",
+				"build",
+				subdir,
+				fmt.tprintf("-out:%v", odin_bin),
+				"-thread-count:1",
+				extras = test.config_flags,
+				stderr_to = &test.output,
+			)
+			if cpres.exit_code != 0 {
+				sync.atomic_add(failures, 1)
 				continue
 			}
 
-			ref_res := cmd(odin_bin)
-			if test.expected_stdout != "" && ref_res.stdout != test.expected_stdout {
-				fmt.eprintfln(
+			test.ref_res = cmd(odin_bin)
+			if test.expected_stdout != "" &&
+			   test.ref_res.stdout != test.expected_stdout {
+				fmt.sbprintfln(
+					&test.output,
 					" [%v] reference result differs from the generator oracle",
 					name,
 				)
-				failures += 1
+				sync.atomic_add(failures, 1)
+				continue
+			}
+		}
+
+		LEVELS := []string {
+			"moderate-quick",
+			"none",
+			"none-quick",
+			"moderate",
+			"all",
+			"aggresive",
+		}
+
+		results_vl := make([]strings.Builder, len(tests) * len(LEVELS))
+		results := &results_vl
+		lane.sync_value(&results)
+
+		stests := &lane.Queue{limit = len(tests) * len(LEVELS)}
+
+		lane.sync_value(&stests)
+
+		for idx in lane.next(stests) {
+			level := LEVELS[idx % len(LEVELS)]
+			test := &tests[idx / len(LEVELS)]
+			name := test.name
+			buf := &results[idx]
+
+			config_flags := []string{}
+			if name == "module-imports" {
+				config_flags = {
+					"-define:MODULE_IMPORTS_BASE=0x20",
+					"-define:MODULE_IMPORTS_ENABLED=true",
+					"-define:MODULE_IMPORTS_LABEL=constants",
+				}
+			}
+
+			entry := join(test.directory, "main.odin")
+			file_name, _ := strings.replace_all(name, "/", "_", context.allocator)
+
+			res_obj := join(MOD_DIR, name, fmt.tprintf("%v-%v.o", file_name, level))
+
+			res := cmd(
+				jit_path,
+				entry,
+				fmt.tprintf("-o:%v", level),
+				"-o",
+				res_obj,
+				env_map = {root_env},
+				extras = config_flags,
+				stderr_to = buf,
+			)
+			fmt.print(res.stdout)
+			if res.exit_code != 0 {
+				fmt.sbprintfln(
+					buf,
+					" [%v] compilation failed for %v (exit=%v)",
+					level,
+					name,
+					res.exit_code,
+				)
+				sync.atomic_add(failures, 1)
 				continue
 			}
 
-			LEVELS := []string {
-				"moderate-quick",
-				"none",
-				"none-quick",
-				"moderate",
-				"all",
-				"aggresive",
+			res_bin := join(
+				MOD_DIR,
+				name,
+				fmt.tprintf("%v-%v-bin", file_name, level),
+			)
+
+			if cmd("gcc", res_obj, "-o", res_bin, stderr_to = buf).exit_code != 0 {
+				sync.atomic_add(failures, 1)
+				continue
 			}
 
-			for level in LEVELS {
-				res_obj := join(
-					MOD_DIR,
-					name,
-					fmt.tprintf("%v-%v.o", file_name, level),
-				)
+			prog_res := cmd(res_bin)
 
-				res := cmd(
-					jit_path,
-					entry,
-					fmt.tprintf("-o:%v", level),
-					"-o",
-					res_obj,
-					env_map = {root_env},
-					extras = config_flags,
+			ref_res := test.ref_res
+
+			ok := true
+			if ref_res.exit_code != prog_res.exit_code {
+				fmt.sbprintfln(
+					buf,
+					" [%v] exit code mismatch: %v != %v",
+					level,
+					ref_res.exit_code,
+					prog_res.exit_code,
 				)
-				fmt.print(res.stdout)
-				if res.exit_code != 0 {
-					fmt.eprintfln(
-						" [%v] compilation failed for %v (exit=%v)",
-						level,
-						name,
-						res.exit_code,
+				ok = false
+			}
+
+			subdir := join(MOD_DIR, name)
+
+			if ref_res.stdout != prog_res.stdout {
+				fmt.sbprintfln(buf, " [%v] stdout mismatch", level)
+
+				if cmd_exists("diff") {
+					write(join(subdir, "a"), prog_res.stdout)
+					write(join(subdir, "b"), ref_res.stdout)
+					res := cmd(
+						"diff",
+						join(subdir, "b"),
+						join(subdir, "a"),
+						stderr_to = buf,
 					)
-					failures += 1
-					continue
+					fmt.sbprintln(buf, res.stdout)
 				}
+				ok = false
+			}
 
-				res_bin := join(
-					MOD_DIR,
-					name,
-					fmt.tprintf("%v-%v-bin", file_name, level),
-				)
+			if ref_res.stderr != prog_res.stderr {
+				fmt.sbprintfln(buf, " [%v] stderr mismatch", level)
 
-				if cmd("gcc", res_obj, "-o", res_bin).exit_code != 0 {
-					failures += 1
-					continue
-				}
-
-				prog_res := cmd(res_bin)
-
-				ok := true
-				if ref_res.exit_code != prog_res.exit_code {
-					fmt.printfln(
-						" [%v] exit code mismatch: %v != %v",
-						level,
-						ref_res.exit_code,
-						prog_res.exit_code,
+				if cmd_exists("diff") {
+					write(join(subdir, "a"), prog_res.stderr)
+					write(join(subdir, "b"), ref_res.stderr)
+					res := cmd(
+						"diff",
+						join(subdir, "b"),
+						join(subdir, "a"),
+						stderr_to = buf,
 					)
-					ok = false
+
 				}
 
-				if ref_res.stdout != prog_res.stdout {
-					fmt.printfln(" [%v] stdout mismatch", level)
+				ok = false
+			}
 
-					if cmd_exists("diff") {
-						write(join(subdir, "a"), prog_res.stdout)
-						write(join(subdir, "b"), ref_res.stdout)
-						res := cmd("diff", join(subdir, "b"), join(subdir, "a"))
-						fmt.println(res.stdout)
-					}
-					ok = false
-				}
-
-				if ref_res.stderr != prog_res.stderr {
-					fmt.printfln(" [%v] stderr mismatch", level)
-
-					if cmd_exists("diff") {
-						write(join(subdir, "a"), prog_res.stderr)
-						write(join(subdir, "b"), ref_res.stderr)
-						res := cmd("diff", join(subdir, "b"), join(subdir, "a"))
-						fmt.println(res.stderr)
-					}
-
-					ok = false
-				}
-
-				if ok {
-					fmt.printfln(" [%v] OK (exit=%v)", level, prog_res.exit_code)
-				} else {
-					failures += 1
-				}
+			if ok {
+				fmt.sbprintfln(buf, " [%v] OK (exit=%v)", level, prog_res.exit_code)
+			} else {
+				sync.atomic_add(failures, 1)
 			}
 		}
-		if failures != 0 {
-			fmt.eprintfln("%v program checks failed", failures)
-			os.exit(1)
+
+		lane.sync()
+
+		if lane.idx() == 0 {
+			for test, i in tests {
+				fmt.print(strings.to_string(test.output))
+				for sres in results[i * len(LEVELS):][:len(LEVELS)] {
+					fmt.print(strings.to_string(sres))
+				}
+			}
+
+			if failures^ != 0 {
+				fmt.eprintfln("%v program checks failed", failures^)
+				os.exit(1)
+			}
 		}
 	case "prebuild-libs":
 		TO_COMMENT_OUT :: []string {
@@ -1131,6 +1229,7 @@ cmd :: proc(
 	args: ..string,
 	env_map := []string{},
 	extras := []string{},
+	stderr_to: ^strings.Builder = nil,
 ) -> Cmd_Out {
 	pd: os.Process_Desc
 	pd.command = slice.concatenate([][]string{args, extras})
@@ -1140,7 +1239,11 @@ cmd :: proc(
 	pd.env = env_map
 	state, stdout, stderr, err := os.process_exec(pd, context.allocator)
 	fmt.assertf(err == nil, "cmd err (%v): %v", args, err)
-	fmt.eprint(string(stderr), sep = "")
+	if stderr_to != nil {
+		strings.write_bytes(stderr_to, stderr)
+	} else {
+		fmt.eprint(string(stderr), sep = "")
+	}
 	return {stderr = string(stderr), stdout = string(stdout), state = state}
 }
 

@@ -1,0 +1,851 @@
+=========== OPT LEVEL: none-quick ===========
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 128, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+mix:
+    movz x2, #256
+    madd x0, x0, x2, xzr
+    movz x2, #255
+    and x1, x1, x2
+    add x0, x0, x1
+    ret
+read_flags:
+    sub sp, sp, #32
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
+    mov x19, x0
+    movz x20, #7
+    movz x0, #24
+    lsl w1, w19, w0
+    and w0, w19, w20
+    uxtb w0, w0
+    uxtb w0, w0
+    movz x2, #27
+    asr w1, w1, w2
+    uxth w1, w1
+    invalid
+    bl 0xffffffe8
+    movz x1, #8
+    lsr w1, w19, w1
+    movz x2, #1
+    and w1, w1, w2
+    movz x2, #0
+    cmp w1, w2
+    cset w1, ne
+    uxtb w1, w1
+    bl 0xffffffe8
+    movz x1, #9
+    lsr w1, w19, w1
+    and w1, w1, w20
+    uxtb w1, w1
+    uxtb w1, w1
+    bl 0xffffffe8
+    movz x1, #12
+    lsr w1, w19, w1
+    movz x2, #65535
+    movk x2, #15, lsl #16
+    and w1, w1, w2
+    mov w1, w1
+    movz x2, #32
+    lsl x1, x1, x2
+    eor x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
+    add sp, sp, #32
+    ret
+read_mixed:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    uxth w19, w0
+    movz x0, #14
+    uxth w0, w0
+    movz x1, #10
+    uxth w1, w1
+    lsl w2, w19, w1
+    movz x20, #0
+    movz x21, #32
+    cmp w0, w21
+    cset w3, cc
+    lsl w4, w19, w0
+    cmp w3, #0
+    csel w4, w4, w20, ne
+    uxth w4, w4
+    sxth w4, w4
+    movz x5, #31
+    cmp w1, w21
+    csel w1, w2, w20, cc
+    uxth w1, w1
+    sxth w1, w1
+    movz x2, #12
+    uxth w2, w2
+    cmp w3, #0
+    csel w0, w0, w5, ne
+    asr w0, w4, w0
+    uxth w0, w0
+    uxtb w0, w0
+    invalid
+    cmp w2, w21
+    csel w2, w2, w5, cc
+    asr w1, w1, w2
+    uxth w1, w1
+    uxtb w1, w1
+    invalid
+    bl 0xffffff34
+    movz x1, #6
+    uxth w1, w1
+    lsr w2, w19, w1
+    cmp w1, w21
+    csel w1, w2, w20, cc
+    uxth w1, w1
+    uxth w1, w1
+    movz x2, #3
+    uxth w2, w2
+    and w1, w1, w2
+    uxth w1, w1
+    uxth w1, w1
+    movz x2, #0
+    uxth w2, w2
+    cmp w1, w2
+    cset w1, ne
+    uxtb w1, w1
+    bl 0xffffff34
+    movz x1, #8
+    uxth w1, w1
+    lsr w2, w19, w1
+    cmp w1, w21
+    csel w1, w2, w20, cc
+    uxth w1, w1
+    uxth w1, w1
+    movz x2, #255
+    uxth w2, w2
+    and w1, w1, w2
+    uxth w1, w1
+    uxth w1, w1
+    bl 0xffffff34
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    movz x0, #61421
+    movk x0, #43981, lsl #16
+    bl 0xfffffe18
+    mov x19, x0
+    movz x0, #3195
+    bl 0xfffffe18
+    mov x20, x0
+    movz x0, #42466
+    bl 0xfffffecc
+    mov x21, x0
+    movz x0, #433
+    bl 0xfffffecc
+    movz x1, #3
+    madd x1, x20, x1, xzr
+    eor x1, x19, x1
+    movz x2, #8
+    lsl x2, x21, x2
+    eor x1, x1, x2
+    eor x0, x1, x0
+    movz x1, #21834
+    movk x1, #2841, lsl #16
+    movk x1, #6, lsl #48
+    eor x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: none ===========
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 128, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+mix:
+    movz x2, #256
+    madd x2, x0, x2, xzr
+    movz x0, #255
+    and x0, x1, x0
+    add x0, x2, x0
+    ret
+read_flags:
+    sub sp, sp, #32
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
+    mov x20, x0
+    movz x19, #7
+    movz x1, #24
+    lsl w2, w20, w1
+    and w0, w20, w19
+    uxtb w0, w0
+    uxtb w0, w0
+    movz x1, #27
+    asr w1, w2, w1
+    uxth w1, w1
+    invalid
+    bl 0xffffffe8
+    movz x2, #8
+    lsr w2, w20, w2
+    movz x1, #1
+    and w2, w2, w1
+    movz x1, #0
+    cmp w2, w1
+    cset w1, ne
+    uxtb w1, w1
+    bl 0xffffffe8
+    movz x2, #9
+    lsr w1, w20, w2
+    and w1, w1, w19
+    uxtb w1, w1
+    uxtb w1, w1
+    bl 0xffffffe8
+    movz x2, #12
+    lsr w2, w20, w2
+    movz x1, #65535
+    movk x1, #15, lsl #16
+    and w1, w2, w1
+    mov w2, w1
+    movz x1, #32
+    lsl x1, x2, x1
+    eor x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
+    add sp, sp, #32
+    ret
+read_mixed:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    uxth w21, w0
+    movz x0, #14
+    uxth w6, w0
+    movz x0, #10
+    uxth w2, w0
+    lsl w1, w21, w2
+    movz x20, #0
+    movz x19, #32
+    cmp w6, w19
+    cset w5, cc
+    lsl w0, w21, w6
+    cmp w5, #0
+    csel w0, w0, w20, ne
+    uxth w0, w0
+    sxth w4, w0
+    movz x3, #31
+    cmp w2, w19
+    csel w0, w1, w20, cc
+    uxth w0, w0
+    sxth w2, w0
+    movz x0, #12
+    uxth w1, w0
+    cmp w5, #0
+    csel w0, w6, w3, ne
+    asr w0, w4, w0
+    uxth w0, w0
+    uxtb w0, w0
+    invalid
+    cmp w1, w19
+    csel w1, w1, w3, cc
+    asr w1, w2, w1
+    uxth w1, w1
+    uxtb w1, w1
+    invalid
+    bl 0xffffff34
+    movz x1, #6
+    uxth w2, w1
+    lsr w1, w21, w2
+    cmp w2, w19
+    csel w1, w1, w20, cc
+    uxth w1, w1
+    uxth w2, w1
+    movz x1, #3
+    uxth w1, w1
+    and w1, w2, w1
+    uxth w1, w1
+    uxth w2, w1
+    movz x1, #0
+    uxth w1, w1
+    cmp w2, w1
+    cset w1, ne
+    uxtb w1, w1
+    bl 0xffffff34
+    movz x1, #8
+    uxth w2, w1
+    lsr w1, w21, w2
+    cmp w2, w19
+    csel w1, w1, w20, cc
+    uxth w1, w1
+    uxth w2, w1
+    movz x1, #255
+    uxth w1, w1
+    and w1, w2, w1
+    uxth w1, w1
+    uxth w1, w1
+    bl 0xffffff34
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    movz x0, #61421
+    movk x0, #43981, lsl #16
+    bl 0xfffffe18
+    mov x20, x0
+    movz x0, #3195
+    bl 0xfffffe18
+    mov x21, x0
+    movz x0, #42466
+    bl 0xfffffecc
+    mov x19, x0
+    movz x0, #433
+    bl 0xfffffecc
+    movz x1, #3
+    madd x1, x21, x1, xzr
+    eor x2, x20, x1
+    movz x1, #8
+    lsl x1, x19, x1
+    eor x1, x2, x1
+    eor x1, x1, x0
+    movz x0, #21834
+    movk x0, #2841, lsl #16
+    movk x0, #6, lsl #48
+    eor x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 128, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+mix:
+    movz x2, #256
+    madd x0, x0, x2, xzr
+    movz x2, #255
+    and x1, x1, x2
+    add x0, x0, x1
+    ret
+read_flags:
+    sub sp, sp, #32
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
+    mov x19, x0
+    movz x20, #7
+    movz x0, #24
+    lsl w1, w19, w0
+    and w0, w19, w20
+    uxtb w0, w0
+    uxtb w0, w0
+    movz x2, #27
+    asr w1, w1, w2
+    uxth w1, w1
+    invalid
+    bl 0xffffffe8
+    movz x1, #8
+    lsr w1, w19, w1
+    movz x2, #1
+    and w1, w1, w2
+    movz x2, #0
+    cmp w1, w2
+    cset w1, ne
+    uxtb w1, w1
+    bl 0xffffffe8
+    movz x1, #9
+    lsr w1, w19, w1
+    and w1, w1, w20
+    uxtb w1, w1
+    uxtb w1, w1
+    bl 0xffffffe8
+    movz x1, #12
+    lsr w1, w19, w1
+    movz x2, #65535
+    movk x2, #15, lsl #16
+    and w1, w1, w2
+    mov w1, w1
+    movz x2, #32
+    lsl x1, x1, x2
+    eor x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
+    add sp, sp, #32
+    ret
+read_mixed:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    uxth w19, w0
+    movz x0, #14
+    uxth w0, w0
+    movz x1, #10
+    uxth w1, w1
+    lsl w2, w19, w1
+    movz x20, #0
+    movz x21, #32
+    cmp w0, w21
+    cset w3, cc
+    lsl w4, w19, w0
+    cmp w3, #0
+    csel w4, w4, w20, ne
+    uxth w4, w4
+    sxth w4, w4
+    movz x5, #31
+    cmp w1, w21
+    csel w1, w2, w20, cc
+    uxth w1, w1
+    sxth w1, w1
+    movz x2, #12
+    uxth w2, w2
+    cmp w3, #0
+    csel w0, w0, w5, ne
+    asr w0, w4, w0
+    uxth w0, w0
+    uxtb w0, w0
+    invalid
+    cmp w2, w21
+    csel w2, w2, w5, cc
+    asr w1, w1, w2
+    uxth w1, w1
+    uxtb w1, w1
+    invalid
+    bl 0xffffff34
+    movz x1, #6
+    uxth w1, w1
+    lsr w2, w19, w1
+    cmp w1, w21
+    csel w1, w2, w20, cc
+    uxth w1, w1
+    uxth w1, w1
+    movz x2, #3
+    uxth w2, w2
+    and w1, w1, w2
+    uxth w1, w1
+    uxth w1, w1
+    movz x2, #0
+    uxth w2, w2
+    cmp w1, w2
+    cset w1, ne
+    uxtb w1, w1
+    bl 0xffffff34
+    movz x1, #8
+    uxth w1, w1
+    lsr w2, w19, w1
+    cmp w1, w21
+    csel w1, w2, w20, cc
+    uxth w1, w1
+    uxth w1, w1
+    movz x2, #255
+    uxth w2, w2
+    and w1, w1, w2
+    uxth w1, w1
+    uxth w1, w1
+    bl 0xffffff34
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    movz x0, #61421
+    movk x0, #43981, lsl #16
+    bl 0xfffffe18
+    mov x19, x0
+    movz x0, #3195
+    bl 0xfffffe18
+    mov x20, x0
+    movz x0, #42466
+    bl 0xfffffecc
+    mov x21, x0
+    movz x0, #433
+    bl 0xfffffecc
+    movz x1, #3
+    madd x1, x20, x1, xzr
+    eor x1, x19, x1
+    movz x2, #8
+    lsl x2, x21, x2
+    eor x1, x1, x2
+    eor x0, x1, x0
+    movz x1, #21834
+    movk x1, #2841, lsl #16
+    movk x1, #6, lsl #48
+    eor x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: moderate ===========
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 128, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+mix:
+    movz x2, #256
+    madd x2, x0, x2, xzr
+    movz x0, #255
+    and x0, x1, x0
+    add x0, x2, x0
+    ret
+read_flags:
+    sub sp, sp, #32
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
+    mov x20, x0
+    movz x19, #7
+    movz x1, #24
+    lsl w2, w20, w1
+    and w0, w20, w19
+    uxtb w0, w0
+    uxtb w0, w0
+    movz x1, #27
+    asr w1, w2, w1
+    uxth w1, w1
+    invalid
+    bl 0xffffffe8
+    movz x2, #8
+    lsr w2, w20, w2
+    movz x1, #1
+    and w2, w2, w1
+    movz x1, #0
+    cmp w2, w1
+    cset w1, ne
+    uxtb w1, w1
+    bl 0xffffffe8
+    movz x2, #9
+    lsr w1, w20, w2
+    and w1, w1, w19
+    uxtb w1, w1
+    uxtb w1, w1
+    bl 0xffffffe8
+    movz x2, #12
+    lsr w2, w20, w2
+    movz x1, #65535
+    movk x1, #15, lsl #16
+    and w1, w2, w1
+    mov w2, w1
+    movz x1, #32
+    lsl x1, x2, x1
+    eor x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
+    add sp, sp, #32
+    ret
+read_mixed:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    uxth w21, w0
+    movz x0, #14
+    uxth w6, w0
+    movz x0, #10
+    uxth w2, w0
+    lsl w1, w21, w2
+    movz x20, #0
+    movz x19, #32
+    cmp w6, w19
+    cset w5, cc
+    lsl w0, w21, w6
+    cmp w5, #0
+    csel w0, w0, w20, ne
+    uxth w0, w0
+    sxth w4, w0
+    movz x3, #31
+    cmp w2, w19
+    csel w0, w1, w20, cc
+    uxth w0, w0
+    sxth w2, w0
+    movz x0, #12
+    uxth w1, w0
+    cmp w5, #0
+    csel w0, w6, w3, ne
+    asr w0, w4, w0
+    uxth w0, w0
+    uxtb w0, w0
+    invalid
+    cmp w1, w19
+    csel w1, w1, w3, cc
+    asr w1, w2, w1
+    uxth w1, w1
+    uxtb w1, w1
+    invalid
+    bl 0xffffff34
+    movz x1, #6
+    uxth w2, w1
+    lsr w1, w21, w2
+    cmp w2, w19
+    csel w1, w1, w20, cc
+    uxth w1, w1
+    uxth w2, w1
+    movz x1, #3
+    uxth w1, w1
+    and w1, w2, w1
+    uxth w1, w1
+    uxth w2, w1
+    movz x1, #0
+    uxth w1, w1
+    cmp w2, w1
+    cset w1, ne
+    uxtb w1, w1
+    bl 0xffffff34
+    movz x1, #8
+    uxth w2, w1
+    lsr w1, w21, w2
+    cmp w2, w19
+    csel w1, w1, w20, cc
+    uxth w1, w1
+    uxth w2, w1
+    movz x1, #255
+    uxth w1, w1
+    and w1, w2, w1
+    uxth w1, w1
+    uxth w1, w1
+    bl 0xffffff34
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    movz x0, #61421
+    movk x0, #43981, lsl #16
+    bl 0xfffffe18
+    mov x20, x0
+    movz x0, #3195
+    bl 0xfffffe18
+    mov x21, x0
+    movz x0, #42466
+    bl 0xfffffecc
+    mov x19, x0
+    movz x0, #433
+    bl 0xfffffecc
+    movz x1, #3
+    madd x1, x21, x1, xzr
+    eor x2, x20, x1
+    movz x1, #8
+    lsl x1, x19, x1
+    eor x1, x2, x1
+    eor x1, x1, x0
+    movz x0, #21834
+    movk x0, #2841, lsl #16
+    movk x0, #6, lsl #48
+    eor x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: all ===========
+Error{inst_idx = 56, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 128, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 152, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+mix:
+    movz x2, #256
+    madd x2, x0, x2, xzr
+    movz x0, #255
+    and x0, x1, x0
+    add x0, x2, x0
+    ret
+read_flags:
+    sub sp, sp, #32
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    stp x29, x30, [xzr, #16]
+    mov x20, x0
+    movz x19, #7
+    movz x1, #24
+    lsl w2, w20, w1
+    and w0, w20, w19
+    uxtb w0, w0
+    uxtb w0, w0
+    movz x1, #27
+    asr w1, w2, w1
+    uxth w1, w1
+    invalid
+    bl 0xffffffe8
+    movz x2, #8
+    lsr w2, w20, w2
+    movz x1, #1
+    and w2, w2, w1
+    movz x1, #0
+    cmp w2, w1
+    cset w1, ne
+    uxtb w1, w1
+    bl 0xffffffe8
+    movz x2, #9
+    lsr w1, w20, w2
+    and w1, w1, w19
+    uxtb w1, w1
+    uxtb w1, w1
+    bl 0xffffffe8
+    movz x2, #12
+    lsr w2, w20, w2
+    movz x1, #65535
+    movk x1, #15, lsl #16
+    and w1, w2, w1
+    mov w2, w1
+    movz x1, #32
+    lsl x1, x2, x1
+    eor x0, x0, x1
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldp x29, x30, [xzr, #16]
+    add sp, sp, #32
+    ret
+read_mixed:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    uxth w21, w0
+    movz x0, #14
+    uxth w6, w0
+    movz x0, #10
+    uxth w2, w0
+    lsl w1, w21, w2
+    movz x20, #0
+    movz x19, #32
+    cmp w6, w19
+    cset w5, cc
+    lsl w0, w21, w6
+    cmp w5, #0
+    csel w0, w0, w20, ne
+    uxth w0, w0
+    sxth w4, w0
+    movz x3, #31
+    cmp w2, w19
+    csel w0, w1, w20, cc
+    uxth w0, w0
+    sxth w2, w0
+    movz x0, #12
+    uxth w1, w0
+    cmp w5, #0
+    csel w0, w6, w3, ne
+    asr w0, w4, w0
+    uxth w0, w0
+    uxtb w0, w0
+    invalid
+    cmp w1, w19
+    csel w1, w1, w3, cc
+    asr w1, w2, w1
+    uxth w1, w1
+    uxtb w1, w1
+    invalid
+    bl 0xffffff34
+    movz x1, #6
+    uxth w2, w1
+    lsr w1, w21, w2
+    cmp w2, w19
+    csel w1, w1, w20, cc
+    uxth w1, w1
+    uxth w2, w1
+    movz x1, #3
+    uxth w1, w1
+    and w1, w2, w1
+    uxth w1, w1
+    uxth w2, w1
+    movz x1, #0
+    uxth w1, w1
+    cmp w2, w1
+    cset w1, ne
+    uxtb w1, w1
+    bl 0xffffff34
+    movz x1, #8
+    uxth w2, w1
+    lsr w1, w21, w2
+    cmp w2, w19
+    csel w1, w1, w20, cc
+    uxth w1, w1
+    uxth w2, w1
+    movz x1, #255
+    uxth w1, w1
+    and w1, w2, w1
+    uxth w1, w1
+    uxth w1, w1
+    bl 0xffffff34
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+main:
+    sub sp, sp, #48
+    str x19, [xzr]
+    str x20, [xzr, #8]
+    str x21, [xzr, #16]
+    stp x29, x30, [xzr, #24]
+    movz x0, #61421
+    movk x0, #43981, lsl #16
+    bl 0xfffffe18
+    mov x20, x0
+    movz x0, #3195
+    bl 0xfffffe18
+    mov x21, x0
+    movz x0, #42466
+    bl 0xfffffecc
+    mov x19, x0
+    movz x0, #433
+    bl 0xfffffecc
+    movz x1, #3
+    madd x1, x21, x1, xzr
+    eor x2, x20, x1
+    movz x1, #8
+    lsl x1, x19, x1
+    eor x1, x2, x1
+    eor x1, x1, x0
+    movz x0, #21834
+    movk x0, #2841, lsl #16
+    movk x0, #6, lsl #48
+    eor x0, x1, x0
+    ldr x19, [xzr]
+    ldr x20, [xzr, #8]
+    ldr x21, [xzr, #16]
+    ldp x29, x30, [xzr, #24]
+    add sp, sp, #48
+    ret
+=========== OPT LEVEL: aggresive ===========

@@ -550,6 +550,14 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 					if typecheck.in_set(inner.backing, typecheck.UNSIGNED_TYPES) {
 						encoding = .Unsigned
 					}
+				case ^typecheck.Bit_Set:
+					if typecheck.in_set(inner.underlying, typecheck.UNSIGNED_TYPES) {
+						encoding = .Unsigned
+					}
+				case ^typecheck.Bit_Field:
+					if typecheck.in_set(inner.backing, typecheck.UNSIGNED_TYPES) {
+						encoding = .Unsigned
+					}
 				case ^typecheck.Simd:
 					if typecheck.in_set(inner.elem, typecheck.FLOAT_TYPES) {
 						encoding = .Float

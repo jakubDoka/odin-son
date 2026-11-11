@@ -203,6 +203,7 @@ main :: proc() {
 			.Zip1 = {default_type = .V128, args = {"lsh", "rhs"}, pass_lane = true},
 			.Addv128 = {args = {"vec"}, pass_lane = true},
 			.Umov = {id = arm.Arm_Op, args = {"vec"}, extra_args = {"aux"}},
+			.Cnt = {args = {"vec"}},
 			.Lslv ..= .Lsrv = {no_ctor = true},
 		}
 

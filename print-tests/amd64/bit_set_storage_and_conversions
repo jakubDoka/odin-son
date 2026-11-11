@@ -1,0 +1,613 @@
+=========== OPT LEVEL: none-quick ===========
+paint:
+    push rbx
+    push rbp
+    mov rax, rsi
+    mov rcx, rsi
+    mov dl, 1
+    movzx edx, dl
+    shlx edx, edx, eax
+    mov rbx, 1
+    movzx ebx, bx
+    shlx ebx, ebx, ecx
+    cmp al, 0x20
+    setb al
+    movzx eax, al
+    xor ebp, ebp
+    test al, al
+    cmovne ebp, edx
+    mov rax, rbp
+    or.b [rdi], al
+    cmp cx, 0x20
+    setb al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne ecx, ebx
+    mov rax, rcx
+    or.w [rdi + 0x2], ax
+    xor.d [rdi + 0x4], 8
+    pop rbp
+    pop rbx
+    ret
+pack:
+    mov.q [rsp - 0x18], rdi
+    mov rax, rsi
+    mov.d [rsp - 0x10], eax
+    movzx.b eax, [rsp - 0x18]
+    imul rax, rax, 0x10000
+    movzx.w ecx, [rsp - 0x16]
+    add rax, rcx
+    imul rax, rax, 0x100
+    mov.d ecx, [rsp - 0x14]
+    add rax, rcx
+    imul rax, rax, 0x100
+    movzx.b ecx, [rsp - 0x10]
+    add rax, rcx
+    ret
+main:
+    push rbx
+    sub rsp, 0x10
+    mov.b [rsp + 0x2], 0
+    mov.w [rsp + 0x3], 0
+    mov.b [rsp + 0xa], 0
+    mov.w [rsp + 0xb], 0
+    mov.b [rsp + 0x1], 1
+    mov.d [rsp + 0x5], 2
+    mov.b [rsp + 0x9], 0x5a
+    mov rsi, 4
+    lea rdi, [rsp + 0x1]
+    call paint
+    mov rsi, 7
+    lea rdi, [rsp + 0x1]
+    call paint
+    mov.q rdi, [rsp + 0x1]
+    mov.d esi, [rsp + 0x9]
+    call pack
+    or.b [rip + 0xe23], 1
+    movzx.b ecx, [rip + 0xe1b]
+    mov dl, -0x80
+    not dl
+    and dl, cl
+    mov.b [rip + 0xe0b], dl
+    mov.w [rip + 0xe03], 0x88
+    movzx.b ecx, [rip + 0xdf9]
+    movzx.w edx, [rip + 0xdf3]
+    mov.b [rsp], 0
+    imul rax, rax, 0x100
+    add rax, rcx
+    movzx.b ecx, [rsp]
+    xor cl, -0x80
+    mov.b [rsp], cl
+    shl rdx, 0x10
+    xor rax, rdx
+    imul rax, rax, 0x100
+    add rax, 0x19
+    imul rax, rax, 0x100
+    movzx ecx, cl
+    add rax, rcx
+    movzx.w ecx, [rip + 0xdac]
+    shr cx, 7
+    and cx, 1
+    cmp cx, 0
+    jne 3
+    mov rcx, rax
+    jmp 4
+3:
+    add rax, 1
+    mov rcx, rax
+4:
+    mov rdx, rcx
+    add rdx, 2
+    mov al, 0x19
+    movzx.b ebx, [rip + 0xd6c]
+    not bl
+    and bl, al
+    cmp bl, 0
+    mov rax, rcx
+    cmove rax, rdx
+    add rsp, 0x10
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+paint:
+    mov rcx, rsi
+    mov r8, rsi
+    mov al, 1
+    movzx eax, al
+    shlx esi, eax, ecx
+    mov rax, 1
+    movzx eax, ax
+    shlx edx, eax, r8d
+    cmp cl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, esi
+    or.b [rdi], al
+    cmp r8w, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, edx
+    or.w [rdi + 0x2], ax
+    xor.d [rdi + 0x4], 8
+    ret
+pack:
+    mov.q [rsp - 0x18], rdi
+    mov rax, rsi
+    mov.d [rsp - 0x10], eax
+    movzx.b eax, [rsp - 0x18]
+    imul rcx, rax, 0x10000
+    movzx.w eax, [rsp - 0x16]
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    mov.d eax, [rsp - 0x14]
+    add rcx, rax
+    imul rax, rcx, 0x100
+    movzx.b ecx, [rsp - 0x10]
+    add rax, rcx
+    ret
+main:
+    sub rsp, 0x18
+    mov.b [rsp + 0x2], 0
+    mov.w [rsp + 0x3], 0
+    mov.b [rsp + 0xa], 0
+    mov.w [rsp + 0xb], 0
+    mov.b [rsp + 0x1], 1
+    mov.d [rsp + 0x5], 2
+    mov.b [rsp + 0x9], 0x5a
+    mov rsi, 4
+    lea rdi, [rsp + 0x1]
+    call paint
+    mov rsi, 7
+    lea rdi, [rsp + 0x1]
+    call paint
+    mov.q rdi, [rsp + 0x1]
+    mov.d esi, [rsp + 0x9]
+    call pack
+    or.b [rip + 0xe50], 1
+    movzx.b edx, [rip + 0xe48]
+    mov cl, -0x80
+    not cl
+    and cl, dl
+    mov.b [rip + 0xe38], cl
+    mov.w [rip + 0xe30], 0x88
+    movzx.b ecx, [rip + 0xe26]
+    movzx.w edx, [rip + 0xe20]
+    mov.b [rsp], 0
+    imul rax, rax, 0x100
+    add rax, rcx
+    movzx.b ecx, [rsp]
+    xor cl, -0x80
+    mov.b [rsp], cl
+    shl rdx, 0x10
+    xor rax, rdx
+    imul rax, rax, 0x100
+    add rax, 0x19
+    imul rsi, rax, 0x100
+    movzx eax, cl
+    add rsi, rax
+    movzx.w eax, [rip + 0xdd9]
+    shr ax, 7
+    and ax, 1
+    cmp ax, 0
+    jne 3
+    jmp 4
+3:
+    add rsi, 1
+4:
+    mov rdx, rsi
+    add rdx, 2
+    mov cl, 0x19
+    movzx.b eax, [rip + 0xd9f]
+    not al
+    and al, cl
+    cmp al, 0
+    mov rax, rsi
+    cmove rax, rdx
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+paint:
+    push rbx
+    push rbp
+    mov rax, rsi
+    mov rcx, rsi
+    mov dl, 1
+    movzx edx, dl
+    shlx edx, edx, eax
+    mov rbx, 1
+    movzx ebx, bx
+    shlx ebx, ebx, ecx
+    cmp al, 0x20
+    setb al
+    movzx eax, al
+    xor ebp, ebp
+    test al, al
+    cmovne ebp, edx
+    mov rax, rbp
+    or.b [rdi], al
+    cmp cx, 0x20
+    setb al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne ecx, ebx
+    mov rax, rcx
+    or.w [rdi + 0x2], ax
+    xor.d [rdi + 0x4], 8
+    pop rbp
+    pop rbx
+    ret
+pack:
+    mov.q [rsp - 0x18], rdi
+    mov rax, rsi
+    mov.d [rsp - 0x10], eax
+    movzx.b eax, [rsp - 0x18]
+    imul rax, rax, 0x10000
+    movzx.w ecx, [rsp - 0x16]
+    add rax, rcx
+    imul rax, rax, 0x100
+    mov.d ecx, [rsp - 0x14]
+    add rax, rcx
+    imul rax, rax, 0x100
+    movzx.b ecx, [rsp - 0x10]
+    add rax, rcx
+    ret
+main:
+    push rbx
+    sub rsp, 0x10
+    mov.b [rsp + 0x2], 0
+    mov.w [rsp + 0x3], 0
+    mov.b [rsp + 0xa], 0
+    mov.w [rsp + 0xb], 0
+    mov.b [rsp + 0x1], 1
+    mov.d [rsp + 0x5], 2
+    mov.b [rsp + 0x9], 0x5a
+    mov rsi, 4
+    lea rdi, [rsp + 0x1]
+    call paint
+    mov rsi, 7
+    lea rdi, [rsp + 0x1]
+    call paint
+    mov.q rdi, [rsp + 0x1]
+    mov.d esi, [rsp + 0x9]
+    call pack
+    or.b [rip + 0xe23], 1
+    movzx.b ecx, [rip + 0xe1b]
+    mov dl, -0x80
+    not dl
+    and dl, cl
+    mov.b [rip + 0xe0b], dl
+    mov.w [rip + 0xe03], 0x88
+    movzx.b ecx, [rip + 0xdf9]
+    movzx.w edx, [rip + 0xdf3]
+    mov.b [rsp], 0
+    imul rax, rax, 0x100
+    add rax, rcx
+    movzx.b ecx, [rsp]
+    xor cl, -0x80
+    mov.b [rsp], cl
+    shl rdx, 0x10
+    xor rax, rdx
+    imul rax, rax, 0x100
+    add rax, 0x19
+    imul rax, rax, 0x100
+    movzx ecx, cl
+    add rax, rcx
+    movzx.w ecx, [rip + 0xdac]
+    shr cx, 7
+    and cx, 1
+    cmp cx, 0
+    jne 3
+    mov rcx, rax
+    jmp 4
+3:
+    add rax, 1
+    mov rcx, rax
+4:
+    mov rdx, rcx
+    add rdx, 2
+    mov al, 0x19
+    movzx.b ebx, [rip + 0xd6c]
+    not bl
+    and bl, al
+    cmp bl, 0
+    mov rax, rcx
+    cmove rax, rdx
+    add rsp, 0x10
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+paint:
+    mov rcx, rsi
+    mov r8, rsi
+    mov al, 1
+    movzx eax, al
+    shlx esi, eax, ecx
+    mov rax, 1
+    movzx eax, ax
+    shlx edx, eax, r8d
+    cmp cl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, esi
+    or.b [rdi], al
+    cmp r8w, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, edx
+    or.w [rdi + 0x2], ax
+    xor.d [rdi + 0x4], 8
+    ret
+pack:
+    mov.q [rsp - 0x18], rdi
+    mov rax, rsi
+    mov.d [rsp - 0x10], eax
+    movzx.b eax, [rsp - 0x18]
+    imul rcx, rax, 0x10000
+    movzx.w eax, [rsp - 0x16]
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    mov.d eax, [rsp - 0x14]
+    add rcx, rax
+    imul rax, rcx, 0x100
+    movzx.b ecx, [rsp - 0x10]
+    add rax, rcx
+    ret
+main:
+    sub rsp, 0x18
+    mov.b [rsp + 0x2], 0
+    mov.w [rsp + 0x3], 0
+    mov.b [rsp + 0xa], 0
+    mov.w [rsp + 0xb], 0
+    mov.b [rsp + 0x1], 1
+    mov.d [rsp + 0x5], 2
+    mov.b [rsp + 0x9], 0x5a
+    mov rsi, 4
+    lea rdi, [rsp + 0x1]
+    call paint
+    mov rsi, 7
+    lea rdi, [rsp + 0x1]
+    call paint
+    mov.q rdi, [rsp + 0x1]
+    mov.d esi, [rsp + 0x9]
+    call pack
+    or.b [rip + 0xe50], 1
+    movzx.b edx, [rip + 0xe48]
+    mov cl, -0x80
+    not cl
+    and cl, dl
+    mov.b [rip + 0xe38], cl
+    mov.w [rip + 0xe30], 0x88
+    movzx.b ecx, [rip + 0xe26]
+    movzx.w edx, [rip + 0xe20]
+    mov.b [rsp], 0
+    imul rax, rax, 0x100
+    add rax, rcx
+    movzx.b ecx, [rsp]
+    xor cl, -0x80
+    mov.b [rsp], cl
+    shl rdx, 0x10
+    xor rax, rdx
+    imul rax, rax, 0x100
+    add rax, 0x19
+    imul rsi, rax, 0x100
+    movzx eax, cl
+    add rsi, rax
+    movzx.w eax, [rip + 0xdd9]
+    shr ax, 7
+    and ax, 1
+    cmp ax, 0
+    jne 3
+    jmp 4
+3:
+    add rsi, 1
+4:
+    mov rdx, rsi
+    add rdx, 2
+    mov cl, 0x19
+    movzx.b eax, [rip + 0xd9f]
+    not al
+    and al, cl
+    cmp al, 0
+    mov rax, rsi
+    cmove rax, rdx
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: all ===========
+paint:
+    mov rcx, rsi
+    mov r8, rsi
+    mov al, 1
+    movzx eax, al
+    shlx esi, eax, ecx
+    mov rax, 1
+    movzx eax, ax
+    shlx edx, eax, r8d
+    cmp cl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, esi
+    or.b [rdi], al
+    cmp r8w, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, edx
+    or.w [rdi + 0x2], ax
+    xor.d [rdi + 0x4], 8
+    ret
+pack:
+    mov.q [rsp - 0x18], rdi
+    mov rax, rsi
+    mov.d [rsp - 0x10], eax
+    movzx.b eax, [rsp - 0x18]
+    imul rcx, rax, 0x10000
+    movzx.w eax, [rsp - 0x16]
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    mov.d eax, [rsp - 0x14]
+    add rcx, rax
+    imul rax, rcx, 0x100
+    movzx.b ecx, [rsp - 0x10]
+    add rax, rcx
+    ret
+main:
+    sub rsp, 0x18
+    mov.b [rsp + 0x1], 0
+    mov.w [rsp + 0x2], 0
+    mov.b [rsp + 0x9], 0
+    mov.w [rsp + 0xa], 0
+    mov.b [rsp], 1
+    mov.d [rsp + 0x4], 2
+    mov.b [rsp + 0x8], 0x5a
+    mov rsi, 4
+    lea rdi, [rsp]
+    call paint
+    mov rsi, 7
+    lea rdi, [rsp]
+    call paint
+    mov.q rdi, [rsp]
+    mov.d esi, [rsp + 0x8]
+    call pack
+    or.b [rip + 0xe54], 1
+    movzx.b edx, [rip + 0xe4c]
+    imul rcx, rax, 0x100
+    mov al, -0x80
+    not al
+    and al, dl
+    mov.b [rip + 0xe35], al
+    mov.w [rip + 0xe2d], 0x88
+    movzx.b eax, [rip + 0xe23]
+    add rcx, rax
+    movzx.w eax, [rip + 0xe1a]
+    shl rax, 0x10
+    xor rcx, rax
+    imul rax, rcx, 0x100
+    add rax, 0x19
+    imul rsi, rax, 0x100
+    movzx.w eax, [rip + 0xdf6]
+    shr ax, 7
+    and ax, 1
+    cmp ax, 0
+    jne 3
+    add rsi, 0x80
+    jmp 4
+3:
+    add rsi, 0x81
+4:
+    mov rdx, rsi
+    add rdx, 2
+    mov cl, 0x19
+    movzx.b eax, [rip + 0xdb5]
+    not al
+    and al, cl
+    cmp al, 0
+    mov rax, rsi
+    cmove rax, rdx
+    add rsp, 0x18
+    ret
+=========== OPT LEVEL: aggresive ===========
+paint:
+    mov rcx, rsi
+    mov r8, rsi
+    mov al, 1
+    movzx eax, al
+    shlx esi, eax, ecx
+    mov rax, 1
+    movzx eax, ax
+    shlx edx, eax, r8d
+    cmp cl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, esi
+    or.b [rdi], al
+    cmp r8w, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, edx
+    or.w [rdi + 0x2], ax
+    xor.d [rdi + 0x4], 8
+    ret
+main:
+    sub rsp, 0x18
+    mov.b [rsp + 0x1], 0
+    mov.w [rsp + 0x2], 0
+    mov.b [rsp + 0x9], 0
+    mov.w [rsp + 0xa], 0
+    mov.b [rsp], 1
+    mov.d [rsp + 0x4], 2
+    mov.b [rsp + 0x8], 0x5a
+    mov rsi, 4
+    lea rdi, [rsp]
+    call paint
+    mov rsi, 7
+    lea rdi, [rsp]
+    call paint
+    mov.d ecx, [rsp + 0x8]
+    mov.q rax, [rsp]
+    mov.q [rsp + 0xc], rax
+    mov rax, rcx
+    mov.d [rsp + 0x14], eax
+    movzx.b eax, [rsp + 0xc]
+    imul rcx, rax, 0x10000
+    movzx.w eax, [rsp + 0xe]
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    or.b [rip + 0xe72], 1
+    mov.d eax, [rsp + 0x10]
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    movzx.b eax, [rsp + 0x14]
+    add rcx, rax
+    imul rdx, rcx, 0x100
+    movzx.b ecx, [rip + 0xe4b]
+    mov al, -0x80
+    not al
+    and al, cl
+    mov.b [rip + 0xe3b], al
+    mov.w [rip + 0xe33], 0x88
+    movzx.b eax, [rip + 0xe29]
+    add rdx, rax
+    movzx.w eax, [rip + 0xe20]
+    shl rax, 0x10
+    xor rdx, rax
+    imul rax, rdx, 0x100
+    add rax, 0x19
+    imul rsi, rax, 0x100
+    movzx.w eax, [rip + 0xdfc]
+    shr ax, 7
+    and ax, 1
+    cmp ax, 0
+    jne 2
+    add rsi, 0x80
+    jmp 3
+2:
+    add rsi, 0x81
+3:
+    mov rdx, rsi
+    add rdx, 2
+    movzx.b ecx, [rip + 0xdbe]
+    mov al, 0x19
+    not cl
+    and cl, al
+    cmp cl, 0
+    mov rax, rsi
+    cmove rax, rdx
+    add rsp, 0x18
+    ret

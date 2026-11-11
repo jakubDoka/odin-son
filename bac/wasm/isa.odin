@@ -250,6 +250,7 @@ when !SPEC_NOT_PRESENT {
 		.Neg = #partial{.F32 = .F32_Neg, .F64 = .F64_Neg},
 		.Not = #partial{.I8 ..= .I32 = .I32_Eqz, .I64 = .I64_Eqz},
 		.Ctz = #partial{.I8 ..= .I32 = .I32_Ctz, .I64 = .I64_Ctz},
+		.Popcnt = #partial{.I8 ..= .I32 = .I32_Popcnt, .I64 = .I64_Popcnt},
 		.Set_Local = {.Void ..= .V512 = .Local_Set},
 		.Tee_Local = {.Void ..= .V512 = .Local_Tee},
 		.Drop = {.Void ..= .V512 = .Drop},

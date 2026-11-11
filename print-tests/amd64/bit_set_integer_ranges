@@ -1,0 +1,1346 @@
+=========== OPT LEVEL: none-quick ===========
+digits:
+    push rbx
+    push rbp
+    mov al, 1
+    movzx eax, al
+    sub rdi, 3
+    mov rcx, rdi
+    sub rsi, 3
+    mov rdx, rsi
+    shlx ebx, eax, ecx
+    shlx ebp, eax, edx
+    cmp cl, 0x20
+    setb al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne ecx, ebx
+    mov rax, rcx
+    cmp dl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne edx, ebp
+    mov rcx, rdx
+    or al, cl
+    or al, 1
+    pop rbp
+    pop rbx
+    ret
+around:
+    push rbx
+    push rbp
+    mov al, 1
+    movzx eax, al
+    mov rcx, rdi
+    sub rcx, -2
+    shlx edx, eax, ecx
+    mov rbx, rdi
+    add rbx, 1
+    sub rbx, -2
+    shlx ebp, eax, ebx
+    cmp cl, 0x20
+    setb al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne ecx, edx
+    mov rax, rcx
+    cmp bl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne edx, ebp
+    mov rcx, rdx
+    or al, cl
+    or al, 1
+    pop rbp
+    pop rbx
+    ret
+late:
+    sub rdi, 0x3c
+    mov rax, rdi
+    mov rcx, 1
+    movzx ecx, cx
+    shlx ecx, ecx, eax
+    xor edx, edx
+    cmp ax, 0x20
+    cmovb edx, ecx
+    mov rax, rdx
+    or ax, 0x200
+    ret
+huge:
+    push rbx
+    mov rax, 1
+    shlx rcx, rax, rdi
+    shlx rax, rax, rsi
+    cmp rdi, 0x40
+    setb dl
+    movzx edx, dl
+    xor ebx, ebx
+    test dl, dl
+    cmovne rbx, rcx
+    cmp rsi, 0x40
+    setb cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rbx
+    or rax, rdx
+    pop rbx
+    ret
+tests:
+    push rbx
+    push rbp
+    mov rax, 1
+    mov cl, 1
+    mov rdx, rdi
+    not dl
+    and dl, cl
+    cmp dl, 0
+    sete cl
+    movzx ecx, cl
+    sub rsi, 3
+    mov rdx, rsi
+    movzx ebx, dil
+    shrx ebx, ebx, edx
+    xor ebp, ebp
+    cmp dl, 0x20
+    cmovb ebp, ebx
+    mov rdx, rbp
+    and dl, 1
+    cmp dl, 0
+    setne bl
+    movzx ebx, bl
+    xor ebp, ebp
+    test bl, bl
+    cmovne rbp, rax
+    mov rax, rbp
+    or rax, 2
+    cmp dl, 0
+    mov rdx, rbp
+    cmove rdx, rax
+    mov rax, rdx
+    or rax, 4
+    mov bl, 0x45
+    not bl
+    and bl, dil
+    cmp bl, 0
+    cmove rdx, rax
+    mov rbx, rdx
+    or rbx, 8
+    cmp dil, 1
+    setne al
+    movzx eax, al
+    and cl, al
+    test cl, cl
+    mov rax, rdx
+    cmovne rax, rbx
+    pop rbp
+    pop rbx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov rbx, rax
+    xor edi, edi
+    call around
+    mov rbp, rax
+    mov rdi, 4
+    call around
+    mov r12, rax
+    mov rdi, 0x3d
+    call late
+    mov r13, rax
+    mov rdi, 0x3f
+    xor esi, esi
+    call huge
+    mov r14, rax
+    mov rdi, 0x20
+    mov rsi, 7
+    call huge
+    mov r15, rax
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov rsi, 5
+    mov rdi, rax
+    call tests
+    mov.q [rsp], rax
+    mov rdi, 4
+    mov rsi, 9
+    call digits
+    mov rdi, rax
+    mov rsi, 6
+    call tests
+    mov.q [rsp + 0x8], rax
+    mov dil, 1
+    mov rsi, 3
+    call tests
+    mov.q [rsp + 0x10], rax
+    mov rsi, 4
+    mov rdi, 4
+    call digits
+    mov.q [rsp + 0x18], rax
+    mov rdi, 6
+    mov rsi, 7
+    call digits
+    mov.q [rsp + 0x20], rax
+    mov rsi, 1
+    mov rdi, 1
+    call huge
+    mov rcx, rax
+    movzx eax, bl
+    add rax, 0x74000
+    imul rax, rax, 0x100
+    movzx edx, bpl
+    add rax, rdx
+    imul rax, rax, 0x100
+    movzx edx, r12b
+    add rax, rdx
+    imul rax, rax, 0x10000
+    movzx edx, r13w
+    add rax, rdx
+    mov rdx, r14
+    shr rdx, 0x30
+    xor rax, rdx
+    xor rax, r15
+    imul rax, rax, 0x10
+    mov.q rdx, [rsp]
+    add rax, rdx
+    imul rax, rax, 0x10
+    mov.q rdx, [rsp + 0x8]
+    add rax, rdx
+    imul rax, rax, 0x10
+    mov.q rdx, [rsp + 0x10]
+    add rax, rdx
+    imul rax, rax, 0x100
+    mov.q rdx, [rsp + 0x18]
+    not dl
+    and dl, 0x7f
+    movzx edx, dl
+    add rax, rdx
+    imul rax, rax, 0x100
+    add rax, 0xff
+    imul rax, rax, 0x10
+    mov.q rdx, [rsp + 0x20]
+    movzx edx, dl
+    popcnt rdx, rdx
+    add rax, rdx
+    popcnt rcx, rcx
+    add rax, rcx
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+digits:
+    mov al, 1
+    movzx ecx, al
+    sub rdi, 3
+    mov rax, rdi
+    sub rsi, 3
+    mov rdi, rsi
+    shlx edx, ecx, eax
+    shlx esi, ecx, edi
+    cmp al, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, edx
+    cmp dil, 0x20
+    setb dl
+    movzx edx, dl
+    xor ecx, ecx
+    test dl, dl
+    cmovne ecx, esi
+    or al, cl
+    or al, 1
+    ret
+around:
+    mov al, 1
+    movzx esi, al
+    mov rax, rdi
+    sub rax, -2
+    mov rcx, rax
+    shlx r8d, esi, ecx
+    mov rax, rdi
+    add rax, 1
+    sub rax, -2
+    mov rdx, rax
+    shlx esi, esi, edx
+    cmp cl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, r8d
+    cmp dl, 0x20
+    setb dl
+    movzx edx, dl
+    xor ecx, ecx
+    test dl, dl
+    cmovne ecx, esi
+    or al, cl
+    or al, 1
+    ret
+late:
+    sub rdi, 0x3c
+    mov rdx, rdi
+    mov rax, 1
+    movzx eax, ax
+    shlx ecx, eax, edx
+    xor eax, eax
+    cmp dx, 0x20
+    cmovb eax, ecx
+    or ax, 0x200
+    ret
+huge:
+    mov rax, 1
+    shlx rcx, rax, rdi
+    shlx r8, rax, rsi
+    cmp rdi, 0x40
+    setb al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rcx
+    cmp rsi, 0x40
+    setb al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne rcx, r8
+    mov rax, rdx
+    or rax, rcx
+    ret
+tests:
+    mov r9, 1
+    mov cl, 1
+    mov rax, rdi
+    not al
+    and al, cl
+    cmp al, 0
+    sete r8b
+    movzx r8d, r8b
+    sub rsi, 3
+    mov rdx, rsi
+    movzx eax, dil
+    shrx ecx, eax, edx
+    xor eax, eax
+    cmp dl, 0x20
+    cmovb eax, ecx
+    mov rcx, rax
+    and cl, 1
+    cmp cl, 0
+    setne al
+    movzx eax, al
+    xor esi, esi
+    test al, al
+    cmovne rsi, r9
+    mov rax, rsi
+    or rax, 2
+    cmp cl, 0
+    cmove rsi, rax
+    mov rcx, rsi
+    or rcx, 4
+    mov al, 0x45
+    not al
+    and al, dil
+    cmp al, 0
+    cmove rsi, rcx
+    mov rdx, rsi
+    or rdx, 8
+    cmp dil, 1
+    setne cl
+    movzx ecx, cl
+    mov rax, r8
+    and al, cl
+    test al, al
+    mov rax, rsi
+    cmovne rax, rdx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov.q [rsp + 0x20], rax
+    xor edi, edi
+    call around
+    mov.q [rsp + 0x18], rax
+    mov rdi, 4
+    call around
+    mov.q [rsp + 0x10], rax
+    mov rdi, 0x3d
+    call late
+    mov.q [rsp + 0x8], rax
+    mov rdi, 0x3f
+    xor esi, esi
+    call huge
+    mov.q [rsp], rax
+    mov rdi, 0x20
+    mov rsi, 7
+    call huge
+    mov r15, rax
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov rsi, 5
+    mov rdi, rax
+    call tests
+    mov r14, rax
+    mov rdi, 4
+    mov rsi, 9
+    call digits
+    mov rdi, rax
+    mov rsi, 6
+    call tests
+    mov r13, rax
+    mov dil, 1
+    mov rsi, 3
+    call tests
+    mov r12, rax
+    mov rsi, 4
+    mov rdi, 4
+    call digits
+    mov rbp, rax
+    mov rdi, 6
+    mov rsi, 7
+    call digits
+    mov rbx, rax
+    mov rsi, 1
+    mov rdi, 1
+    call huge
+    mov rdx, rax
+    mov.q rax, [rsp + 0x20]
+    movzx eax, al
+    add rax, 0x74000
+    imul rcx, rax, 0x100
+    mov.q rax, [rsp + 0x18]
+    movzx eax, al
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    mov.q rax, [rsp + 0x10]
+    movzx eax, al
+    add rcx, rax
+    imul rcx, rcx, 0x10000
+    mov.q rax, [rsp + 0x8]
+    movzx eax, ax
+    add rcx, rax
+    mov.q rax, [rsp]
+    shr rax, 0x30
+    xor rcx, rax
+    xor rcx, r15
+    imul rcx, rcx, 0x10
+    add rcx, r14
+    imul rcx, rcx, 0x10
+    add rcx, r13
+    imul rcx, rcx, 0x10
+    add rcx, r12
+    imul rcx, rcx, 0x100
+    mov rax, rbp
+    not al
+    and al, 0x7f
+    movzx eax, al
+    add rcx, rax
+    imul rax, rcx, 0x100
+    add rax, 0xff
+    imul rax, rax, 0x10
+    movzx ecx, bl
+    popcnt rcx, rcx
+    add rax, rcx
+    popcnt rcx, rdx
+    add rax, rcx
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+digits:
+    push rbx
+    push rbp
+    mov al, 1
+    movzx eax, al
+    sub rdi, 3
+    mov rcx, rdi
+    sub rsi, 3
+    mov rdx, rsi
+    shlx ebx, eax, ecx
+    shlx ebp, eax, edx
+    cmp cl, 0x20
+    setb al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne ecx, ebx
+    mov rax, rcx
+    cmp dl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne edx, ebp
+    mov rcx, rdx
+    or al, cl
+    or al, 1
+    pop rbp
+    pop rbx
+    ret
+around:
+    push rbx
+    push rbp
+    mov al, 1
+    movzx eax, al
+    mov rcx, rdi
+    sub rcx, -2
+    shlx edx, eax, ecx
+    mov rbx, rdi
+    add rbx, 1
+    sub rbx, -2
+    shlx ebp, eax, ebx
+    cmp cl, 0x20
+    setb al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne ecx, edx
+    mov rax, rcx
+    cmp bl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne edx, ebp
+    mov rcx, rdx
+    or al, cl
+    or al, 1
+    pop rbp
+    pop rbx
+    ret
+late:
+    sub rdi, 0x3c
+    mov rax, rdi
+    mov rcx, 1
+    movzx ecx, cx
+    shlx ecx, ecx, eax
+    xor edx, edx
+    cmp ax, 0x20
+    cmovb edx, ecx
+    mov rax, rdx
+    or ax, 0x200
+    ret
+huge:
+    push rbx
+    mov rax, 1
+    shlx rcx, rax, rdi
+    shlx rax, rax, rsi
+    cmp rdi, 0x40
+    setb dl
+    movzx edx, dl
+    xor ebx, ebx
+    test dl, dl
+    cmovne rbx, rcx
+    cmp rsi, 0x40
+    setb cl
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rbx
+    or rax, rdx
+    pop rbx
+    ret
+tests:
+    push rbx
+    push rbp
+    mov rax, 1
+    mov cl, 1
+    mov rdx, rdi
+    not dl
+    and dl, cl
+    cmp dl, 0
+    sete cl
+    movzx ecx, cl
+    sub rsi, 3
+    mov rdx, rsi
+    movzx ebx, dil
+    shrx ebx, ebx, edx
+    xor ebp, ebp
+    cmp dl, 0x20
+    cmovb ebp, ebx
+    mov rdx, rbp
+    and dl, 1
+    cmp dl, 0
+    setne bl
+    movzx ebx, bl
+    xor ebp, ebp
+    test bl, bl
+    cmovne rbp, rax
+    mov rax, rbp
+    or rax, 2
+    cmp dl, 0
+    mov rdx, rbp
+    cmove rdx, rax
+    mov rax, rdx
+    or rax, 4
+    mov bl, 0x45
+    not bl
+    and bl, dil
+    cmp bl, 0
+    cmove rdx, rax
+    mov rbx, rdx
+    or rbx, 8
+    cmp dil, 1
+    setne al
+    movzx eax, al
+    and cl, al
+    test cl, cl
+    mov rax, rdx
+    cmovne rax, rbx
+    pop rbp
+    pop rbx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov rbx, rax
+    xor edi, edi
+    call around
+    mov rbp, rax
+    mov rdi, 4
+    call around
+    mov r12, rax
+    mov rdi, 0x3d
+    call late
+    mov r13, rax
+    mov rdi, 0x3f
+    xor esi, esi
+    call huge
+    mov r14, rax
+    mov rdi, 0x20
+    mov rsi, 7
+    call huge
+    mov r15, rax
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov rsi, 5
+    mov rdi, rax
+    call tests
+    mov.q [rsp], rax
+    mov rdi, 4
+    mov rsi, 9
+    call digits
+    mov rdi, rax
+    mov rsi, 6
+    call tests
+    mov.q [rsp + 0x8], rax
+    mov dil, 1
+    mov rsi, 3
+    call tests
+    mov.q [rsp + 0x10], rax
+    mov rsi, 4
+    mov rdi, 4
+    call digits
+    mov.q [rsp + 0x18], rax
+    mov rdi, 6
+    mov rsi, 7
+    call digits
+    mov.q [rsp + 0x20], rax
+    mov rsi, 1
+    mov rdi, 1
+    call huge
+    mov rcx, rax
+    movzx eax, bl
+    add rax, 0x74000
+    imul rax, rax, 0x100
+    movzx edx, bpl
+    add rax, rdx
+    imul rax, rax, 0x100
+    movzx edx, r12b
+    add rax, rdx
+    imul rax, rax, 0x10000
+    movzx edx, r13w
+    add rax, rdx
+    mov rdx, r14
+    shr rdx, 0x30
+    xor rax, rdx
+    xor rax, r15
+    imul rax, rax, 0x10
+    mov.q rdx, [rsp]
+    add rax, rdx
+    imul rax, rax, 0x10
+    mov.q rdx, [rsp + 0x8]
+    add rax, rdx
+    imul rax, rax, 0x10
+    mov.q rdx, [rsp + 0x10]
+    add rax, rdx
+    imul rax, rax, 0x100
+    mov.q rdx, [rsp + 0x18]
+    not dl
+    and dl, 0x7f
+    movzx edx, dl
+    add rax, rdx
+    imul rax, rax, 0x100
+    add rax, 0xff
+    imul rax, rax, 0x10
+    mov.q rdx, [rsp + 0x20]
+    movzx edx, dl
+    popcnt rdx, rdx
+    add rax, rdx
+    popcnt rcx, rcx
+    add rax, rcx
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+digits:
+    mov al, 1
+    movzx ecx, al
+    sub rdi, 3
+    mov rax, rdi
+    sub rsi, 3
+    mov rdi, rsi
+    shlx edx, ecx, eax
+    shlx esi, ecx, edi
+    cmp al, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, edx
+    cmp dil, 0x20
+    setb dl
+    movzx edx, dl
+    xor ecx, ecx
+    test dl, dl
+    cmovne ecx, esi
+    or al, cl
+    or al, 1
+    ret
+around:
+    mov al, 1
+    movzx esi, al
+    mov rax, rdi
+    sub rax, -2
+    mov rcx, rax
+    shlx r8d, esi, ecx
+    mov rax, rdi
+    add rax, 1
+    sub rax, -2
+    mov rdx, rax
+    shlx esi, esi, edx
+    cmp cl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, r8d
+    cmp dl, 0x20
+    setb dl
+    movzx edx, dl
+    xor ecx, ecx
+    test dl, dl
+    cmovne ecx, esi
+    or al, cl
+    or al, 1
+    ret
+late:
+    sub rdi, 0x3c
+    mov rdx, rdi
+    mov rax, 1
+    movzx eax, ax
+    shlx ecx, eax, edx
+    xor eax, eax
+    cmp dx, 0x20
+    cmovb eax, ecx
+    or ax, 0x200
+    ret
+huge:
+    mov rax, 1
+    shlx rcx, rax, rdi
+    shlx r8, rax, rsi
+    cmp rdi, 0x40
+    setb al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rcx
+    cmp rsi, 0x40
+    setb al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne rcx, r8
+    mov rax, rdx
+    or rax, rcx
+    ret
+tests:
+    mov r9, 1
+    mov cl, 1
+    mov rax, rdi
+    not al
+    and al, cl
+    cmp al, 0
+    sete r8b
+    movzx r8d, r8b
+    sub rsi, 3
+    mov rdx, rsi
+    movzx eax, dil
+    shrx ecx, eax, edx
+    xor eax, eax
+    cmp dl, 0x20
+    cmovb eax, ecx
+    mov rcx, rax
+    and cl, 1
+    cmp cl, 0
+    setne al
+    movzx eax, al
+    xor esi, esi
+    test al, al
+    cmovne rsi, r9
+    mov rax, rsi
+    or rax, 2
+    cmp cl, 0
+    cmove rsi, rax
+    mov rcx, rsi
+    or rcx, 4
+    mov al, 0x45
+    not al
+    and al, dil
+    cmp al, 0
+    cmove rsi, rcx
+    mov rdx, rsi
+    or rdx, 8
+    cmp dil, 1
+    setne cl
+    movzx ecx, cl
+    mov rax, r8
+    and al, cl
+    test al, al
+    mov rax, rsi
+    cmovne rax, rdx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov.q [rsp + 0x20], rax
+    xor edi, edi
+    call around
+    mov.q [rsp + 0x18], rax
+    mov rdi, 4
+    call around
+    mov.q [rsp + 0x10], rax
+    mov rdi, 0x3d
+    call late
+    mov.q [rsp + 0x8], rax
+    mov rdi, 0x3f
+    xor esi, esi
+    call huge
+    mov.q [rsp], rax
+    mov rdi, 0x20
+    mov rsi, 7
+    call huge
+    mov r15, rax
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov rsi, 5
+    mov rdi, rax
+    call tests
+    mov r14, rax
+    mov rdi, 4
+    mov rsi, 9
+    call digits
+    mov rdi, rax
+    mov rsi, 6
+    call tests
+    mov r13, rax
+    mov dil, 1
+    mov rsi, 3
+    call tests
+    mov r12, rax
+    mov rsi, 4
+    mov rdi, 4
+    call digits
+    mov rbp, rax
+    mov rdi, 6
+    mov rsi, 7
+    call digits
+    mov rbx, rax
+    mov rsi, 1
+    mov rdi, 1
+    call huge
+    mov rdx, rax
+    mov.q rax, [rsp + 0x20]
+    movzx eax, al
+    add rax, 0x74000
+    imul rcx, rax, 0x100
+    mov.q rax, [rsp + 0x18]
+    movzx eax, al
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    mov.q rax, [rsp + 0x10]
+    movzx eax, al
+    add rcx, rax
+    imul rcx, rcx, 0x10000
+    mov.q rax, [rsp + 0x8]
+    movzx eax, ax
+    add rcx, rax
+    mov.q rax, [rsp]
+    shr rax, 0x30
+    xor rcx, rax
+    xor rcx, r15
+    imul rcx, rcx, 0x10
+    add rcx, r14
+    imul rcx, rcx, 0x10
+    add rcx, r13
+    imul rcx, rcx, 0x10
+    add rcx, r12
+    imul rcx, rcx, 0x100
+    mov rax, rbp
+    not al
+    and al, 0x7f
+    movzx eax, al
+    add rcx, rax
+    imul rax, rcx, 0x100
+    add rax, 0xff
+    imul rax, rax, 0x10
+    movzx ecx, bl
+    popcnt rcx, rcx
+    add rax, rcx
+    popcnt rcx, rdx
+    add rax, rcx
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+digits:
+    mov al, 1
+    movzx ecx, al
+    sub rdi, 3
+    mov rax, rdi
+    sub rsi, 3
+    mov rdi, rsi
+    shlx edx, ecx, eax
+    shlx esi, ecx, edi
+    cmp al, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, edx
+    cmp dil, 0x20
+    setb dl
+    movzx edx, dl
+    xor ecx, ecx
+    test dl, dl
+    cmovne ecx, esi
+    or al, cl
+    or al, 1
+    ret
+around:
+    mov al, 1
+    movzx esi, al
+    mov rax, rdi
+    sub rax, -2
+    mov rcx, rax
+    shlx r8d, esi, ecx
+    mov rax, rdi
+    add rax, 1
+    sub rax, -2
+    mov rdx, rax
+    shlx esi, esi, edx
+    cmp cl, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, r8d
+    cmp dl, 0x20
+    setb dl
+    movzx edx, dl
+    xor ecx, ecx
+    test dl, dl
+    cmovne ecx, esi
+    or al, cl
+    or al, 1
+    ret
+late:
+    sub rdi, 0x3c
+    mov rdx, rdi
+    mov rax, 1
+    movzx eax, ax
+    shlx ecx, eax, edx
+    xor eax, eax
+    cmp dx, 0x20
+    cmovb eax, ecx
+    or ax, 0x200
+    ret
+huge:
+    mov rax, 1
+    shlx rcx, rax, rdi
+    shlx r8, rax, rsi
+    cmp rdi, 0x40
+    setb al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rcx
+    cmp rsi, 0x40
+    setb al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne rcx, r8
+    mov rax, rdx
+    or rax, rcx
+    ret
+tests:
+    mov r9, 1
+    mov cl, 1
+    mov rax, rdi
+    not al
+    and al, cl
+    cmp al, 0
+    sete r8b
+    movzx r8d, r8b
+    sub rsi, 3
+    mov rdx, rsi
+    movzx eax, dil
+    shrx ecx, eax, edx
+    xor eax, eax
+    cmp dl, 0x20
+    cmovb eax, ecx
+    mov rcx, rax
+    and cl, 1
+    cmp cl, 0
+    setne al
+    movzx eax, al
+    xor esi, esi
+    test al, al
+    cmovne rsi, r9
+    mov rax, rsi
+    or rax, 2
+    cmp cl, 0
+    cmove rsi, rax
+    mov rcx, rsi
+    or rcx, 4
+    mov al, 0x45
+    not al
+    and al, dil
+    cmp al, 0
+    cmove rsi, rcx
+    mov rdx, rsi
+    or rdx, 8
+    cmp dil, 1
+    setne cl
+    movzx ecx, cl
+    mov rax, r8
+    and al, cl
+    test al, al
+    mov rax, rsi
+    cmovne rax, rdx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov.q [rsp + 0x20], rax
+    xor edi, edi
+    call around
+    mov.q [rsp + 0x18], rax
+    mov rdi, 4
+    call around
+    mov.q [rsp + 0x10], rax
+    mov rdi, 0x3d
+    call late
+    mov.q [rsp + 0x8], rax
+    mov rdi, 0x3f
+    xor esi, esi
+    call huge
+    mov.q [rsp], rax
+    mov rdi, 0x20
+    mov rsi, 7
+    call huge
+    mov r15, rax
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov rsi, 5
+    mov rdi, rax
+    call tests
+    mov r14, rax
+    mov rdi, 4
+    mov rsi, 9
+    call digits
+    mov rdi, rax
+    mov rsi, 6
+    call tests
+    mov r13, rax
+    mov dil, 1
+    mov rsi, 3
+    call tests
+    mov r12, rax
+    mov rsi, 4
+    mov rdi, 4
+    call digits
+    mov rbp, rax
+    mov rdi, 6
+    mov rsi, 7
+    call digits
+    mov rbx, rax
+    mov rsi, 1
+    mov rdi, 1
+    call huge
+    mov rdx, rax
+    mov.q rax, [rsp + 0x20]
+    movzx eax, al
+    add rax, 0x74000
+    imul rcx, rax, 0x100
+    mov.q rax, [rsp + 0x18]
+    movzx eax, al
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    mov.q rax, [rsp + 0x10]
+    movzx eax, al
+    add rcx, rax
+    imul rcx, rcx, 0x10000
+    mov.q rax, [rsp + 0x8]
+    movzx eax, ax
+    add rcx, rax
+    mov.q rax, [rsp]
+    shr rax, 0x30
+    xor rcx, rax
+    xor rcx, r15
+    imul rcx, rcx, 0x10
+    add rcx, r14
+    imul rcx, rcx, 0x10
+    add rcx, r13
+    imul rcx, rcx, 0x10
+    add rcx, r12
+    imul rcx, rcx, 0x100
+    mov rax, rbp
+    not al
+    and al, 0x7f
+    movzx eax, al
+    add rcx, rax
+    imul rax, rcx, 0x100
+    add rax, 0xff
+    imul rax, rax, 0x10
+    movzx ecx, bl
+    popcnt rcx, rcx
+    add rax, rcx
+    popcnt rcx, rdx
+    add rax, rcx
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+digits:
+    mov al, 1
+    movzx ecx, al
+    sub rdi, 3
+    mov rax, rdi
+    sub rsi, 3
+    mov rdi, rsi
+    shlx edx, ecx, eax
+    shlx esi, ecx, edi
+    cmp al, 0x20
+    setb cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne eax, edx
+    cmp dil, 0x20
+    setb dl
+    movzx edx, dl
+    xor ecx, ecx
+    test dl, dl
+    cmovne ecx, esi
+    or al, cl
+    or al, 1
+    ret
+tests:
+    mov r9, 1
+    mov cl, 1
+    mov rax, rdi
+    not al
+    and al, cl
+    cmp al, 0
+    sete r8b
+    movzx r8d, r8b
+    sub rsi, 3
+    mov rdx, rsi
+    movzx eax, dil
+    shrx ecx, eax, edx
+    xor eax, eax
+    cmp dl, 0x20
+    cmovb eax, ecx
+    mov rcx, rax
+    and cl, 1
+    cmp cl, 0
+    setne al
+    movzx eax, al
+    xor esi, esi
+    test al, al
+    cmovne rsi, r9
+    mov rax, rsi
+    or rax, 2
+    cmp cl, 0
+    cmove rsi, rax
+    mov rcx, rsi
+    or rcx, 4
+    mov al, 0x45
+    not al
+    and al, dil
+    cmp al, 0
+    cmove rsi, rcx
+    mov rdx, rsi
+    or rdx, 8
+    cmp dil, 1
+    setne cl
+    movzx ecx, cl
+    mov rax, r8
+    and al, cl
+    test al, al
+    mov rax, rsi
+    cmovne rax, rdx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov r14, rax
+    mov rdi, 5
+    mov rsi, 9
+    call digits
+    mov rsi, 5
+    mov rdi, rax
+    call tests
+    mov r13, rax
+    mov rdi, 4
+    mov rsi, 9
+    call digits
+    mov rdi, rax
+    mov rsi, 6
+    call tests
+    mov r12, rax
+    mov dil, 1
+    mov rsi, 3
+    call tests
+    mov rbp, rax
+    mov rdi, 4
+    mov rsi, 4
+    call digits
+    mov rbx, rax
+    mov rsi, 7
+    mov rdi, 6
+    call digits
+    mov rdx, rax
+    movzx eax, r14b
+    add rax, 0x74000
+    imul rax, rax, 0x100
+    add rax, 0xd
+    imul rax, rax, 0x100
+    add rax, 0xc1
+    imul rcx, rax, 0x10000
+    add rcx, 0x202
+    movabs rax, 0x100008080
+    xor rcx, rax
+    imul rcx, rcx, 0x10
+    add rcx, r13
+    imul rcx, rcx, 0x10
+    add rcx, r12
+    imul rcx, rcx, 0x10
+    add rcx, rbp
+    imul rcx, rcx, 0x100
+    mov rax, rbx
+    not al
+    and al, 0x7f
+    movzx eax, al
+    add rcx, rax
+    imul rax, rcx, 0x100
+    add rax, 0xff
+    imul rax, rax, 0x10
+    movzx ecx, dl
+    popcnt rcx, rcx
+    add rax, rcx
+    add rax, 1
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret

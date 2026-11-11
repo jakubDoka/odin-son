@@ -1,0 +1,743 @@
+=========== OPT LEVEL: none-quick ===========
+make_packet:
+    movzx eax, dil
+    and eax, 0xf
+    shl edx, 0xe
+    movsx rcx, si
+    shl ecx, 6
+    and ecx, 0x1fc0
+    or eax, ecx
+    movabs rcx, 0xffffc000
+    and edx, ecx
+    or eax, edx
+    or eax, 0x10
+    ret
+swap:
+    mov rax, rdi
+    mov rcx, rax
+    shr cl, 4
+    and cl, 0xf
+    and al, 0xf
+    shl al, 4
+    and al, -0x10
+    or cl, al
+    mov rax, rcx
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    mov dil, 0x1f
+    mov rsi, -0x99
+    mov rdx, 0x7ffff
+    call make_packet
+    mov rbx, rax
+    mov dil, 3
+    mov rsi, -2
+    mov rdx, 0x10
+    call make_packet
+    mov rbp, rax
+    mov dil, -0x4b
+    call swap
+    movabs rcx, 0xaaf373e9
+    mov edx, ebx
+    mov.d [rsp], ecx
+    mov.d [rsp + 0x4], ebx
+    mov.d [rsp + 0x8], 0x2002
+    movabs rsi, 0x602971605
+    xor rdx, rsi
+    imul rdx, rdx, 3
+    mov rsi, 0xf
+    not esi
+    and esi, ebp
+    or esi, 0xf
+    mov rdi, rbx
+    shl edi, 0x13
+    sar edi, 0x19
+    movsx rdi, di
+    xor rdx, rdi
+    mov rdi, rbx
+    shl edi, 0x1a
+    sar edi, 0x1e
+    movsx rdi, dil
+    xor rdx, rdi
+    mov rdi, rdx
+    add rdi, 1
+    cmp ebx, ebp
+    cmove rdx, rdi
+    mov rbp, rdx
+    add rbp, 0x10
+    movabs rdi, 0xffffc000
+    mov r8, 0x1fc0
+    not r8d
+    and r8d, esi
+    or r8d, 0xfc0
+    movabs rsi, 0xffffc000
+    not esi
+    and esi, r8d
+    or esi, edi
+    cmp esi, ebx
+    cmove rdx, rbp
+    mov rbp, rdx
+    add rbp, 0x100
+    cmp ebx, ecx
+    mov rcx, rdx
+    cmovne rcx, rbp
+    imul rcx, rcx, 5
+    movzx edx, al
+    add rcx, rdx
+    and al, 0xf
+    movzx eax, al
+    add rcx, rax
+    imul rax, rcx, 3
+    xor rax, 0x21d950c
+    imul rax, rax, 9
+    xor rax, 0xa
+    xor ecx, ecx
+    add rax, 0x3000
+3:
+    cmp rcx, 3
+    jge 4
+    mov.d edx, [rsp + rcx*4]
+    imul rax, rax, 7
+    mov rbx, rdx
+    and ebx, 0xf
+    movzx ebx, bl
+    add rax, rbx
+    mov rbx, rdx
+    shl ebx, 0x13
+    sar ebx, 0x19
+    movsx rbx, bx
+    add rax, rbx
+    shr edx, 0xd
+    and edx, 1
+    cmp edx, 0
+    setne dl
+    movzx edx, dl
+    movzx edx, dl
+    add rcx, 1
+    add rax, rdx
+    jmp 3
+4:
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+make_packet:
+    movzx eax, dil
+    and eax, 0xf
+    shl edx, 0xe
+    movsx rcx, si
+    shl ecx, 6
+    and ecx, 0x1fc0
+    or eax, ecx
+    movabs rcx, 0xffffc000
+    and edx, ecx
+    or eax, edx
+    or eax, 0x10
+    ret
+swap:
+    mov rax, rdi
+    mov rcx, rax
+    shr cl, 4
+    and cl, 0xf
+    and al, 0xf
+    shl al, 4
+    and al, -0x10
+    or cl, al
+    mov rax, rcx
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    mov dil, 0x1f
+    mov rsi, -0x99
+    mov rdx, 0x7ffff
+    call make_packet
+    mov rbp, rax
+    mov dil, 3
+    mov rsi, -2
+    mov rdx, 0x10
+    call make_packet
+    mov rbx, rax
+    mov dil, -0x4b
+    call swap
+    mov r10, rax
+    movabs rax, 0xaaf373e9
+    mov edx, ebp
+    mov.d [rsp], eax
+    mov.d [rsp + 0x4], ebp
+    mov.d [rsp + 0x8], 0x2002
+    movabs rcx, 0x602971605
+    xor rdx, rcx
+    imul rsi, rdx, 3
+    mov rcx, 0xf
+    not ecx
+    and ecx, ebx
+    or ecx, 0xf
+    mov rdx, rbp
+    shl edx, 0x13
+    sar edx, 0x19
+    movsx rdx, dx
+    xor rsi, rdx
+    mov rdx, rbp
+    shl edx, 0x1a
+    sar edx, 0x1e
+    movsx rdx, dl
+    mov r8, rsi
+    xor r8, rdx
+    mov rdi, r8
+    add rdi, 1
+    cmp ebp, ebx
+    mov rdx, r8
+    cmove rdx, rdi
+    mov r9, rdx
+    add r9, 0x10
+    movabs r8, 0xffffc000
+    mov rdi, 0x1fc0
+    not edi
+    and edi, ecx
+    or edi, 0xfc0
+    movabs rsi, 0xffffc000
+    not esi
+    and esi, edi
+    or esi, r8d
+    cmp esi, ebp
+    cmove rdx, r9
+    mov rsi, rdx
+    add rsi, 0x100
+    cmp ebp, eax
+    cmovne rdx, rsi
+    imul rcx, rdx, 5
+    movzx eax, r10b
+    add rcx, rax
+    mov rax, r10
+    and al, 0xf
+    movzx eax, al
+    add rcx, rax
+    imul rax, rcx, 3
+    xor rax, 0x21d950c
+    imul rax, rax, 9
+    xor rax, 0xa
+    xor esi, esi
+    add rax, 0x3000
+3:
+    cmp rsi, 3
+    jge 4
+    mov.d ecx, [rsp + rsi*4]
+    imul rax, rax, 7
+    mov rdx, rcx
+    and edx, 0xf
+    movzx edx, dl
+    add rax, rdx
+    mov rdx, rcx
+    shl edx, 0x13
+    sar edx, 0x19
+    movsx rdx, dx
+    add rax, rdx
+    shr ecx, 0xd
+    and ecx, 1
+    cmp ecx, 0
+    setne cl
+    movzx ecx, cl
+    movzx ecx, cl
+    add rsi, 1
+    add rax, rcx
+    jmp 3
+4:
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+make_packet:
+    movzx eax, dil
+    and eax, 0xf
+    shl edx, 0xe
+    movsx rcx, si
+    shl ecx, 6
+    and ecx, 0x1fc0
+    or eax, ecx
+    movabs rcx, 0xffffc000
+    and edx, ecx
+    or eax, edx
+    or eax, 0x10
+    ret
+swap:
+    mov rax, rdi
+    mov rcx, rax
+    shr cl, 4
+    and cl, 0xf
+    and al, 0xf
+    shl al, 4
+    and al, -0x10
+    or cl, al
+    mov rax, rcx
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    mov dil, 0x1f
+    mov rsi, -0x99
+    mov rdx, 0x7ffff
+    call make_packet
+    mov rbx, rax
+    mov dil, 3
+    mov rsi, -2
+    mov rdx, 0x10
+    call make_packet
+    mov rbp, rax
+    mov dil, -0x4b
+    call swap
+    movabs rcx, 0xaaf373e9
+    mov edx, ebx
+    mov.d [rsp], ecx
+    mov.d [rsp + 0x4], ebx
+    mov.d [rsp + 0x8], 0x2002
+    movabs rsi, 0x602971605
+    xor rdx, rsi
+    imul rdx, rdx, 3
+    mov rsi, 0xf
+    not esi
+    and esi, ebp
+    or esi, 0xf
+    mov rdi, rbx
+    shl edi, 0x13
+    sar edi, 0x19
+    movsx rdi, di
+    xor rdx, rdi
+    mov rdi, rbx
+    shl edi, 0x1a
+    sar edi, 0x1e
+    movsx rdi, dil
+    xor rdx, rdi
+    mov rdi, rdx
+    add rdi, 1
+    cmp ebx, ebp
+    cmove rdx, rdi
+    mov rbp, rdx
+    add rbp, 0x10
+    movabs rdi, 0xffffc000
+    mov r8, 0x1fc0
+    not r8d
+    and r8d, esi
+    or r8d, 0xfc0
+    movabs rsi, 0xffffc000
+    not esi
+    and esi, r8d
+    or esi, edi
+    cmp esi, ebx
+    cmove rdx, rbp
+    mov rbp, rdx
+    add rbp, 0x100
+    cmp ebx, ecx
+    mov rcx, rdx
+    cmovne rcx, rbp
+    imul rcx, rcx, 5
+    movzx edx, al
+    add rcx, rdx
+    and al, 0xf
+    movzx eax, al
+    add rcx, rax
+    imul rax, rcx, 3
+    xor rax, 0x21d950c
+    imul rax, rax, 9
+    xor rax, 0xa
+    xor ecx, ecx
+    add rax, 0x3000
+3:
+    cmp rcx, 3
+    jge 4
+    mov.d edx, [rsp + rcx*4]
+    imul rax, rax, 7
+    mov rbx, rdx
+    and ebx, 0xf
+    movzx ebx, bl
+    add rax, rbx
+    mov rbx, rdx
+    shl ebx, 0x13
+    sar ebx, 0x19
+    movsx rbx, bx
+    add rax, rbx
+    shr edx, 0xd
+    and edx, 1
+    cmp edx, 0
+    setne dl
+    movzx edx, dl
+    movzx edx, dl
+    add rcx, 1
+    add rax, rdx
+    jmp 3
+4:
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+make_packet:
+    movzx eax, dil
+    and eax, 0xf
+    shl edx, 0xe
+    movsx rcx, si
+    shl ecx, 6
+    and ecx, 0x1fc0
+    or eax, ecx
+    movabs rcx, 0xffffc000
+    and edx, ecx
+    or eax, edx
+    or eax, 0x10
+    ret
+swap:
+    mov rax, rdi
+    mov rcx, rax
+    shr cl, 4
+    and cl, 0xf
+    and al, 0xf
+    shl al, 4
+    and al, -0x10
+    or cl, al
+    mov rax, rcx
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    mov dil, 0x1f
+    mov rsi, -0x99
+    mov rdx, 0x7ffff
+    call make_packet
+    mov rbp, rax
+    mov dil, 3
+    mov rsi, -2
+    mov rdx, 0x10
+    call make_packet
+    mov rbx, rax
+    mov dil, -0x4b
+    call swap
+    mov r10, rax
+    movabs rax, 0xaaf373e9
+    mov edx, ebp
+    mov.d [rsp], eax
+    mov.d [rsp + 0x4], ebp
+    mov.d [rsp + 0x8], 0x2002
+    movabs rcx, 0x602971605
+    xor rdx, rcx
+    imul rsi, rdx, 3
+    mov rcx, 0xf
+    not ecx
+    and ecx, ebx
+    or ecx, 0xf
+    mov rdx, rbp
+    shl edx, 0x13
+    sar edx, 0x19
+    movsx rdx, dx
+    xor rsi, rdx
+    mov rdx, rbp
+    shl edx, 0x1a
+    sar edx, 0x1e
+    movsx rdx, dl
+    mov r8, rsi
+    xor r8, rdx
+    mov rdi, r8
+    add rdi, 1
+    cmp ebp, ebx
+    mov rdx, r8
+    cmove rdx, rdi
+    mov r9, rdx
+    add r9, 0x10
+    movabs r8, 0xffffc000
+    mov rdi, 0x1fc0
+    not edi
+    and edi, ecx
+    or edi, 0xfc0
+    movabs rsi, 0xffffc000
+    not esi
+    and esi, edi
+    or esi, r8d
+    cmp esi, ebp
+    cmove rdx, r9
+    mov rsi, rdx
+    add rsi, 0x100
+    cmp ebp, eax
+    cmovne rdx, rsi
+    imul rcx, rdx, 5
+    movzx eax, r10b
+    add rcx, rax
+    mov rax, r10
+    and al, 0xf
+    movzx eax, al
+    add rcx, rax
+    imul rax, rcx, 3
+    xor rax, 0x21d950c
+    imul rax, rax, 9
+    xor rax, 0xa
+    xor esi, esi
+    add rax, 0x3000
+3:
+    cmp rsi, 3
+    jge 4
+    mov.d ecx, [rsp + rsi*4]
+    imul rax, rax, 7
+    mov rdx, rcx
+    and edx, 0xf
+    movzx edx, dl
+    add rax, rdx
+    mov rdx, rcx
+    shl edx, 0x13
+    sar edx, 0x19
+    movsx rdx, dx
+    add rax, rdx
+    shr ecx, 0xd
+    and ecx, 1
+    cmp ecx, 0
+    setne cl
+    movzx ecx, cl
+    movzx ecx, cl
+    add rsi, 1
+    add rax, rcx
+    jmp 3
+4:
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+make_packet:
+    movzx eax, dil
+    and eax, 0xf
+    shl edx, 0xe
+    movsx rcx, si
+    shl ecx, 6
+    and ecx, 0x1fc0
+    or eax, ecx
+    movabs rcx, 0xffffc000
+    and edx, ecx
+    or eax, edx
+    or eax, 0x10
+    ret
+swap:
+    mov rax, rdi
+    mov rcx, rax
+    shr cl, 4
+    and cl, 0xf
+    and al, 0xf
+    shl al, 4
+    and al, -0x10
+    or cl, al
+    mov rax, rcx
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 0x18
+    mov dil, 0x1f
+    mov rsi, -0x99
+    mov rdx, 0x7ffff
+    call make_packet
+    mov rbp, rax
+    mov dil, 3
+    mov rsi, -2
+    mov rdx, 0x10
+    call make_packet
+    mov rbx, rax
+    mov dil, -0x4b
+    call swap
+    mov r10, rax
+    movabs rax, 0xaaf373e9
+    mov.d [rsp], eax
+    mov.d [rsp + 0x4], ebp
+    mov.d [rsp + 0x8], 0x2002
+    mov edx, ebp
+    movabs rcx, 0x602971605
+    xor rdx, rcx
+    imul rsi, rdx, 3
+    mov rcx, 0xf
+    not ecx
+    and ecx, ebx
+    or ecx, 0xf
+    mov rdx, rbp
+    shl edx, 0x13
+    sar edx, 0x19
+    movsx rdx, dx
+    xor rsi, rdx
+    mov rdx, rbp
+    shl edx, 0x1a
+    sar edx, 0x1e
+    movsx rdx, dl
+    mov r8, rsi
+    xor r8, rdx
+    mov rdi, r8
+    add rdi, 1
+    cmp ebp, ebx
+    mov rdx, r8
+    cmove rdx, rdi
+    mov r9, rdx
+    add r9, 0x10
+    movabs r8, 0xffffc000
+    mov rdi, 0x1fc0
+    not edi
+    and edi, ecx
+    or edi, 0xfc0
+    movabs rsi, 0xffffc000
+    not esi
+    and esi, edi
+    or esi, r8d
+    cmp esi, ebp
+    cmove rdx, r9
+    mov rsi, rdx
+    add rsi, 0x100
+    cmp ebp, eax
+    cmovne rdx, rsi
+    imul rcx, rdx, 5
+    movzx eax, r10b
+    add rcx, rax
+    mov rax, r10
+    and al, 0xf
+    movzx eax, al
+    add rcx, rax
+    imul rax, rcx, 3
+    xor rax, 0x21d950c
+    imul rax, rax, 9
+    xor rax, 0xa
+    xor esi, esi
+    add rax, 0x3000
+3:
+    imul rax, rax, 7
+    mov.d ecx, [rsp + rsi*4]
+    mov rdx, rcx
+    and edx, 0xf
+    movzx edx, dl
+    add rax, rdx
+    mov rdx, rcx
+    shl edx, 0x13
+    sar edx, 0x19
+    movsx rdx, dx
+    add rax, rdx
+    shr ecx, 0xd
+    and ecx, 1
+    cmp ecx, 0
+    setne cl
+    movzx ecx, cl
+    movzx edx, cl
+    add rsi, 1
+    cmp rsi, 3
+    setge cl
+    movzx ecx, cl
+    add rax, rdx
+    test cl, cl
+    je 3
+    add rsp, 0x18
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+make_packet:
+    movzx eax, dil
+    and eax, 0xf
+    shl edx, 0xe
+    movsx rcx, si
+    shl ecx, 6
+    and ecx, 0x1fc0
+    or eax, ecx
+    movabs rcx, 0xffffc000
+    and edx, ecx
+    or eax, edx
+    or eax, 0x10
+    ret
+main:
+    push rbx
+    sub rsp, 0x10
+    mov dil, 0x1f
+    mov rsi, -0x99
+    mov rdx, 0x7ffff
+    call make_packet
+    mov rbx, rax
+    mov dil, 3
+    mov rsi, -2
+    mov rdx, 0x10
+    call make_packet
+    mov r9, rax
+    movabs rax, 0xaaf373e9
+    mov.d [rsp], eax
+    mov.d [rsp + 0x4], ebx
+    mov.d [rsp + 0x8], 0x2002
+    mov edx, ebx
+    movabs rcx, 0x602971605
+    xor rdx, rcx
+    imul rsi, rdx, 3
+    mov rcx, 0xf
+    not ecx
+    and ecx, r9d
+    or ecx, 0xf
+    mov rdx, rbx
+    shl edx, 0x13
+    sar edx, 0x19
+    movsx rdx, dx
+    xor rsi, rdx
+    mov rdx, rbx
+    shl edx, 0x1a
+    sar edx, 0x1e
+    movsx rdx, dl
+    mov r8, rsi
+    xor r8, rdx
+    mov rdi, r8
+    add rdi, 1
+    cmp ebx, r9d
+    mov rdx, r8
+    cmove rdx, rdi
+    mov r9, rdx
+    add r9, 0x10
+    movabs r8, 0xffffc000
+    mov rdi, 0x1fc0
+    not edi
+    and edi, ecx
+    or edi, 0xfc0
+    movabs rsi, 0xffffc000
+    not esi
+    and esi, edi
+    or esi, r8d
+    cmp esi, ebx
+    cmove rdx, r9
+    mov rsi, rdx
+    add rsi, 0x100
+    cmp ebx, eax
+    cmovne rdx, rsi
+    imul rax, rdx, 5
+    add rax, 0x66
+    imul rax, rax, 3
+    xor rax, 0x21d950c
+    imul rax, rax, 9
+    xor rax, 0xa
+    xor esi, esi
+    add rax, 0x3000
+2:
+    imul rax, rax, 7
+    mov.d ecx, [rsp + rsi*4]
+    mov rdx, rcx
+    and edx, 0xf
+    movzx edx, dl
+    add rax, rdx
+    mov rdx, rcx
+    shl edx, 0x13
+    sar edx, 0x19
+    movsx rdx, dx
+    add rax, rdx
+    shr ecx, 0xd
+    and ecx, 1
+    cmp ecx, 0
+    setne cl
+    movzx ecx, cl
+    movzx edx, cl
+    add rsi, 1
+    cmp rsi, 3
+    setge cl
+    movzx ecx, cl
+    add rax, rdx
+    test cl, cl
+    je 2
+    add rsp, 0x10
+    pop rbx
+    ret

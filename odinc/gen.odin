@@ -227,6 +227,12 @@ x86_reg_class_classify :: proc(
 		case ^typecheck.Enum:
 			classify(t.backing, slots, offset) or_return
 			return true
+		case ^typecheck.Bit_Set:
+			classify(t.underlying, slots, offset) or_return
+			return true
+		case ^typecheck.Bit_Field:
+			classify(t.backing, slots, offset) or_return
+			return true
 		case ^typecheck.Union:
 			for f in t.variants {
 				classify(f, slots, offset) or_return
@@ -1047,7 +1053,9 @@ emit_known :: proc(
 
 	dt := type_to_dt(meta.type)
 	if typecheck.in_set(meta.type, typecheck.NUMBER_TYPES) ||
-	   typecheck.is_of(meta.type, ^typecheck.Enum) {
+	   typecheck.is_of(meta.type, ^typecheck.Enum) ||
+	   typecheck.is_of(meta.type, ^typecheck.Bit_Set) ||
+	   typecheck.is_of(meta.type, ^typecheck.Bit_Field) {
 		return Value(bac.add_c_int(ctx, "cnst", dt, meta.int))
 	}
 
@@ -1144,6 +1152,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				if id, iok := lhs.derived.(^ast.Ident); iok && id.name == "_" {
 					continue
 				}
+				if _, _, _, is_bf := typecheck.bit_field_selector(lhs); is_bf {
+					continue
+				}
 				syms[i] = emit_lvalue(ctx, lhs)
 				if v, vok := syms[i].(Value);
 				   vok && typecheck.ret_is_by_pointer(rabi, i) {
@@ -1166,6 +1177,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					continue
 				}
 				vty := prc.rets[i]
+				if _, _, _, is_bf := typecheck.bit_field_selector(d.lhs[i]); is_bf {
+					rv := to_rvalue_ty(ctx, r, vty)
+					bac.pin(ctx, rv)
+					emit_bit_field_store(ctx, d.lhs[i], rv)
+					bac.unpin(ctx, rv)
+					continue
+				}
 				switch sym in syms[i] {
 				case int:
 					rv := to_rvalue_ty(ctx, r, vty)
@@ -1189,6 +1207,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			lhs: ^ast.Node,
 		}
 		mem_stores := make([dynamic]Mem_Store, 0, len(d.lhs))
+		// a bit_field field has no address, it is written like the mem
+		// stores, after all of the values are computed
+		Bit_Field_Store :: struct {
+			lhs: ^ast.Expr,
+			vl:  Node_ID,
+		}
+		bit_field_stores := make([dynamic]Bit_Field_Store, 0, len(d.lhs))
 
 		for i in 0 ..< len(d.lhs) {
 			lhs := d.lhs[i]
@@ -1196,6 +1221,33 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			if id, iok := lhs.derived.(^ast.Ident); iok && id.name == "_" {
 				node := emit_nodes(ctx, {}, rhs)
 				bac.delete_node(ctx, node.id)
+				continue
+			}
+			if _, _, _, is_bf := typecheck.bit_field_selector(lhs); is_bf {
+				value: Node_ID
+				if d.op.kind == .Eq {
+					value = emit_rvalue(ctx, {}, rhs)
+				} else {
+					op, name, lane :=
+						typecheck.tok_to_binop(
+							get_node_type(rhs),
+							d.op.kind,
+						) or_else panic("")
+					old := emit_rvalue(ctx, {}, lhs)
+					bac.pin(ctx, old)
+					value = bac.add_bin_op(
+						ctx,
+						name,
+						op,
+						type_to_dt(get_node_type(lhs)),
+						old,
+						emit_rvalue(ctx, {}, rhs),
+						lane,
+					)
+					bac.unpin(ctx, old)
+				}
+				bac.pin(ctx, value)
+				append(&bit_field_stores, Bit_Field_Store{lhs, value})
 				continue
 			}
 			sym := emit_lvalue(ctx, lhs)
@@ -1278,6 +1330,11 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			store_value(ctx, "asss", s.ptr, Value(s.vl), s.lhs)
 			bac.unpin(ctx, s.vl)
 		}
+
+		for s in bit_field_stores {
+			emit_bit_field_store(ctx, s.lhs, s.vl)
+			bac.unpin(ctx, s.vl)
+		}
 	case ^ast.Binary_Expr:
 		if d.op.kind == .Cmp_And || d.op.kind == .Cmp_Or {
 			lhs := emit_rvalue(ctx, {}, d.left)
@@ -1317,15 +1374,49 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			}
 		}
 
+		if d.op.kind == .In || d.op.kind == .Not_In {
+			set_ty := get_node_type(d.right)
+			bs := unpack_type(set_ty).(^typecheck.Bit_Set)
+			set_dt := type_to_dt(set_ty)
+
+			elem := emit_rvalue(ctx, {}, d.left)
+			bac.pin(ctx, elem)
+			set := emit_rvalue(ctx, {}, d.right)
+			idx := set_bit_index(ctx, bs, elem)
+			bac.unpin(ctx, elem)
+
+			shifted := bac.add_bin_op(ctx, "bsin", .U_Shr, set_dt, set, idx)
+			one := bac.add_c_int(ctx, "bs1", set_dt, 1)
+			bit := bac.add_bin_op(ctx, "bsbit", .And, set_dt, shifted, one)
+			zero := bac.add_c_int(ctx, "bs0", set_dt, 0)
+			op: bac.Bin_Op = d.op.kind == .In ? .Ne : .Eq
+			res = bac.add_bin_op(ctx, "bstest", op, dt, bit, zero)
+			break
+		}
+
 		lhsv := emit_nodes(ctx, {}, d.left)
 		bac.pin(ctx, lhsv.id)
 		rhsv := emit_nodes(ctx, {}, d.right)
 		lhs, rhs := to_rvalue(ctx, lhsv, d.left), to_rvalue(ctx, rhsv, d.right)
+		lhs_ty := get_node_type(d.left)
 		kind, name, lane :=
-			typecheck.tok_to_binop(get_node_type(d.left), d.op.kind) or_else panic(
-				"",
-			)
-		res = bac.add_bin_op(ctx, name, kind, dt, lhs, rhs, lane)
+			typecheck.tok_to_binop(lhs_ty, d.op.kind) or_else panic("")
+		if typecheck.is_of(lhs_ty, ^typecheck.Bit_Set) &&
+		   .Lt <= d.op.kind &&
+		   d.op.kind < .B_Comparison_End {
+			set_dt := type_to_dt(lhs_ty)
+			sub, super := lhs, rhs
+			if d.op.kind == .Gt || d.op.kind == .Gt_Eq do sub, super = rhs, lhs
+			diff := bac.add_bin_op(ctx, name, kind, set_dt, sub, super)
+			zero := bac.add_c_int(ctx, "bs0", set_dt, 0)
+			res = bac.add_bin_op(ctx, "subeq", .Eq, dt, diff, zero)
+			if d.op.kind == .Lt || d.op.kind == .Gt {
+				differ := bac.add_bin_op(ctx, "subne", .Ne, dt, lhs, rhs)
+				res = bac.add_bin_op(ctx, "subst", .And, dt, res, differ)
+			}
+		} else {
+			res = bac.add_bin_op(ctx, name, kind, dt, lhs, rhs, lane)
+		}
 		bac.unpin(ctx, lhsv.id)
 	case ^ast.Unary_Expr:
 		#partial switch d.op.kind {
@@ -1351,6 +1442,15 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			op: bac.Un_Op = d.op.kind == .Sub ? .Neg : .Not
 			name := d.op.kind == .Sub ? "neg" : "not"
 			res = bac.add_un_op(ctx, name, op, dt, operand)
+			if bs, is_set := unpack_type(ty).(^typecheck.Bit_Set); is_set {
+				mask := bac.add_c_int(
+					ctx,
+					"bsmask",
+					dt,
+					i64(typecheck.bit_set_mask(bs)),
+				)
+				res = bac.add_bin_op(ctx, "bsnot", .And, dt, res, mask)
+			}
 		case:
 			fmt.panicf("TODO: %#v", node.derived)
 		}
@@ -1509,6 +1609,76 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			}
 		}
 	case ^ast.Comp_Lit:
+		if bs, is_set := unpack_type(ty).(^typecheck.Bit_Set); is_set {
+			known: u64
+			for elem in d.elems {
+				emeta := typecheck.get_node_meta(elem)
+				if emeta.known {
+					known |= 1 << u64(emeta.int - bs.lower)
+					continue
+				}
+
+				if res != 0 do bac.pin(ctx, res)
+				idx := set_bit_index(ctx, bs, emit_rvalue(ctx, {}, elem))
+				one := bac.add_c_int(ctx, "bs1", dt, 1)
+				bit := bac.add_bin_op(ctx, "bsbit", .Shl, dt, one, idx)
+				if res == 0 {
+					res = bit
+				} else {
+					next := bac.add_bin_op(ctx, "bsor", .Or, dt, res, bit)
+					bac.unpin(ctx, res)
+					res = next
+				}
+			}
+
+			if known != 0 {
+				mask := bac.add_c_int(ctx, "bsknown", dt, i64(known))
+				res = bac.add_bin_op(ctx, "bsor", .Or, dt, res, mask)
+			}
+			break
+		}
+
+		if bf, is_bf := unpack_type(ty).(^typecheck.Bit_Field); is_bf {
+			unsigned_ty := typecheck.int_type_for_size(type_size(bf.backing))
+			known: u64
+			for elem in d.elems {
+				fv := elem.derived.(^ast.Field_Value)
+				member := bf.fields[typecheck.get_node_data(fv.field, int)]
+				mask := typecheck.bit_field_mask(member)
+				emeta := typecheck.get_node_meta(fv.value)
+				if emeta.known {
+					known |= (emeta.uint & mask) << u64(member.offset)
+					continue
+				}
+
+				if res != 0 do bac.pin(ctx, res)
+				value := emit_rvalue(ctx, {}, fv.value)
+				bits := emit_conversion(ctx, unsigned_ty, member.ty, value)
+				off := bac.add_c_int(ctx, "bfoff", dt, i64(member.offset))
+				bits = bac.add_bin_op(ctx, "bfshl", .Shl, dt, bits, off)
+				maskc := bac.add_c_int(
+					ctx,
+					"bfmask",
+					dt,
+					i64(mask << u64(member.offset)),
+				)
+				bits = bac.add_bin_op(ctx, "bfbits", .And, dt, bits, maskc)
+				if res == 0 {
+					res = bits
+				} else {
+					next := bac.add_bin_op(ctx, "bfor", .Or, dt, res, bits)
+					bac.unpin(ctx, res)
+					res = next
+				}
+			}
+
+			if known != 0 {
+				knownc := bac.add_c_int(ctx, "bfknown", dt, i64(known))
+				res = bac.add_bin_op(ctx, "bfor", .Or, dt, res, knownc)
+			}
+			break
+		}
+
 		dest := prop.dest != 0 ? prop.dest : alloca(ctx, "comp", ty)
 
 		#partial switch t in unpack_type(ty) {
@@ -1588,6 +1758,32 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				offset := typecheck.get_node_data(d.field, int)
 				field_ptr := field_offset(ctx, base.id, offset)
 				res, lvalue = field_ptr, true
+			case ^typecheck.Bit_Field:
+				member := t.fields[typecheck.get_node_data(d.field, int)]
+				packed := to_rvalue(ctx, base, t.backing)
+				size := type_size(t.backing)
+				bdt := type_to_dt(t.backing)
+				signed := typecheck.bit_field_signed(member)
+				if signed {
+					up := i64(size * 8 - member.offset - member.size)
+					upc := bac.add_c_int(ctx, "bfup", bdt, up)
+					res = bac.add_bin_op(ctx, "bfshl", .Shl, bdt, packed, upc)
+					down := bac.add_c_int(
+						ctx,
+						"bfdown",
+						bdt,
+						i64(size * 8 - member.size),
+					)
+					res = bac.add_bin_op(ctx, "bfsar", .Shr, bdt, res, down)
+				} else {
+					off := bac.add_c_int(ctx, "bfoff", bdt, i64(member.offset))
+					res = bac.add_bin_op(ctx, "bfshr", .U_Shr, bdt, packed, off)
+					mask := i64(typecheck.bit_field_mask(member))
+					maskc := bac.add_c_int(ctx, "bfmask", bdt, mask)
+					res = bac.add_bin_op(ctx, "bfand", .And, bdt, res, maskc)
+				}
+				src_ty := typecheck.int_type_for_size(size, signed)
+				res = emit_conversion(ctx, ty, src_ty, res)
 			case:
 				fmt.panicf("TODO: %#v", t)
 			}
@@ -1778,6 +1974,8 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			}
 		}
 	case ^ast.If_Stmt:
+		sbase := ctx_scope_base(ctx)
+		emit_nodes(ctx, {}, d.init)
 		cond := emit_rvalue(ctx, {}, d.cond)
 
 		if_state: ssa.If_State
@@ -1786,6 +1984,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		ssa.start_else(ctx, &ctx.node_scope, &if_state)
 		emit_stmts(ctx, {d.else_stmt})
 		ssa.end_else(ctx, &ctx.node_scope, &if_state)
+		emit_stmts(ctx, {}, sbase)
 	case ^ast.Switch_Stmt:
 		condv := emit_rvalue(ctx, {}, d.cond)
 		bac.pin(ctx, condv)
@@ -2001,6 +2200,69 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 
 		expr_ty := get_node_type(d.expr)
+		if bs, is_set := unpack_type(expr_ty).(^typecheck.Bit_Set); is_set {
+			set_dt := type_to_dt(expr_ty)
+			elem_dt := type_to_dt(bs.elem)
+			rest_slot := push_scope_value(
+				ctx,
+				nil,
+				emit_rvalue(ctx, {}, d.expr),
+				expr_ty,
+			)
+			elem_slot := push_scope_value(
+				ctx,
+				slice.get(d.vals, 0) or_else nil,
+				bac.add_c_int(ctx, "bsez", elem_dt, 0),
+				bs.elem,
+			)
+
+			loop_state := typecheck.Loop_State {
+				label  = typecheck.src_of(ctx.file^, d.label),
+				parent = ctx.loop,
+			}
+			ctx.loop = &loop_state
+			ssa.start_loop(ctx, ctx.node_scope, &loop_state.bstate)
+
+			rest := ssa.get_scope_value(ctx, ctx.node_scope, rest_slot)
+			zero := bac.add_c_int(ctx, "bs0", set_dt, 0)
+			break_if(
+				ctx,
+				&loop_state,
+				bac.add_bin_op(ctx, "bsdone", .Eq, .I8, rest, zero),
+			)
+
+			// the lowest element is dropped before the body, so a continue
+			// needs no increment
+			rest = ssa.get_scope_value(ctx, ctx.node_scope, rest_slot)
+			low := bac.add_un_op(ctx, "bslow", .Ctz, set_dt, rest)
+			elem := emit_conversion(ctx, bs.elem, bs.underlying, low)
+			if bs.lower != 0 {
+				lower := bac.add_c_int(ctx, "bslo", elem_dt, bs.lower)
+				elem = bac.add_bin_op(ctx, "bselem", .Add, elem_dt, elem, lower)
+			}
+			ssa.set_scope_value(ctx, ctx.node_scope, elem_slot, elem)
+
+			one := bac.add_c_int(ctx, "bs1", set_dt, 1)
+			below := bac.add_bin_op(ctx, "bsdec", .Sub, set_dt, rest, one)
+			next := bac.add_bin_op(ctx, "bsnext", .And, set_dt, rest, below)
+			ssa.set_scope_value(ctx, ctx.node_scope, rest_slot, next)
+
+			for v in d.vals {
+				flags := typecheck.get_node_vflags(v)
+				add_var(
+					ctx,
+					{typecheck.src_of(ctx.file^, v), elem_slot, bs.elem, v, flags},
+				)
+			}
+			emit_stmts(ctx, {d.body})
+
+			ssa.start_loop_increment(ctx, &ctx.node_scope, &loop_state.bstate)
+			ssa.end_loop(ctx, &ctx.node_scope, &loop_state.bstate)
+			ctx.loop = ctx.loop.parent
+			emit_stmts(ctx, {}, sbase)
+			break
+		}
+
 		base := emit_nodes(ctx, {}, d.expr)
 
 		data_ptr, length: Node_ID
@@ -2101,6 +2363,12 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			case:
 				fmt.panicf("TODO: len of %#v", t)
 			}
+			break match
+		case .card:
+			bs := unpack_type(get_node_type(d.args[0])).(^typecheck.Bit_Set)
+			set := emit_rvalue(ctx, {}, d.args[0])
+			count := bac.add_un_op(ctx, "card", .Popcnt, type_to_dt(bs.underlying), set)
+			res = emit_conversion(ctx, ty, bs.underlying, count)
 			break match
 		case .raw_data:
 			#partial switch t in unpack_type(get_node_type(d.args[0])) {
@@ -2240,12 +2508,17 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				)
 
 				break match
-			case .count_trailing_zeros:
+			case .count_trailing_zeros, .count_ones:
+				un_op := #partial [typecheck.Intrinsic]bac.Un_Op {
+					.count_trailing_zeros = .Ctz,
+					.count_ones           = .Popcnt,
+				}
+
 				a := emit_rvalue(ctx, {}, d.args[0])
 				res = bac.add_un_op(
 					ctx,
-					"ctz",
-					.Ctz,
+					"bitc",
+					un_op[base_meta.lit.intrinsic],
 					type_to_dt(get_node_type(node)),
 					a,
 				)
@@ -2315,6 +2588,70 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		ctx.node_scope = 0
 		ssa.end_if(ctx, &ctx.node_scope, &state)
 	}
+
+	set_bit_index :: proc(
+		ctx: ^Gen_Ctx,
+		bs: ^typecheck.Bit_Set,
+		elem: Node_ID,
+	) -> Node_ID {
+		elem := elem
+		if bs.lower != 0 {
+			elem_dt := type_to_dt(bs.elem)
+			lower := bac.add_c_int(ctx, "bslo", elem_dt, bs.lower)
+			elem = bac.add_bin_op(ctx, "bsoff", .Sub, elem_dt, elem, lower)
+		}
+		return emit_conversion(ctx, bs.underlying, bs.elem, elem)
+	}
+}
+
+// emit_bit_field_store writes the bits of the field into its container, the
+// value is computed before the container is read so it needs to stay pinned
+emit_bit_field_store :: proc(ctx: ^Gen_Ctx, lhs: ^ast.Expr, value: Node_ID) {
+	sel, bf, idx, _ := typecheck.bit_field_selector(lhs)
+	member := bf.fields[idx]
+	bdt := type_to_dt(bf.backing)
+
+	container: Sym
+	if typecheck.is_of(get_node_type(sel.expr), typecheck.Pointer) {
+		container = Value {
+			id        = emit_rvalue(ctx, {}, sel.expr),
+			is_lvalue = true,
+		}
+	} else {
+		container = emit_lvalue(ctx, sel.expr)
+	}
+
+	old: Node_ID
+	switch c in container {
+	case int:
+		old = ssa.get_scope_value(ctx, ctx.node_scope, c)
+	case Value:
+		assert(c.is_lvalue)
+		old = field_load(ctx, "bfold", bdt, c.id)
+	}
+	bac.pin(ctx, old)
+
+	mask := i64(typecheck.bit_field_mask(member) << u64(member.offset))
+	unsigned_ty := typecheck.int_type_for_size(type_size(bf.backing))
+	bits := emit_conversion(ctx, unsigned_ty, member.ty, value)
+	off := bac.add_c_int(ctx, "bfoff", bdt, i64(member.offset))
+	bits = bac.add_bin_op(ctx, "bfshl", .Shl, bdt, bits, off)
+	maskc := bac.add_c_int(ctx, "bfmask", bdt, mask)
+	bits = bac.add_bin_op(ctx, "bfbits", .And, bdt, bits, maskc)
+	bac.pin(ctx, bits)
+
+	maskc = bac.add_c_int(ctx, "bfmask", bdt, mask)
+	kept := bac.add_bin_op(ctx, "bfkeep", .And_Not, bdt, old, maskc)
+	bac.unpin(ctx, old)
+	new := bac.add_bin_op(ctx, "bfnew", .Or, bdt, kept, bits)
+	bac.unpin(ctx, bits)
+
+	switch c in container {
+	case int:
+		ssa.set_scope_value(ctx, ctx.node_scope, c, new)
+	case Value:
+		field_store(ctx, "bfst", c.id, 0, new)
+	}
 }
 
 emit_conversion :: proc(
@@ -2322,6 +2659,10 @@ emit_conversion :: proc(
 	dst, src: Type,
 	arg: Node_ID,
 ) -> Node_ID {
+	dst, src := dst, src
+	if bf, ok := unpack_type(dst).(^typecheck.Bit_Field); ok do dst = bf.backing
+	if bf, ok := unpack_type(src).(^typecheck.Bit_Field); ok do src = bf.backing
+
 	dest_dt, src_dt := type_to_dt(dst), type_to_dt(src)
 	if typecheck.strip_named(dst) == .Bool {
 		zero := bac.add_c_int(ctx, "zero", src_dt, 0)

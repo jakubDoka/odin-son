@@ -141,6 +141,7 @@ Node_Type :: enum u16 {
 	U_Conv,
 	Splat,
 	Ctz,
+	Popcnt,
 	Simd_Extract_Lsbs,
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,

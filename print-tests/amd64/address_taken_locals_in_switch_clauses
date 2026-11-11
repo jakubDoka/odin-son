@@ -1,0 +1,224 @@
+=========== OPT LEVEL: none-quick ===========
+bump:
+    add.q [rdi], 0x100
+    ret
+pick:
+    sub rsp, 8
+    cmp rdi, 1
+    je 3
+    cmp rdi, 2
+    je 2
+    xor eax, eax
+    jmp 4
+2:
+    mov.q [rsp], 0x20
+    lea rdi, [rsp]
+    call bump
+    mov.q rax, [rsp]
+    jmp 4
+3:
+    mov rax, 0x11
+4:
+    add rsp, 8
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rdi, 1
+    call pick
+    mov rbx, rax
+    mov rdi, 2
+    call pick
+    mov rbp, rax
+    mov.q [rsp], 0x1003
+    lea rdi, [rsp]
+    call bump
+    mov rax, rbx
+    add rax, rbp
+    add.q rax, [rsp]
+    and rax, 0xffff
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+bump:
+    add.q [rdi], 0x100
+    ret
+pick:
+    sub rsp, 8
+    cmp rdi, 1
+    je 3
+    cmp rdi, 2
+    je 2
+    xor eax, eax
+    jmp 4
+2:
+    mov.q [rsp], 0x20
+    lea rdi, [rsp]
+    call bump
+    mov.q rax, [rsp]
+    jmp 4
+3:
+    mov rax, 0x11
+4:
+    add rsp, 8
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rdi, 1
+    call pick
+    mov rbp, rax
+    mov rdi, 2
+    call pick
+    mov rbx, rax
+    mov.q [rsp], 0x1003
+    lea rdi, [rsp]
+    call bump
+    add rbp, rbx
+    mov rax, rbp
+    add.q rax, [rsp]
+    and rax, 0xffff
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+bump:
+    add.q [rdi], 0x100
+    ret
+pick:
+    sub rsp, 8
+    cmp rdi, 1
+    je 3
+    cmp rdi, 2
+    je 2
+    xor eax, eax
+    jmp 4
+2:
+    mov.q [rsp], 0x20
+    lea rdi, [rsp]
+    call bump
+    mov.q rax, [rsp]
+    jmp 4
+3:
+    mov rax, 0x11
+4:
+    add rsp, 8
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rdi, 1
+    call pick
+    mov rbx, rax
+    mov rdi, 2
+    call pick
+    mov rbp, rax
+    mov.q [rsp], 0x1003
+    lea rdi, [rsp]
+    call bump
+    mov rax, rbx
+    add rax, rbp
+    add.q rax, [rsp]
+    and rax, 0xffff
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+bump:
+    add.q [rdi], 0x100
+    ret
+pick:
+    sub rsp, 8
+    cmp rdi, 1
+    je 3
+    cmp rdi, 2
+    je 2
+    xor eax, eax
+    jmp 4
+2:
+    mov.q [rsp], 0x20
+    lea rdi, [rsp]
+    call bump
+    mov.q rax, [rsp]
+    jmp 4
+3:
+    mov rax, 0x11
+4:
+    add rsp, 8
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rdi, 1
+    call pick
+    mov rbp, rax
+    mov rdi, 2
+    call pick
+    mov rbx, rax
+    mov.q [rsp], 0x1003
+    lea rdi, [rsp]
+    call bump
+    add rbp, rbx
+    mov rax, rbp
+    add.q rax, [rsp]
+    and rax, 0xffff
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+bump:
+    add.q [rdi], 0x100
+    ret
+pick:
+    sub rsp, 8
+    cmp rdi, 1
+    je 3
+    cmp rdi, 2
+    je 2
+    xor eax, eax
+    jmp 4
+2:
+    mov.q [rsp], 0x20
+    lea rdi, [rsp]
+    call bump
+    mov.q rax, [rsp]
+    jmp 4
+3:
+    mov rax, 0x11
+4:
+    add rsp, 8
+    ret
+main:
+    push rbx
+    push rbp
+    sub rsp, 8
+    mov rdi, 1
+    call pick
+    mov rbp, rax
+    mov rdi, 2
+    call pick
+    mov rbx, rax
+    mov.q [rsp], 0x1003
+    lea rdi, [rsp]
+    call bump
+    add rbp, rbx
+    mov rax, rbp
+    add.q rax, [rsp]
+    and rax, 0xffff
+    add rsp, 8
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 0x1234
+    ret

@@ -1,5 +1,5 @@
 package bac
-// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1055:2)
+// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1056:2)
 
 INHERITANCE_TABLE :: []u16{		0b1, // Nil
 		0b1, // Entry
@@ -68,6 +68,7 @@ INHERITANCE_TABLE :: []u16{		0b1, // Nil
 		0b10, // U_Conv
 		0b10, // Splat
 		0b10, // Ctz
+		0b10, // Popcnt
 		0b10, // Simd_Extract_Lsbs
 		0b10, // Simd_Extract_Msbs
 		0b10, // Simd_Reduce_Add_Bisect
@@ -143,6 +144,7 @@ NODE_EXTRA_SIZES :: []u8{		1, // Nil -> Cfg
 		0, // U_Conv -> No_Extra
 		0, // Splat -> No_Extra
 		0, // Ctz -> No_Extra
+		0, // Popcnt -> No_Extra
 		0, // Simd_Extract_Lsbs -> No_Extra
 		0, // Simd_Extract_Msbs -> No_Extra
 		0, // Simd_Reduce_Add_Bisect -> No_Extra
@@ -219,6 +221,7 @@ NODE_EXTRA_SIZES :: []u8{		1, // Nil -> Cfg
 		{Class_Flag.Interned}, // U_Conv
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
+		{Class_Flag.Interned}, // Popcnt
 		{Class_Flag.Interned}, // Simd_Extract_Lsbs
 		{Class_Flag.Interned}, // Simd_Extract_Msbs
 		{Class_Flag.Interned}, // Simd_Reduce_Add_Bisect
@@ -301,6 +304,7 @@ NODE_EXTRA_SIZES :: []u8{		1, // Nil -> Cfg
 		No_Extra,
 		No_Extra,
 		No_Extra,
+		No_Extra,
 		Tup,
 }
 Bin_Op :: enum u16 {
@@ -337,6 +341,7 @@ Un_Op :: enum u16 {
 	U_Conv = u16(Node_Type.U_Conv),
 	Splat = u16(Node_Type.Splat),
 	Ctz = u16(Node_Type.Ctz),
+	Popcnt = u16(Node_Type.Popcnt),
 	Simd_Extract_Lsbs = u16(Node_Type.Simd_Extract_Lsbs),
 	Simd_Extract_Msbs = u16(Node_Type.Simd_Extract_Msbs),
 	Simd_Reduce_Add_Bisect = u16(Node_Type.Simd_Reduce_Add_Bisect),
@@ -409,6 +414,7 @@ Node_Type :: enum u16 {
 	U_Conv,
 	Splat,
 	Ctz,
+	Popcnt,
 	Simd_Extract_Lsbs,
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,

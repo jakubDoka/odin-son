@@ -1,0 +1,844 @@
+=========== OPT LEVEL: none-quick ===========
+card8:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+card16:
+    popcnt ax, di
+    movzx eax, ax
+    ret
+card32:
+    popcnt eax, edi
+    mov eax, eax
+    ret
+card8_to_u16:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_int:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_u32:
+    movzx eax, dil
+    popcnt eax, eax
+    ret
+pc16_int:
+    popcnt ax, di
+    movzx eax, ax
+    ret
+pc16_u8:
+    popcnt ax, di
+    ret
+pc32_int:
+    popcnt eax, edi
+    mov eax, eax
+    ret
+pc32_u8:
+    popcnt eax, edi
+    ret
+pc32_u16:
+    popcnt eax, edi
+    ret
+pci8_i64:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_store:
+    add rsi, rdx
+    movzx eax, dil
+    popcnt ax, ax
+    mov.b [rsi], al
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x58
+    mov dil, -0x5b
+    call card8
+    mov rbx, rax
+    mov dil, -1
+    call card8
+    mov rbp, rax
+    mov rdi, 0xf00f
+    call card16
+    mov r12, rax
+    mov rdi, 0xffff
+    call card16
+    mov r13, rax
+    movabs rdi, 0x80000001
+    call card32
+    mov r14, rax
+    movabs rdi, 0xffffffff
+    call card32
+    mov r15, rax
+    mov dil, 0x7e
+    call card8_to_u16
+    mov.q [rsp + 0x4], rax
+    mov dil, -0xf
+    call pc8_int
+    mov.q [rsp + 0xc], rax
+    mov dil, -0x7f
+    call pc8_u32
+    mov.q [rsp + 0x14], rax
+    mov rdi, 0xfffe
+    call pc16_int
+    mov.q [rsp + 0x1c], rax
+    mov rdi, 0xf0f
+    call pc16_u8
+    mov.q [rsp + 0x24], rax
+    movabs rdi, 0xdeadbeef
+    call pc32_int
+    mov.q [rsp + 0x2c], rax
+    movabs rdi, 0xffffffff
+    call pc32_u8
+    mov.q [rsp + 0x34], rax
+    mov rdi, 0xff00ff
+    call pc32_u16
+    mov.q [rsp + 0x3c], rax
+    mov dil, -1
+    call pci8_i64
+    mov.q [rsp + 0x44], rax
+    mov.d [rsp], 0x44332211
+    mov rdx, 1
+    mov dil, -1
+    lea rsi, [rsp]
+    call pc8_store
+    mov dil, 3
+    mov rdx, 2
+    lea rsi, [rsp]
+    call pc8_store
+    imul rax, rbx, 0x41
+    add rax, rbp
+    imul rax, rax, 0x41
+    add rax, r12
+    imul rax, rax, 0x41
+    add rax, r13
+    imul rax, rax, 0x41
+    add rax, r14
+    imul rax, rax, 0x41
+    add rax, r15
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x4]
+    movzx ecx, cx
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0xc]
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x14]
+    mov ecx, ecx
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x1c]
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x24]
+    movzx ecx, cl
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x2c]
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x34]
+    movzx ecx, cl
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x3c]
+    movzx ecx, cx
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x44]
+    add rax, rcx
+    mov.d ecx, [rsp]
+    shl rcx, 0x10
+    xor rax, rcx
+    add rsp, 0x58
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+card8:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+card16:
+    popcnt ax, di
+    movzx eax, ax
+    ret
+card32:
+    popcnt eax, edi
+    mov eax, eax
+    ret
+card8_to_u16:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_int:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_u32:
+    movzx eax, dil
+    popcnt eax, eax
+    ret
+pc16_int:
+    popcnt ax, di
+    movzx eax, ax
+    ret
+pc16_u8:
+    popcnt ax, di
+    ret
+pc32_int:
+    popcnt eax, edi
+    mov eax, eax
+    ret
+pc32_u8:
+    popcnt eax, edi
+    ret
+pc32_u16:
+    popcnt eax, edi
+    ret
+pci8_i64:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_store:
+    add rsi, rdx
+    movzx eax, dil
+    popcnt ax, ax
+    mov.b [rsi], al
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x58
+    mov dil, -0x5b
+    call card8
+    mov.q [rsp + 0x44], rax
+    mov dil, -1
+    call card8
+    mov.q [rsp + 0x3c], rax
+    mov rdi, 0xf00f
+    call card16
+    mov.q [rsp + 0x34], rax
+    mov rdi, 0xffff
+    call card16
+    mov.q [rsp + 0x2c], rax
+    movabs rdi, 0x80000001
+    call card32
+    mov.q [rsp + 0x24], rax
+    movabs rdi, 0xffffffff
+    call card32
+    mov.q [rsp + 0x1c], rax
+    mov dil, 0x7e
+    call card8_to_u16
+    mov.q [rsp + 0x14], rax
+    mov dil, -0xf
+    call pc8_int
+    mov.q [rsp + 0xc], rax
+    mov dil, -0x7f
+    call pc8_u32
+    mov.q [rsp + 0x4], rax
+    mov rdi, 0xfffe
+    call pc16_int
+    mov r15, rax
+    mov rdi, 0xf0f
+    call pc16_u8
+    mov r14, rax
+    movabs rdi, 0xdeadbeef
+    call pc32_int
+    mov r13, rax
+    movabs rdi, 0xffffffff
+    call pc32_u8
+    mov r12, rax
+    mov rdi, 0xff00ff
+    call pc32_u16
+    mov rbp, rax
+    mov dil, -1
+    call pci8_i64
+    mov rbx, rax
+    mov.d [rsp], 0x44332211
+    mov rdx, 1
+    mov dil, -1
+    lea rsi, [rsp]
+    call pc8_store
+    mov dil, 3
+    mov rdx, 2
+    lea rsi, [rsp]
+    call pc8_store
+    mov.q rax, [rsp + 0x44]
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x3c]
+    add rax, rcx
+    imul rcx, rax, 0x41
+    mov.q rax, [rsp + 0x34]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x2c]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x24]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x1c]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x14]
+    movzx eax, ax
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0xc]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x4]
+    mov eax, eax
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    add rcx, r15
+    imul rcx, rcx, 0x41
+    movzx eax, r14b
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    add rcx, r13
+    imul rcx, rcx, 0x41
+    movzx eax, r12b
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    movzx eax, bp
+    add rcx, rax
+    imul rax, rcx, 0x41
+    add rax, rbx
+    mov.d ecx, [rsp]
+    shl rcx, 0x10
+    xor rax, rcx
+    add rsp, 0x58
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+card8:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+card16:
+    popcnt ax, di
+    movzx eax, ax
+    ret
+card32:
+    popcnt eax, edi
+    mov eax, eax
+    ret
+card8_to_u16:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_int:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_u32:
+    movzx eax, dil
+    popcnt eax, eax
+    ret
+pc16_int:
+    popcnt ax, di
+    movzx eax, ax
+    ret
+pc16_u8:
+    popcnt ax, di
+    ret
+pc32_int:
+    popcnt eax, edi
+    mov eax, eax
+    ret
+pc32_u8:
+    popcnt eax, edi
+    ret
+pc32_u16:
+    popcnt eax, edi
+    ret
+pci8_i64:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_store:
+    add rsi, rdx
+    movzx eax, dil
+    popcnt ax, ax
+    mov.b [rsi], al
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x58
+    mov dil, -0x5b
+    call card8
+    mov rbx, rax
+    mov dil, -1
+    call card8
+    mov rbp, rax
+    mov rdi, 0xf00f
+    call card16
+    mov r12, rax
+    mov rdi, 0xffff
+    call card16
+    mov r13, rax
+    movabs rdi, 0x80000001
+    call card32
+    mov r14, rax
+    movabs rdi, 0xffffffff
+    call card32
+    mov r15, rax
+    mov dil, 0x7e
+    call card8_to_u16
+    mov.q [rsp + 0x4], rax
+    mov dil, -0xf
+    call pc8_int
+    mov.q [rsp + 0xc], rax
+    mov dil, -0x7f
+    call pc8_u32
+    mov.q [rsp + 0x14], rax
+    mov rdi, 0xfffe
+    call pc16_int
+    mov.q [rsp + 0x1c], rax
+    mov rdi, 0xf0f
+    call pc16_u8
+    mov.q [rsp + 0x24], rax
+    movabs rdi, 0xdeadbeef
+    call pc32_int
+    mov.q [rsp + 0x2c], rax
+    movabs rdi, 0xffffffff
+    call pc32_u8
+    mov.q [rsp + 0x34], rax
+    mov rdi, 0xff00ff
+    call pc32_u16
+    mov.q [rsp + 0x3c], rax
+    mov dil, -1
+    call pci8_i64
+    mov.q [rsp + 0x44], rax
+    mov.d [rsp], 0x44332211
+    mov rdx, 1
+    mov dil, -1
+    lea rsi, [rsp]
+    call pc8_store
+    mov dil, 3
+    mov rdx, 2
+    lea rsi, [rsp]
+    call pc8_store
+    imul rax, rbx, 0x41
+    add rax, rbp
+    imul rax, rax, 0x41
+    add rax, r12
+    imul rax, rax, 0x41
+    add rax, r13
+    imul rax, rax, 0x41
+    add rax, r14
+    imul rax, rax, 0x41
+    add rax, r15
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x4]
+    movzx ecx, cx
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0xc]
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x14]
+    mov ecx, ecx
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x1c]
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x24]
+    movzx ecx, cl
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x2c]
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x34]
+    movzx ecx, cl
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x3c]
+    movzx ecx, cx
+    add rax, rcx
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x44]
+    add rax, rcx
+    mov.d ecx, [rsp]
+    shl rcx, 0x10
+    xor rax, rcx
+    add rsp, 0x58
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+card8:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+card16:
+    popcnt ax, di
+    movzx eax, ax
+    ret
+card32:
+    popcnt eax, edi
+    mov eax, eax
+    ret
+card8_to_u16:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_int:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_u32:
+    movzx eax, dil
+    popcnt eax, eax
+    ret
+pc16_int:
+    popcnt ax, di
+    movzx eax, ax
+    ret
+pc16_u8:
+    popcnt ax, di
+    ret
+pc32_int:
+    popcnt eax, edi
+    mov eax, eax
+    ret
+pc32_u8:
+    popcnt eax, edi
+    ret
+pc32_u16:
+    popcnt eax, edi
+    ret
+pci8_i64:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_store:
+    add rsi, rdx
+    movzx eax, dil
+    popcnt ax, ax
+    mov.b [rsi], al
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x58
+    mov dil, -0x5b
+    call card8
+    mov.q [rsp + 0x44], rax
+    mov dil, -1
+    call card8
+    mov.q [rsp + 0x3c], rax
+    mov rdi, 0xf00f
+    call card16
+    mov.q [rsp + 0x34], rax
+    mov rdi, 0xffff
+    call card16
+    mov.q [rsp + 0x2c], rax
+    movabs rdi, 0x80000001
+    call card32
+    mov.q [rsp + 0x24], rax
+    movabs rdi, 0xffffffff
+    call card32
+    mov.q [rsp + 0x1c], rax
+    mov dil, 0x7e
+    call card8_to_u16
+    mov.q [rsp + 0x14], rax
+    mov dil, -0xf
+    call pc8_int
+    mov.q [rsp + 0xc], rax
+    mov dil, -0x7f
+    call pc8_u32
+    mov.q [rsp + 0x4], rax
+    mov rdi, 0xfffe
+    call pc16_int
+    mov r15, rax
+    mov rdi, 0xf0f
+    call pc16_u8
+    mov r14, rax
+    movabs rdi, 0xdeadbeef
+    call pc32_int
+    mov r13, rax
+    movabs rdi, 0xffffffff
+    call pc32_u8
+    mov r12, rax
+    mov rdi, 0xff00ff
+    call pc32_u16
+    mov rbp, rax
+    mov dil, -1
+    call pci8_i64
+    mov rbx, rax
+    mov.d [rsp], 0x44332211
+    mov rdx, 1
+    mov dil, -1
+    lea rsi, [rsp]
+    call pc8_store
+    mov dil, 3
+    mov rdx, 2
+    lea rsi, [rsp]
+    call pc8_store
+    mov.q rax, [rsp + 0x44]
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x3c]
+    add rax, rcx
+    imul rcx, rax, 0x41
+    mov.q rax, [rsp + 0x34]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x2c]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x24]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x1c]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x14]
+    movzx eax, ax
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0xc]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x4]
+    mov eax, eax
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    add rcx, r15
+    imul rcx, rcx, 0x41
+    movzx eax, r14b
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    add rcx, r13
+    imul rcx, rcx, 0x41
+    movzx eax, r12b
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    movzx eax, bp
+    add rcx, rax
+    imul rax, rcx, 0x41
+    add rax, rbx
+    mov.d ecx, [rsp]
+    shl rcx, 0x10
+    xor rax, rcx
+    add rsp, 0x58
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+card8:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+card16:
+    popcnt ax, di
+    movzx eax, ax
+    ret
+card32:
+    popcnt eax, edi
+    mov eax, eax
+    ret
+card8_to_u16:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_int:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_u32:
+    movzx eax, dil
+    popcnt eax, eax
+    ret
+pc16_int:
+    popcnt ax, di
+    movzx eax, ax
+    ret
+pc16_u8:
+    popcnt ax, di
+    ret
+pc32_int:
+    popcnt eax, edi
+    mov eax, eax
+    ret
+pc32_u8:
+    popcnt eax, edi
+    ret
+pc32_u16:
+    popcnt eax, edi
+    ret
+pci8_i64:
+    movzx eax, dil
+    popcnt rax, rax
+    ret
+pc8_store:
+    add rsi, rdx
+    movzx eax, dil
+    popcnt ax, ax
+    mov.b [rsi], al
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x58
+    mov dil, -0x5b
+    call card8
+    mov.q [rsp + 0x44], rax
+    mov dil, -1
+    call card8
+    mov.q [rsp + 0x3c], rax
+    mov rdi, 0xf00f
+    call card16
+    mov.q [rsp + 0x34], rax
+    mov rdi, 0xffff
+    call card16
+    mov.q [rsp + 0x2c], rax
+    movabs rdi, 0x80000001
+    call card32
+    mov.q [rsp + 0x24], rax
+    movabs rdi, 0xffffffff
+    call card32
+    mov.q [rsp + 0x1c], rax
+    mov dil, 0x7e
+    call card8_to_u16
+    mov.q [rsp + 0x14], rax
+    mov dil, -0xf
+    call pc8_int
+    mov.q [rsp + 0xc], rax
+    mov dil, -0x7f
+    call pc8_u32
+    mov.q [rsp + 0x4], rax
+    mov rdi, 0xfffe
+    call pc16_int
+    mov r15, rax
+    mov rdi, 0xf0f
+    call pc16_u8
+    mov r14, rax
+    movabs rdi, 0xdeadbeef
+    call pc32_int
+    mov r13, rax
+    movabs rdi, 0xffffffff
+    call pc32_u8
+    mov r12, rax
+    mov rdi, 0xff00ff
+    call pc32_u16
+    mov rbp, rax
+    mov dil, -1
+    call pci8_i64
+    mov rbx, rax
+    mov.d [rsp], 0x44332211
+    mov rdx, 1
+    mov dil, -1
+    lea rsi, [rsp]
+    call pc8_store
+    mov dil, 3
+    mov rdx, 2
+    lea rsi, [rsp]
+    call pc8_store
+    mov.q rax, [rsp + 0x44]
+    imul rax, rax, 0x41
+    mov.q rcx, [rsp + 0x3c]
+    add rax, rcx
+    imul rcx, rax, 0x41
+    mov.q rax, [rsp + 0x34]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x2c]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x24]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x1c]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x14]
+    movzx eax, ax
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0xc]
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    mov.q rax, [rsp + 0x4]
+    mov eax, eax
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    add rcx, r15
+    imul rcx, rcx, 0x41
+    movzx eax, r14b
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    add rcx, r13
+    imul rcx, rcx, 0x41
+    movzx eax, r12b
+    add rcx, rax
+    imul rcx, rcx, 0x41
+    movzx eax, bp
+    add rcx, rax
+    imul rax, rcx, 0x41
+    add rax, rbx
+    mov.d ecx, [rsp]
+    shl rcx, 0x10
+    xor rax, rcx
+    add rsp, 0x58
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov.d [rsp - 0x8], 0x44332211
+    mov.w [rsp - 0x7], 0x208
+    mov.d eax, [rsp - 0x8]
+    shl rax, 0x10
+    movabs rcx, -0x221013a60a21bdc6
+    xor rax, rcx
+    ret

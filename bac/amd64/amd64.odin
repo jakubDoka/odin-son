@@ -411,6 +411,8 @@ peep :: proc(
 	case .Simd_Extract_Lsbs:
 		return bac.lsbs_to_msbs(ctx, node, struct{}{})
 	case .Conv, .U_Conv:
+		if res := bac.fold_bit_count_conv(ctx, node, struct{}{}); res != nil do return res
+
 		inp := expand_node(ctx, node.inps[0])
 		assert(inp.dt != node.dt)
 		if inp.dt in bac.INT_DTS && node.dt in bac.INT_DTS {
@@ -493,6 +495,8 @@ peep :: proc(
 		return res
 	case .Ctz:
 		return bac.normalize_ctz(ctx, node, .I16, struct{}{})
+	case .Popcnt:
+		return bac.normalize_popcnt(ctx, node, .I16, struct{}{})
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -1046,6 +1050,7 @@ meta_of :: proc(
 		.Mul ..= .And_Not            = true,
 		.Neg        = true,
 		.Ctz        = true,
+		.Popcnt     = true,
 		.AMD64_Add ..= .AMD64_Xor            = true,
 		.AMD64_Shl ..= .AMD64_Div            = true,
 		.AMD64_Neg  = true,
@@ -1236,6 +1241,9 @@ meta_of_raw :: proc(
 	case .Ctz, .Not, .Neg:
 		assert(nkind == RK_GENERAL)
 		return {out = out, masks = nmasks[:1], in_place_slot = 1}
+	case .Popcnt:
+		assert(nkind == RK_GENERAL)
+		return {out = out, masks = nmasks[:1]}
 	case .Conv, .U_Conv, .Cast:
 		inp := get_node(prc, node.inps[0])
 		return {out = out, masks = masks[ra.datatype_to_reg_kind[inp.dt]][:1]}
@@ -1780,6 +1788,20 @@ emit_instr :: proc(ctx: ^Ctx, instr: Node_ID, is_consecutive: bool, _: $T) {
 
 		rx := rex(dst, src, RAX, node.dt == .I64)
 		emit(ctx.code, {rx, 0x0f, 0xbc, mod_rm(.Direct, dst, src)})
+	case .Popcnt:
+		// popcnt $dst, $src
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+		sdt := get_node(ctx, node.inps[0]).dt
+
+		emit(ctx.code, {0xf3})
+
+		if sdt == .I16 {
+			emit(ctx.code, {0x66})
+		}
+
+		rx := rex(dst, src, RAX, sdt == .I64)
+		emit(ctx.code, {rx, 0x0f, 0xb8, mod_rm(.Direct, dst, src)})
 	case .Local_Addr, .Global_Addr:
 		dst := reg_of(ctx, instr)
 		addr, dis, id := reg_and_disp_of(ctx, node.inps[0])

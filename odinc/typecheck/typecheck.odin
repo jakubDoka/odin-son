@@ -350,6 +350,10 @@ type_align :: proc(ty: Type) -> int {
 		return 8
 	case ^Enum:
 		return type_align(t.backing)
+	case ^Bit_Set:
+		return type_align(t.underlying)
+	case ^Bit_Field:
+		return type_align(t.backing)
 	case ^Union:
 		layout_union(t)
 		return t.align
@@ -374,6 +378,10 @@ type_size :: proc(ty: Type) -> (res: int) {
 	case ^Slice:
 		return 16
 	case ^Enum:
+		return type_size(t.backing)
+	case ^Bit_Set:
+		return type_size(t.underlying)
+	case ^Bit_Field:
 		return type_size(t.backing)
 	case ^Union:
 		layout_union(t)
@@ -531,6 +539,10 @@ type_to_dt :: proc(ty: Type) -> bac.Node_Datatype {
 		return .I64
 	case ^Enum:
 		return type_to_dt(t.backing)
+	case ^Bit_Set:
+		return type_to_dt(t.underlying)
+	case ^Bit_Field:
+		return type_to_dt(t.backing)
 	case ^Struct, ^Array, ^Slice, ^Union:
 		return .Void
 	case ^Simd:
@@ -616,6 +628,8 @@ Type_Data :: union #no_nil {
 	^Enum,
 	^Union,
 	^Simd,
+	^Bit_Set,
+	^Bit_Field,
 	^Named,
 }
 
@@ -710,6 +724,27 @@ type_display :: proc(w: io.Writer, ty: Type) {
 		for v, i in t.variants {
 			if i != 0 do io.write_string(w, ", ")
 			fmt.wprintf(w, "%v = %v", v.name, v.value)
+		}
+		io.write_rune(w, '}')
+	case ^Bit_Set:
+		io.write_string(w, "bit_set[")
+		if is_of(t.elem, ^Enum) {
+			type_display(w, t.elem)
+		} else {
+			fmt.wprintf(w, "%v..=%v", t.lower, t.upper)
+		}
+		io.write_string(w, "; ")
+		type_display(w, t.underlying)
+		io.write_rune(w, ']')
+	case ^Bit_Field:
+		io.write_string(w, "bit_field ")
+		type_display(w, t.backing)
+		io.write_string(w, " {")
+		for f, i in t.fields {
+			if i != 0 do io.write_string(w, ", ")
+			fmt.wprintf(w, "%v: ", f.name)
+			type_display(w, f.ty)
+			fmt.wprintf(w, " | %v", f.size)
 		}
 		io.write_rune(w, '}')
 	case ^Union:
@@ -837,6 +872,71 @@ intern_slice :: proc(ctx: ^Gen_Ctx, elem: Type) -> Type {
 	return pack_type(existing)
 }
 
+intern_bit_set :: proc(ctx: ^Gen_Ctx, key: Bit_Set) -> Type {
+	existing := ctx.bit_sets[key] or_else new_clone(key, ctx.types.allocator)
+	ctx.bit_sets[key] = existing
+	return pack_type(existing)
+}
+
+// bit_set_mask has the bits of the elements the set can hold, an enum may not
+// have a variant for every value in its range
+bit_set_mask :: proc(bs: ^Bit_Set) -> (mask: u64) {
+	if e, ok := unpack_type(bs.elem).(^Enum); ok {
+		for v in e.variants do mask |= 1 << u64(v.value - bs.lower)
+		return
+	}
+	return ~u64(0) >> u64(63 - (bs.upper - bs.lower))
+}
+
+bit_field_mask :: proc(f: Bit_Field_Member) -> u64 {
+	return ~u64(0) >> u64(64 - f.size)
+}
+
+bit_field_signed :: proc(f: Bit_Field_Member) -> bool {
+	return in_set(constant_base_type(f.ty), SIGNED_TYPES)
+}
+
+bit_field_extract :: proc(f: Bit_Field_Member, packed: u64) -> (value: Lit) {
+	value.uint = packed >> u64(f.offset) & bit_field_mask(f)
+	if bit_field_signed(f) {
+		shift := u64(64 - f.size)
+		value.int = i64(value.uint << shift) >> shift
+	} else if strip_named(f.ty) == .Bool {
+		value.uint = u64(value.uint != 0)
+	}
+	return
+}
+
+// bit_field_fits checks a constant against the range the field can hold, odin
+// rejects the constants that would get truncated
+bit_field_fits :: proc(
+	ctx: ^Gen_Ctx,
+	node: ^ast.Node,
+	f: Bit_Field_Member,
+	value: ^Check_Meta,
+) -> bool {
+	if !value.known do return true
+
+	fits: bool
+	if bit_field_signed(f) {
+		shift := u64(64 - f.size)
+		fits = (value.int << shift) >> shift == value.int
+	} else {
+		fits = value.uint & ~bit_field_mask(f) == 0
+	}
+	if !fits {
+		error(
+			ctx,
+			node,
+			"%v does not fit into the %v bits of the bit_field field %q",
+			bit_field_signed(f) ? value.int : i64(value.uint),
+			f.size,
+			f.name,
+		)
+	}
+	return fits
+}
+
 intern_simd :: proc(ctx: ^Gen_Ctx, elem: Type, length: int) -> Type {
 	fmt.assertf(math.is_power_of_two(length), "%v", length)
 	key := Simd{elem, length}
@@ -856,10 +956,12 @@ simd_dt :: proc(size: int) -> bac.Node_Datatype {
 	)
 }
 
-int_type_for_size :: proc(size: int) -> Type {
+int_type_for_size :: proc(size: int, signed := false) -> Type {
 	assert(math.is_power_of_two(size))
 	assert(size <= 8)
-	return Type(int(Type.U8) + intrinsics.count_trailing_zeros(size))
+	return Type(
+		int(signed ? Type.I8 : Type.U8) + intrinsics.count_trailing_zeros(size),
+	)
 }
 
 instantiate_struct :: proc(
@@ -977,7 +1079,12 @@ resolve_struct_fields :: proc(
 		if strip_named(res.type) != .Int {
 			error(ctx, align_ast, "#align must be an integer, found %v", res.type)
 		} else if !math.is_power_of_two(int(res.lit.int)) {
-			error(ctx, align_ast, "#align must be a power of two, found %v", res.lit.int)
+			error(
+				ctx,
+				align_ast,
+				"#align must be a power of two, found %v",
+				res.lit.int,
+			)
 		} else {
 			structa.req_align = int(res.lit.int)
 		}
@@ -1577,6 +1684,7 @@ Intrinsic :: enum int {
 	simd_extract_msbs,
 	simd_reduce_add_bisect,
 	count_trailing_zeros,
+	count_ones,
 }
 
 Builtin_Proc :: enum int {
@@ -1585,6 +1693,7 @@ Builtin_Proc :: enum int {
 	raw_data,
 	size_of,
 	align_of,
+	card,
 }
 
 get_builtin_proc :: proc(node: ^ast.Node) -> Builtin_Proc {
@@ -1666,6 +1775,7 @@ Types :: struct {
 	struct_insts:   map[Struct_Inst_Key]^Named,
 	arrays:         map[Array]^Array,
 	simds:          map[Simd]^Simd,
+	bit_sets:       map[Bit_Set]^Bit_Set,
 	slices:         map[Slice]^Slice,
 	proc_types:     map[Proc_Type_Key]^Proc_Type,
 	type_slices:    map[Type_Slice_Key][]Type,
@@ -1832,6 +1942,27 @@ Enum :: struct {
 Enum_Variant :: struct {
 	name:  string,
 	value: i64,
+}
+
+Bit_Set :: struct {
+	elem:       Type,
+	underlying: Type,
+	lower:      i64,
+	upper:      i64,
+}
+
+Bit_Field :: struct {
+	backing: Type,
+	fields:  []Bit_Field_Member,
+}
+
+// offset and size are in bits, the fields are packed from the lowest bit in
+// the declaration order
+Bit_Field_Member :: struct {
+	name:   string,
+	ty:     Type,
+	offset: int,
+	size:   int,
 }
 
 Proc_Type :: struct {
@@ -2037,6 +2168,188 @@ typecheck :: proc(
 			e.variants[i] = {vname, vval}
 			next = vval + 1
 		}
+	case ^ast.Bit_Set_Type:
+		bs: Bit_Set
+		interval, is_interval := ast.unparen_expr(d.elem).derived.(^ast.Binary_Expr)
+		if is_interval &&
+		   (interval.op.kind == .Range_Half || interval.op.kind == .Range_Full) {
+			lhs, rhs: ^Check_Meta
+			if is_num_lit(interval.left) && !is_num_lit(interval.right) {
+				rhs = typecheck_eval(ctx, {}, interval.right)
+				lhs = typecheck_eval(ctx, {inferred_ty = rhs.type}, interval.left)
+			} else {
+				lhs = typecheck_eval(ctx, {}, interval.left)
+				rhs = typecheck_eval(ctx, {inferred_ty = lhs.type}, interval.right)
+			}
+			if expect(ctx, interval.right, rhs, lhs.type) == &INVALID {
+				ty = &INVALID
+				break match
+			}
+			if !in_set(lhs.type, INTEGER_TYPES) || strip_named(lhs.type) == .Bool {
+				ty = error(
+					ctx,
+					d.elem,
+					"expected an integer range, found %v",
+					lhs.type,
+				)
+				break match
+			}
+			bs.elem = lhs.type
+			bs.lower = lhs.int
+			bs.upper = rhs.int - i64(interval.op.kind == .Range_Half)
+			if bs.upper < bs.lower {
+				ty = error(ctx, d.elem, "a bit_set range can not be empty")
+				break match
+			}
+		} else {
+			bs.elem = emit_type(ctx, d.elem)
+			e := unwrap_type(
+				ctx,
+				d.elem,
+				bs.elem,
+				^Enum,
+				"a bit_set needs an enum or an integer range, found %v",
+				&ty,
+			) or_break match
+			bs.upper = -1
+			for v, i in e.variants {
+				bs.lower = i == 0 ? v.value : min(bs.lower, v.value)
+				bs.upper = i == 0 ? v.value : max(bs.upper, v.value)
+			}
+		}
+
+		bits := u64(bs.upper - bs.lower) + 1
+		if d.underlying == nil {
+			if bits > 64 {
+				ty = error(
+					ctx,
+					d.elem,
+					"a bit_set needs %v bits, at most 64 are supported",
+					bits,
+				)
+				break match
+			}
+			bs.underlying = int_type_for_size(
+				max(1, int(math.next_power_of_two(int((bits + 7) / 8)))),
+			)
+		} else {
+			bs.underlying = emit_type(ctx, d.underlying)
+			if !in_set(bs.underlying, INTEGER_TYPES) ||
+			   strip_named(bs.underlying) == .Bool {
+				ty = error(
+					ctx,
+					d.underlying,
+					"the underlying type of a bit_set must be an integer, found %v",
+					bs.underlying,
+				)
+				break match
+			}
+			if bits > u64(type_size(bs.underlying) * 8) {
+				ty = error(
+					ctx,
+					d.elem,
+					"the bit_set needs %v bits, %v has only %v",
+					bits,
+					bs.underlying,
+					type_size(bs.underlying) * 8,
+				)
+				break match
+			}
+		}
+		ty = tpmeta(ctx, intern_bit_set(ctx, bs))
+	case ^ast.Bit_Field_Type:
+		bf := new(Bit_Field, ctx.types.allocator)
+		ty = tpmeta(ctx, pack_type(new_named(ctx, prop, node, pack_type(bf))))
+		set_node_data(node, ty)
+
+		bf.backing = emit_type(ctx, d.backing_type)
+		if bf.backing == .Invalid_Type {
+			ty = &INVALID
+			break match
+		}
+		if is_of(bf.backing, ^Array) {
+			ty = error(ctx, d.backing_type, "TODO: bit_fields backed by an array")
+			break match
+		}
+		if !in_set(bf.backing, INTEGER_TYPES) || strip_named(bf.backing) == .Bool {
+			ty = error(
+				ctx,
+				d.backing_type,
+				"the backing type of a bit_field must be an integer, found %v",
+				bf.backing,
+			)
+			break match
+		}
+
+		bf.fields = make([]Bit_Field_Member, len(d.fields), ctx.types.allocator)
+		offset := 0
+		for f, i in d.fields {
+			name, is_ident := f.name.derived.(^ast.Ident)
+			if !is_ident {
+				ty = error(ctx, f.name, "expected a field name")
+				break match
+			}
+
+			field_ty := emit_type(ctx, f.type)
+			if field_ty == .Invalid_Type {
+				ty = &INVALID
+				break match
+			}
+			if !in_set(field_ty, INTEGER_TYPES) && !is_of(field_ty, ^Enum) {
+				ty = error(
+					ctx,
+					f.type,
+					"the type of a bit_field field must be an integer, an enum or a boolean, found %v",
+					field_ty,
+				)
+				break match
+			}
+
+			size := typecheck_eval(ctx, {inferred_ty = .Int}, f.bit_size)
+			if !in_set(size.type, INTEGER_TYPES) || strip_named(size.type) == .Bool {
+				ty = error(
+					ctx,
+					f.bit_size,
+					"the bit size of a bit_field field must be a constant integer",
+				)
+				break match
+			}
+			if size.int <= 0 {
+				ty = error(
+					ctx,
+					f.bit_size,
+					"the bit size of a bit_field field must be positive, found %v",
+					size.int,
+				)
+				break match
+			}
+			if size.int > i64(type_size(field_ty) * 8) {
+				ty = error(
+					ctx,
+					f.bit_size,
+					"the bit size %v exceeds the %v bits of %v",
+					size.int,
+					type_size(field_ty) * 8,
+					field_ty,
+				)
+				break match
+			}
+
+			bf.fields[i] = {name.name, field_ty, offset, int(size.int)}
+			offset += int(size.int)
+		}
+
+		if offset > type_size(bf.backing) * 8 {
+			ty = error(
+				ctx,
+				node,
+				"the bit_field needs %v bits, %v has only %v",
+				offset,
+				bf.backing,
+				type_size(bf.backing) * 8,
+			)
+			break match
+		}
 	case ^ast.Union_Type:
 		u := new(Union, ctx.types.allocator)
 		ty = tpmeta(ctx, pack_type(new_named(ctx, prop, node, pack_type(u))))
@@ -2139,7 +2452,7 @@ typecheck :: proc(
 			ty = tpmeta(ctx, pack_type(sig))
 		}
 	case ^ast.Block_Stmt:
-		prev_scope_len := len(ctx.scope)
+		prev_scope_len := push_scope(ctx)
 		typecheck_block_constants(ctx, d.stmts)
 
 		stmts: [dynamic]^ast.Stmt
@@ -2157,10 +2470,6 @@ typecheck :: proc(
 		for stmt in d.stmts {
 			typecheck(ctx, {}, stmt)
 		}
-		for var in ctx.scope[prev_scope_len:] {
-			set_node_data(var.ident, var.flags)
-		}
-		resize(&ctx.scope, prev_scope_len)
 	case ^ast.Value_Decl:
 		if !d.is_mutable {
 			break match
@@ -2361,6 +2670,73 @@ typecheck :: proc(
 			comp_ty = get_node_meta(d.type).typeida
 		} else {
 			comp_ty = emit_type(ctx, d.type)
+		}
+
+		// a set is a scalar, so it folds to its mask instead of a global
+		set_ty := comp_ty == .Void ? prop.inferred_ty : comp_ty
+		if bs, is_bs := unpack_type(set_ty).(^Bit_Set); is_bs {
+			mask: u64
+			known := true
+			for elem in d.elems {
+				res := typecheck_as(ctx, bs.elem, elem)
+				if res.type == .Invalid_Type do continue
+				if !res.known {
+					known = false
+					continue
+				}
+				if res.int < bs.lower || res.int > bs.upper {
+					error(
+						ctx,
+						elem,
+						"%v is out of the range %v..=%v of %v",
+						res.int,
+						bs.lower,
+						bs.upper,
+						set_ty,
+					)
+					continue
+				}
+				mask |= 1 << u64(res.int - bs.lower)
+			}
+			ty = known ? tcmeta(ctx, set_ty, {uint = mask}) : tmeta(ctx, set_ty)
+			break match
+		}
+
+		if bf, is_bf := unpack_type(set_ty).(^Bit_Field); is_bf {
+			packed: u64
+			known := true
+			fields: for elem in d.elems {
+				fv, is_fv := elem.derived.(^ast.Field_Value)
+				if !is_fv {
+					error(
+						ctx,
+						elem,
+						"%v literals can only contain 'field = value' elements",
+						set_ty,
+					)
+					continue
+				}
+
+				name := src_of(ctx.file^, fv.field)
+				for f, i in bf.fields {
+					if f.name != name do continue
+
+					set_node_data(fv.field, i)
+					res := typecheck_as(ctx, f.ty, fv.value)
+					if res.type == .Invalid_Type do continue fields
+					if !res.known {
+						known = false
+						continue fields
+					}
+					if bit_field_fits(ctx, fv.value, f, res) {
+						packed |= (res.uint & bit_field_mask(f)) << u64(f.offset)
+					}
+					continue fields
+				}
+				error(ctx, fv.field, "%v has no field %q", set_ty, name)
+			}
+			ty = known ? tcmeta(ctx, set_ty, {uint = packed}) : tmeta(ctx, set_ty)
+			break match
 		}
 
 		prop := gi_init(ctx, prop, comp_ty)
@@ -2618,6 +2994,35 @@ typecheck :: proc(
 					break match
 				}
 			}
+		case ^Bit_Field:
+			for member, i in t.fields {
+				if member.name != f.name do continue
+
+				set_node_data(d.field, i)
+				if prop.referencing {
+					ty = error(ctx, node, "cannot take the address of a bit_field field")
+					break match
+				}
+				if base.type == .Typeid {
+					ty = error(
+						ctx,
+						node,
+						"a bit_field field needs a value, found the type %v",
+						base_ty,
+					)
+					break match
+				}
+
+				if base.known && (should_be_known || !base.lvalue && !through_ptr) {
+					packed := global_load(ctx, base)
+					ty = tcmeta(ctx, member.ty, bit_field_extract(member, packed.uint))
+					break match
+				}
+
+				lvalue = through_ptr || base.lvalue
+				ty = tmeta(ctx, member.ty)
+				break match
+			}
 		}
 		ty = error(ctx, d.field, "%v has no field %q", base_ty, f.name)
 	case ^ast.Implicit_Selector_Expr:
@@ -2660,7 +3065,8 @@ typecheck :: proc(
 		}
 		ty = tmeta(ctx, target)
 	case ^ast.Binary_Expr:
-		bool_ty := strip_named(prop.inferred_ty) == .Bool ? prop.inferred_ty : .Bool
+		bool_ty :=
+			strip_named(prop.inferred_ty) == .Bool ? prop.inferred_ty : .Bool
 
 		if d.op.kind == .Cmp_And || d.op.kind == .Cmp_Or {
 			lhs := expect_boolean(ctx, d.left, bool_ty)
@@ -2676,6 +3082,30 @@ typecheck :: proc(
 				ty.untyped = lhs.untyped && rhs.untyped
 			} else {
 				ty = tmeta(ctx, res_ty)
+			}
+			break match
+		}
+
+		if d.op.kind == .In || d.op.kind == .Not_In {
+			set := typecheck(ctx, {}, d.right)
+			bs := unwrap_type(
+				ctx,
+				d.right,
+				set.type,
+				^Bit_Set,
+				"expected a bit_set, found %v",
+				&ty,
+			) or_break match
+			elem := typecheck_as(ctx, bs.elem, d.left)
+			if elem.type == .Invalid_Type {
+				ty = &INVALID
+			} else if elem.known && set.known {
+				bit := u64(elem.int - bs.lower)
+				present := bit < 64 && set.uint >> bit & 1 != 0
+				ty = tcmeta(ctx, bool_ty, {int = i64(present == (d.op.kind == .In))})
+				ty.untyped = true
+			} else {
+				ty = tmeta(ctx, bool_ty)
 			}
 			break match
 		}
@@ -2773,6 +3203,10 @@ typecheck :: proc(
 				{inferred_ty = inferred_ty, referencing = true},
 				d.expr,
 			)
+			if res.type == .Invalid_Type {
+				ty = &INVALID
+				break match
+			}
 			if !res.lvalue {
 				ty = error(ctx, d.expr, "cant reference this")
 				break match
@@ -2784,7 +3218,8 @@ typecheck :: proc(
 				ty = tcmeta(ctx, ty.type, {dest = res.dest})
 			}
 		case .Not:
-			bool_ty := strip_named(prop.inferred_ty) == .Bool ? prop.inferred_ty : .Bool
+			bool_ty :=
+				strip_named(prop.inferred_ty) == .Bool ? prop.inferred_ty : .Bool
 			vl := expect_boolean(ctx, d.expr, bool_ty)
 			if vl.type == .Invalid_Type {
 				ty = vl
@@ -2797,6 +3232,14 @@ typecheck :: proc(
 			if vl.known do ty.int = i64(vl.int == 0)
 		case .Xor:
 			vl := typecheck(ctx, prop, d.expr)
+			if bs, is_bs := unpack_type(vl.type).(^Bit_Set); is_bs {
+				if vl.known {
+					vl = new_clone(vl^, ctx.types.allocator)
+					vl.uint = ~vl.uint & bit_set_mask(bs)
+				}
+				ty = vl
+				break match
+			}
 			if !in_set(vl.type, INTEGER_TYPES) {
 				ty = error(ctx, node, "only integers support this, TODO: vectors")
 				break match
@@ -2854,7 +3297,9 @@ typecheck :: proc(
 	case ^ast.Expr_Stmt:
 		ty = typecheck(ctx, {}, d.expr)
 	case ^ast.If_Stmt:
-		if d.init != nil do error(ctx, d.init, "TODO: an if with an initializer")
+		push_scope(ctx)
+
+		typecheck(ctx, {}, d.init)
 		expect_boolean(ctx, d.cond)
 		then_reachable := typecheck_branch(ctx, d.body)
 		if d.else_stmt != nil {
@@ -2888,10 +3333,9 @@ typecheck :: proc(
 			for v in clause.list {
 				typecheck(ctx, {inferred_ty = cond_ty.type}, v)
 			}
-			prev := len(ctx.scope)
+			push_scope(ctx)
 			if len(clause.list) == 0 do has_default = true
 			if typecheck_clause(ctx, clause.body) do reachable = true
-			resize(&ctx.scope, prev)
 		}
 		if has_default && !reachable && !sw.broken do mark_unreachable(ctx)
 		ty = &VOID
@@ -2950,7 +3394,7 @@ typecheck :: proc(
 					)
 				}
 			}
-			prev := len(ctx.scope)
+			push_scope(ctx)
 			set_node_data(tag.lhs[0], Var_Flags{.Referenced})
 			append(
 				&ctx.scope,
@@ -2962,19 +3406,12 @@ typecheck :: proc(
 				},
 			)
 			if typecheck_clause(ctx, clause.body) do reachable = true
-			resize(&ctx.scope, prev)
 		}
 		exhaustive := has_default || covered == len(uni.variants)
 		if exhaustive && !reachable && !sw.broken do mark_unreachable(ctx)
 		ty = &VOID
 	case ^ast.For_Stmt:
-		prev := len(ctx.scope)
-		defer {
-			for var in ctx.scope[prev:] {
-				set_node_data(var.ident, var.flags)
-			}
-			resize(&ctx.scope, prev)
-		}
+		push_scope(ctx)
 
 		typecheck(ctx, {}, d.init)
 		if d.cond != nil do expect_boolean(ctx, d.cond)
@@ -2991,13 +3428,7 @@ typecheck :: proc(
 		typecheck_branch(ctx, d.post)
 		if !loop.broken do mark_unreachable(ctx)
 	case ^ast.Range_Stmt:
-		prev := len(ctx.scope)
-		defer {
-			for var in ctx.scope[prev:] {
-				set_node_data(var.ident, var.flags)
-			}
-			resize(&ctx.scope, prev)
-		}
+		push_scope(ctx)
 		typecheck(ctx, {}, d.init)
 
 		interval, is_interval := ast.unparen_expr(d.expr).derived.(^ast.Binary_Expr)
@@ -3005,6 +3436,7 @@ typecheck :: proc(
 			is_interval &&
 			(interval.op.kind == .Range_Half || interval.op.kind == .Range_Full)
 		elem: Type
+		is_set := false
 		if is_interval {
 			if d.reverse {
 				error(ctx, node, "#reverse is not supported with integer ranges")
@@ -3042,6 +3474,12 @@ typecheck :: proc(
 				elem = t.elem
 			case String_Type:
 				elem = .U8
+			case ^Bit_Set:
+				elem = t.elem
+				is_set = true
+				if d.reverse {
+					error(ctx, node, "#reverse is not supported with bit_sets")
+				}
 			case:
 				ty = error(ctx, d.expr, "can not range over a %v", expr_meta.type)
 				break match
@@ -3058,14 +3496,15 @@ typecheck :: proc(
 
 		val_types := [2]Type{elem, .Int}
 		for v, i in d.vals {
-			if i >= len(val_types) {
-				error(ctx, v, "a range yields at most 2 values")
+			if i >= (is_set ? 1 : len(val_types)) {
+				error(ctx, v, "a range yields at most %v values", is_set ? 1 : 2)
 				break
 			}
 			inner := v
 			if un, is_un := v.derived.(^ast.Unary_Expr); is_un && i == 0 {
-				if is_interval {
-					error(ctx, v, "integer ranges can not be iterated by reference")
+				if is_interval || is_set {
+					kind := is_set ? "bit_sets" : "integer ranges"
+					error(ctx, v, "%v can not be iterated by reference", kind)
 					continue
 				}
 				inner = un.expr
@@ -3076,7 +3515,7 @@ typecheck :: proc(
 				continue
 			}
 			flags: Var_Flags
-			if is_interval do flags |= {.Immutable}
+			if is_interval || is_set do flags |= {.Immutable}
 			append(
 				&ctx.scope,
 				Variable {
@@ -3226,7 +3665,8 @@ typecheck :: proc(
 		if d.name == "false" || d.name == "true" {
 			meta.kind = .Const
 			meta.value = i64(d.name == "true")
-			bool_ty := strip_named(prop.inferred_ty) == .Bool ? prop.inferred_ty : .Bool
+			bool_ty :=
+				strip_named(prop.inferred_ty) == .Bool ? prop.inferred_ty : .Bool
 			ty = tcmeta(ctx, bool_ty, {int = meta.value})
 			ty.untyped = true
 			break match
@@ -3335,6 +3775,22 @@ typecheck :: proc(
 				{int = i64(bprc == .size_of ? type_size(tp) : type_align(tp))},
 			)
 			break match
+		case .card:
+			args := expect_args(ctx, node, d.args, 1, &ty) or_break match
+			set := typecheck(ctx, {}, args[0])
+			_ = unwrap_type(
+				ctx,
+				args[0],
+				set.type,
+				^Bit_Set,
+				"can not take the card of a %v",
+				&ty,
+			) or_break match
+			ty = tmeta(ctx, .Int)
+			if set.known {
+				ty = tcmeta(ctx, .Int, {int = i64(intrinsics.count_ones(set.uint))})
+			}
+			break match
 		}
 
 		callee := typecheck(ctx, {}, d.expr)
@@ -3388,7 +3844,7 @@ typecheck :: proc(
 				bytes := (sd.len + 7) / 8
 				ty = tmeta(ctx, int_type_for_size(bytes))
 				break match
-			case .count_trailing_zeros:
+			case .count_trailing_zeros, .count_ones:
 				args := expect_args(ctx, node, d.args, 1, &ty) or_break match
 				a := typecheck(ctx, {inferred_ty = prop.inferred_ty}, args[0])
 				if !in_set(a.type, INTEGER_TYPES) {
@@ -3449,7 +3905,8 @@ typecheck :: proc(
 				ty = typecheck_conversion(ctx, node, dst, src)
 				break match
 			}
-			inferred := is_num_lit(d.args[0]) && in_set(dst, NUMBER_TYPES) ? dst : .Void
+			inferred :=
+				is_num_lit(d.args[0]) && in_set(dst, NUMBER_TYPES) ? dst : .Void
 			src := typecheck(ctx, {inferred_ty = inferred}, d.args[0])
 			ty = typecheck_conversion(ctx, node, dst, src)
 			break match
@@ -3694,7 +4151,11 @@ typecheck :: proc(
 				expect(ctx, d.rhs[i], rhs_ty, lhs_ty.type)
 				continue
 			}
-			typecheck_as(ctx, lhs_ty.type, d.rhs[i])
+			rhs_ty := typecheck_as(ctx, lhs_ty.type, d.rhs[i])
+			if _, bf, idx, ok := bit_field_selector(d.lhs[i]);
+			   ok && d.op.kind == .Eq {
+				bit_field_fits(ctx, d.rhs[i], bf.fields[idx], rhs_ty)
+			}
 			ty = valid_binop(ctx, lhs_ty.type, node, d.op.kind)
 			if ty != nil do break match
 		}
@@ -3724,6 +4185,23 @@ Var_Flag :: enum uintptr {
 }
 
 Var_Flags :: bit_set[Var_Flag;uintptr]
+
+// bit_field_selector finds the writes to a bit_field field, those can not
+// go through an address since the field does not start at a byte
+bit_field_selector :: proc(
+	node: ^ast.Expr,
+) -> (
+	sel: ^ast.Selector_Expr,
+	bf: ^Bit_Field,
+	idx: int,
+	ok: bool,
+) {
+	sel = ast.unparen_expr(node).derived.(^ast.Selector_Expr) or_return
+	base_ty := get_node_type(sel.expr)
+	if p, is_ptr := unpack_type(base_ty).(Pointer); is_ptr do base_ty = p^
+	bf = unpack_type(base_ty).(^Bit_Field) or_return
+	return sel, bf, get_node_data(sel.field, int), true
+}
 
 get_node_meta :: proc(node: ^ast.Node) -> ^Check_Meta {
 	if node == nil do return &VOID
@@ -3919,6 +4397,10 @@ is_shader_uniform_type :: proc(ty: Type) -> bool {
 		return true
 	case ^Enum:
 		return is_shader_uniform_type(t.backing)
+	case ^Bit_Set:
+		return is_shader_uniform_type(t.underlying)
+	case ^Bit_Field:
+		return is_shader_uniform_type(t.backing)
 	}
 	return in_set(
 		ty,
@@ -4080,6 +4562,16 @@ end_branch :: proc(ctx: ^Gen_Ctx, prev: ^bool) {
 	ctx.reachable = prev
 }
 
+@(deferred_in_out = pop_scope)
+push_scope :: proc(ctx: ^Gen_Ctx) -> int {
+	return len(ctx.scope)
+}
+
+pop_scope :: proc(ctx: ^Gen_Ctx, prev: int) {
+	for var in ctx.scope[prev:] do set_node_data(var.ident, var.flags)
+	resize(&ctx.scope, prev)
+}
+
 mark_unreachable :: proc(ctx: ^Gen_Ctx) {
 	// constant expressions are evaluated outside of any proc body
 	if ctx.reachable == nil do return
@@ -4154,6 +4646,10 @@ tok_to_binop :: proc(
 	ty := ty
 	has_lane := false
 	if e, eok := unpack_type(ty).(^Enum); eok do ty = e.backing
+	if bf, bok := unpack_type(ty).(^Bit_Field); bok {
+		if tok != .Cmp_Eq && tok != .Not_Eq do return
+		ty = bf.backing
+	}
 	if s, sok := unpack_type(ty).(^Simd); sok {
 		ty = s.elem
 		lane = simd_lane_of(s.elem)
@@ -4239,9 +4735,34 @@ tok_to_binop :: proc(
 		.I8 ..= .I64 = {.Add, .Sub, .And, .Xor, .Or},
 	}
 
+	// the subset comparisons are lowered around the difference of the sets
+	@(static, rodata)
+	BIT_SET_TABLE := #partial [tokenizer.Token_Kind]Op_Info {
+		.Add        = {.Or, "or"},
+		.Add_Eq     = {.Or, "ore"},
+		.Or         = {.Or, "or"},
+		.Or_Eq      = {.Or, "ore"},
+		.Sub        = {.And_Not, "andn"},
+		.Sub_Eq     = {.And_Not, "andne"},
+		.And_Not    = {.And_Not, "andn"},
+		.And_Not_Eq = {.And_Not, "andne"},
+		.And        = {.And, "and"},
+		.And_Eq     = {.And, "ande"},
+		.Xor        = {.Xor, "xor"},
+		.Xor_Eq     = {.Xor, "xore"},
+		.Cmp_Eq     = {.Eq, "eq"},
+		.Not_Eq     = {.Ne, "ne"},
+		.Lt         = {.And_Not, "subs"},
+		.Lt_Eq      = {.And_Not, "subs"},
+		.Gt         = {.And_Not, "sups"},
+		.Gt_Eq      = {.And_Not, "sups"},
+	}
+
 	info: Op_Info
 
-	if ty in FLOAT_TYPES {
+	if is_of(ty, ^Bit_Set) {
+		info = BIT_SET_TABLE[tok]
+	} else if ty in FLOAT_TYPES {
 		info = FLOAT_TABLE[tok]
 	} else {
 		info = SIGNED_TABLE[tok]

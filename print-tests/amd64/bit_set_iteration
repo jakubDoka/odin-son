@@ -1,0 +1,985 @@
+=========== OPT LEVEL: none-quick ===========
+colors:
+    push rbx
+    push rbp
+    xor eax, eax
+    mov rcx, rdi
+1:
+    cmp cl, 0
+    je 2
+    imul rax, rax, 0x10
+    mov rdx, rcx
+    sub dl, 1
+    mov rbx, rcx
+    or bx, 0x100
+    tzcnt bx, bx
+    add bl, 2
+    movzx ebx, bl
+    mov rbp, rcx
+    and bpl, dl
+    add rax, rbx
+    mov rcx, rbp
+    jmp 1
+2:
+    pop rbp
+    pop rbx
+    ret
+digits:
+    xor eax, eax
+    mov rcx, rdi
+4:
+    cmp cl, 0
+    je 6
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, 3
+    cmp rdx, 7
+    je 5
+    cmp rdx, 8
+    jg 6
+    imul rax, rax, 0x10
+    add rax, rdx
+    jmp 5
+    jmp 6
+5:
+    mov rdx, rcx
+    sub dl, 1
+    and cl, dl
+    jmp 4
+6:
+    ret
+around:
+    push rbx
+    xor eax, eax
+    mov rcx, rdi
+8:
+    cmp cl, 0
+    je 9
+    imul rax, rax, 0x10
+    mov rdx, rcx
+    sub dl, 1
+    mov rbx, rcx
+    or bx, 0x100
+    tzcnt bx, bx
+    movzx ebx, bx
+    add rbx, -2
+    add rax, rbx
+    mov rbx, rcx
+    and bl, dl
+    add rax, 2
+    mov rcx, rbx
+    jmp 8
+9:
+    pop rbx
+    ret
+huge:
+    push rbx
+    push rbp
+    xor eax, eax
+    mov rcx, rdi
+    cmp rcx, 0
+    je 11
+    imul rax, rax, 0x40
+    mov rdx, rcx
+    sub rdx, 1
+    mov rbx, rcx
+    tzcnt rbx, rbx
+    mov rbp, rcx
+    and rbp, rdx
+    add rax, rbx
+    mov rcx, rbp
+    jmp -0x37
+11:
+    pop rbp
+    pop rbx
+    ret
+nested:
+    push rbx
+    push rbp
+    xor eax, eax
+    mov rcx, rdi
+    cmp cl, 0
+    je 15
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, 3
+    mov rbx, rsi
+13:
+    cmp bl, 0
+    je 14
+    mov rbp, rbx
+    sub bpl, 1
+    mov rdi, rbx
+    or di, 0x100
+    tzcnt di, di
+    add dil, 2
+    movzx edi, dil
+    mov r8, rdx
+    imul r8, rdi
+    mov rdi, rbx
+    and dil, bpl
+    add rax, r8
+    mov rbx, rdi
+    jmp 13
+14:
+    mov rdx, rcx
+    sub dl, 1
+    and cl, dl
+    jmp -0x76
+15:
+    pop rbp
+    pop rbx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    mov dil, 0x31
+    call colors
+    mov rbx, rax
+    xor edi, edi
+    call colors
+    mov rbp, rax
+    mov dil, 0x79
+    call digits
+    mov r12, rax
+    mov dil, -0x7b
+    call around
+    mov r13, rax
+    movabs rdi, -0x7ffffffdffffffff
+    call huge
+    mov r14, rax
+    mov dil, 3
+    mov sil, 0x22
+    call nested
+    mov rcx, rax
+    imul rax, rbx, 0x1000
+    add rax, rbp
+    imul rax, rax, 0x1000
+    add rax, r12
+    mov rdx, r13
+    shl rdx, 0x10
+    xor rax, rdx
+    mov rdx, r14
+    shl rdx, 8
+    xor rax, rdx
+    xor rax, rcx
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+colors:
+    xor eax, eax
+    mov rcx, rdi
+1:
+    cmp cl, 0
+    je 2
+    imul rax, rax, 0x10
+    mov rsi, rcx
+    sub sil, 1
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    add dl, 2
+    movzx edx, dl
+    and cl, sil
+    add rax, rdx
+    jmp 1
+2:
+    ret
+digits:
+    xor eax, eax
+    mov rcx, rdi
+    cmp cl, 0
+    je 5
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, 3
+    cmp rdx, 7
+    je 4
+    cmp rdx, 8
+    jg 5
+    imul rax, rax, 0x10
+    add rax, rdx
+    jmp 4
+    jmp 5
+4:
+    mov rdx, rcx
+    sub dl, 1
+    and cl, dl
+    jmp -0x61
+5:
+    ret
+around:
+    xor eax, eax
+    mov rcx, rdi
+    cmp cl, 0
+    je 7
+    imul rax, rax, 0x10
+    mov rsi, rcx
+    sub sil, 1
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, -2
+    add rax, rdx
+    and cl, sil
+    add rax, 2
+    jmp -0x44
+7:
+    ret
+huge:
+    xor eax, eax
+    mov rcx, rdi
+    cmp rcx, 0
+    je 9
+    imul rax, rax, 0x40
+    mov rsi, rcx
+    sub rsi, 1
+    mov rdx, rcx
+    tzcnt rdx, rdx
+    and rcx, rsi
+    add rax, rdx
+    jmp -0x31
+9:
+    ret
+nested:
+    xor eax, eax
+    mov rcx, rdi
+    cmp cl, 0
+    je 13
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx r10d, dx
+    add r10, 3
+    mov rdx, rsi
+11:
+    cmp dl, 0
+    je 12
+    mov r9, rdx
+    sub r9b, 1
+    mov rdi, rdx
+    or di, 0x100
+    tzcnt di, di
+    add dil, 2
+    movzx r8d, dil
+    mov rdi, r10
+    imul rdi, r8
+    and dl, r9b
+    add rax, rdi
+    jmp 11
+12:
+    mov rdx, rcx
+    sub dl, 1
+    and cl, dl
+    jmp -0x70
+13:
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    mov dil, 0x31
+    call colors
+    mov r14, rax
+    xor edi, edi
+    call colors
+    mov r13, rax
+    mov dil, 0x79
+    call digits
+    mov r12, rax
+    mov dil, -0x7b
+    call around
+    mov rbp, rax
+    movabs rdi, -0x7ffffffdffffffff
+    call huge
+    mov rbx, rax
+    mov dil, 3
+    mov sil, 0x22
+    call nested
+    mov rdx, rax
+    imul rcx, r14, 0x1000
+    add rcx, r13
+    imul rax, rcx, 0x1000
+    add rax, r12
+    mov rcx, rbp
+    shl rcx, 0x10
+    xor rax, rcx
+    mov rcx, rbx
+    shl rcx, 8
+    xor rax, rcx
+    xor rax, rdx
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+colors:
+    push rbx
+    push rbp
+    xor eax, eax
+    mov rcx, rdi
+1:
+    cmp cl, 0
+    je 2
+    imul rax, rax, 0x10
+    mov rdx, rcx
+    sub dl, 1
+    mov rbx, rcx
+    or bx, 0x100
+    tzcnt bx, bx
+    add bl, 2
+    movzx ebx, bl
+    mov rbp, rcx
+    and bpl, dl
+    add rax, rbx
+    mov rcx, rbp
+    jmp 1
+2:
+    pop rbp
+    pop rbx
+    ret
+digits:
+    xor eax, eax
+    mov rcx, rdi
+4:
+    cmp cl, 0
+    je 6
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, 3
+    cmp rdx, 7
+    je 5
+    cmp rdx, 8
+    jg 6
+    imul rax, rax, 0x10
+    add rax, rdx
+    jmp 5
+    jmp 6
+5:
+    mov rdx, rcx
+    sub dl, 1
+    and cl, dl
+    jmp 4
+6:
+    ret
+around:
+    push rbx
+    xor eax, eax
+    mov rcx, rdi
+8:
+    cmp cl, 0
+    je 9
+    imul rax, rax, 0x10
+    mov rdx, rcx
+    sub dl, 1
+    mov rbx, rcx
+    or bx, 0x100
+    tzcnt bx, bx
+    movzx ebx, bx
+    add rbx, -2
+    add rax, rbx
+    mov rbx, rcx
+    and bl, dl
+    add rax, 2
+    mov rcx, rbx
+    jmp 8
+9:
+    pop rbx
+    ret
+huge:
+    push rbx
+    push rbp
+    xor eax, eax
+    mov rcx, rdi
+    cmp rcx, 0
+    je 11
+    imul rax, rax, 0x40
+    mov rdx, rcx
+    sub rdx, 1
+    mov rbx, rcx
+    tzcnt rbx, rbx
+    mov rbp, rcx
+    and rbp, rdx
+    add rax, rbx
+    mov rcx, rbp
+    jmp -0x37
+11:
+    pop rbp
+    pop rbx
+    ret
+nested:
+    push rbx
+    push rbp
+    xor eax, eax
+    mov rcx, rdi
+    cmp cl, 0
+    je 15
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, 3
+    mov rbx, rsi
+13:
+    cmp bl, 0
+    je 14
+    mov rbp, rbx
+    sub bpl, 1
+    mov rdi, rbx
+    or di, 0x100
+    tzcnt di, di
+    add dil, 2
+    movzx edi, dil
+    mov r8, rdx
+    imul r8, rdi
+    mov rdi, rbx
+    and dil, bpl
+    add rax, r8
+    mov rbx, rdi
+    jmp 13
+14:
+    mov rdx, rcx
+    sub dl, 1
+    and cl, dl
+    jmp -0x76
+15:
+    pop rbp
+    pop rbx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    mov dil, 0x31
+    call colors
+    mov rbx, rax
+    xor edi, edi
+    call colors
+    mov rbp, rax
+    mov dil, 0x79
+    call digits
+    mov r12, rax
+    mov dil, -0x7b
+    call around
+    mov r13, rax
+    movabs rdi, -0x7ffffffdffffffff
+    call huge
+    mov r14, rax
+    mov dil, 3
+    mov sil, 0x22
+    call nested
+    mov rcx, rax
+    imul rax, rbx, 0x1000
+    add rax, rbp
+    imul rax, rax, 0x1000
+    add rax, r12
+    mov rdx, r13
+    shl rdx, 0x10
+    xor rax, rdx
+    mov rdx, r14
+    shl rdx, 8
+    xor rax, rdx
+    xor rax, rcx
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+colors:
+    xor eax, eax
+    mov rcx, rdi
+1:
+    cmp cl, 0
+    je 2
+    imul rax, rax, 0x10
+    mov rsi, rcx
+    sub sil, 1
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    add dl, 2
+    movzx edx, dl
+    and cl, sil
+    add rax, rdx
+    jmp 1
+2:
+    ret
+digits:
+    xor eax, eax
+    mov rcx, rdi
+    cmp cl, 0
+    je 5
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, 3
+    cmp rdx, 7
+    je 4
+    cmp rdx, 8
+    jg 5
+    imul rax, rax, 0x10
+    add rax, rdx
+    jmp 4
+    jmp 5
+4:
+    mov rdx, rcx
+    sub dl, 1
+    and cl, dl
+    jmp -0x61
+5:
+    ret
+around:
+    xor eax, eax
+    mov rcx, rdi
+    cmp cl, 0
+    je 7
+    imul rax, rax, 0x10
+    mov rsi, rcx
+    sub sil, 1
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, -2
+    add rax, rdx
+    and cl, sil
+    add rax, 2
+    jmp -0x44
+7:
+    ret
+huge:
+    xor eax, eax
+    mov rcx, rdi
+    cmp rcx, 0
+    je 9
+    imul rax, rax, 0x40
+    mov rsi, rcx
+    sub rsi, 1
+    mov rdx, rcx
+    tzcnt rdx, rdx
+    and rcx, rsi
+    add rax, rdx
+    jmp -0x31
+9:
+    ret
+nested:
+    xor eax, eax
+    mov rcx, rdi
+    cmp cl, 0
+    je 13
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx r10d, dx
+    add r10, 3
+    mov rdx, rsi
+11:
+    cmp dl, 0
+    je 12
+    mov r9, rdx
+    sub r9b, 1
+    mov rdi, rdx
+    or di, 0x100
+    tzcnt di, di
+    add dil, 2
+    movzx r8d, dil
+    mov rdi, r10
+    imul rdi, r8
+    and dl, r9b
+    add rax, rdi
+    jmp 11
+12:
+    mov rdx, rcx
+    sub dl, 1
+    and cl, dl
+    jmp -0x70
+13:
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    mov dil, 0x31
+    call colors
+    mov r14, rax
+    xor edi, edi
+    call colors
+    mov r13, rax
+    mov dil, 0x79
+    call digits
+    mov r12, rax
+    mov dil, -0x7b
+    call around
+    mov rbp, rax
+    movabs rdi, -0x7ffffffdffffffff
+    call huge
+    mov rbx, rax
+    mov dil, 3
+    mov sil, 0x22
+    call nested
+    mov rdx, rax
+    imul rcx, r14, 0x1000
+    add rcx, r13
+    imul rax, rcx, 0x1000
+    add rax, r12
+    mov rcx, rbp
+    shl rcx, 0x10
+    xor rax, rcx
+    mov rcx, rbx
+    shl rcx, 8
+    xor rax, rcx
+    xor rax, rdx
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+colors:
+    mov rdx, rdi
+    xor ecx, ecx
+1:
+    mov rax, rcx
+    imul rcx, rax, 0x10
+    mov r8, rdx
+    sub r8b, 1
+    mov rsi, rdx
+    or si, 0x100
+    tzcnt si, si
+    add sil, 2
+    movzx edi, sil
+    cmp dl, 0
+    sete sil
+    movzx esi, sil
+    add rcx, rdi
+    and dl, r8b
+    test sil, sil
+    je 1
+    ret
+digits:
+    xor eax, eax
+    cmp dil, 0
+    je 5
+    mov rcx, rdi
+3:
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, 3
+    cmp rdx, 7
+    je 4
+    cmp rdx, 8
+    jg 5
+    imul rax, rax, 0x10
+    add rax, rdx
+    jmp 4
+    jmp 5
+4:
+    mov rdx, rcx
+    sub dl, 1
+    and dl, cl
+    cmp dl, 0
+    mov rcx, rdx
+    jne 3
+    jmp 5
+5:
+    ret
+around:
+    mov rdx, rdi
+    xor ecx, ecx
+    mov rax, rcx
+    imul rcx, rax, 0x10
+    mov rdi, rdx
+    sub dil, 1
+    mov rsi, rdx
+    or si, 0x100
+    tzcnt si, si
+    movzx esi, si
+    add rsi, -2
+    add rcx, rsi
+    cmp dl, 0
+    sete sil
+    movzx esi, sil
+    add rcx, 2
+    and dl, dil
+    test sil, sil
+    je -0x4d
+    ret
+huge:
+    mov rdx, rdi
+    xor ecx, ecx
+    mov rax, rcx
+    imul rcx, rax, 0x40
+    mov r8, rdx
+    sub r8, 1
+    mov rdi, rdx
+    tzcnt rdi, rdi
+    cmp rdx, 0
+    sete sil
+    movzx esi, sil
+    add rcx, rdi
+    and rdx, r8
+    test sil, sil
+    je -0x3a
+    ret
+nested:
+    xor eax, eax
+    cmp dil, 0
+    je 11
+    mov rcx, rdi
+9:
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx r11d, dx
+    add r11, 3
+    mov rdx, rax
+    mov rax, rsi
+10:
+    mov r10, rdx
+    mov r9, rax
+    sub r9b, 1
+    mov rdx, rax
+    or dx, 0x100
+    tzcnt dx, dx
+    add dl, 2
+    movzx edx, dl
+    mov r8, r11
+    imul r8, rdx
+    cmp al, 0
+    sete dil
+    movzx edi, dil
+    and al, r9b
+    mov rdx, r10
+    add rdx, r8
+    test dil, dil
+    je 10
+    mov rax, rcx
+    sub al, 1
+    and al, cl
+    cmp al, 0
+    mov rcx, rax
+    mov rax, r10
+    jne 9
+    mov rax, r10
+    jmp 11
+11:
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    mov dil, 0x31
+    call colors
+    mov r14, rax
+    xor edi, edi
+    call colors
+    mov r13, rax
+    mov dil, 0x79
+    call digits
+    mov r12, rax
+    mov dil, -0x7b
+    call around
+    mov rbp, rax
+    movabs rdi, -0x7ffffffdffffffff
+    call huge
+    mov rbx, rax
+    mov dil, 3
+    mov sil, 0x22
+    call nested
+    mov rdx, rax
+    imul rcx, r14, 0x1000
+    add rcx, r13
+    imul rax, rcx, 0x1000
+    add rax, r12
+    mov rcx, rbp
+    shl rcx, 0x10
+    xor rax, rcx
+    mov rcx, rbx
+    shl rcx, 8
+    xor rax, rcx
+    xor rax, rdx
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+colors:
+    mov rdx, rdi
+    xor ecx, ecx
+1:
+    mov rax, rcx
+    imul rcx, rax, 0x10
+    mov r8, rdx
+    sub r8b, 1
+    mov rsi, rdx
+    or si, 0x100
+    tzcnt si, si
+    add sil, 2
+    movzx edi, sil
+    cmp dl, 0
+    sete sil
+    movzx esi, sil
+    add rcx, rdi
+    and dl, r8b
+    test sil, sil
+    je 1
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    sub rsp, 8
+    mov dil, 0x31
+    call colors
+    mov r13, rax
+    xor edi, edi
+    call colors
+    xor esi, esi
+    mov cl, 0x79
+3:
+    mov rdx, rcx
+    or dx, 0x100
+    tzcnt dx, dx
+    movzx edx, dx
+    add rdx, 3
+    cmp rdx, 7
+    je 5
+    cmp rdx, 8
+    jg 4
+    imul rsi, rsi, 0x10
+    add rsi, rdx
+    jmp 5
+4:
+    mov rdi, rsi
+    jmp 6
+5:
+    mov rdx, rcx
+    sub dl, 1
+    and dl, cl
+    cmp dl, 0
+    mov rcx, rdx
+    jne 3
+    mov rdi, rsi
+6:
+    mov cl, -0x7b
+    xor edx, edx
+7:
+    mov rsi, rdx
+    imul rdx, rsi, 0x10
+    mov r9, rcx
+    sub r9b, 1
+    mov r8, rcx
+    or r8w, 0x100
+    tzcnt r8w, r8w
+    movzx r8d, r8w
+    add r8, -2
+    add rdx, r8
+    cmp cl, 0
+    sete r8b
+    movzx r8d, r8b
+    add rdx, 2
+    and cl, r9b
+    test r8b, r8b
+    je 7
+    movabs rcx, -0x7ffffffdffffffff
+    xor r8d, r8d
+8:
+    mov rdx, r8
+    imul r8, rdx, 0x40
+    mov r11, rcx
+    tzcnt r11, r11
+    mov r10, rcx
+    sub r10, 1
+    cmp rcx, 0
+    sete r9b
+    movzx r9d, r9b
+    add r8, r11
+    and rcx, r10
+    test r9b, r9b
+    je 8
+    mov r8b, 3
+    xor r11d, r11d
+9:
+    mov rcx, r8
+    or cx, 0x100
+    tzcnt cx, cx
+    movzx r9d, cx
+    add r9, 3
+    mov r10b, 0x22
+10:
+    mov rcx, r11
+    mov r11, r10
+    sub r11b, 1
+    mov rbx, r10
+    or bx, 0x100
+    tzcnt bx, bx
+    add bl, 2
+    movzx ebx, bl
+    mov r12, r9
+    imul r12, rbx
+    cmp r10b, 0
+    sete bpl
+    movzx ebp, bpl
+    mov rbx, rcx
+    add rbx, r12
+    and r10b, r11b
+    test bpl, bpl
+    mov r11, rbx
+    je 10
+    mov r9, r8
+    sub r9b, 1
+    and r9b, r8b
+    cmp r9b, 0
+    mov r11, rcx
+    mov r8, r9
+    jne 9
+    imul r8, r13, 0x1000
+    add r8, rax
+    imul rax, r8, 0x1000
+    add rax, rdi
+    shl rsi, 0x10
+    xor rax, rsi
+    shl rdx, 8
+    xor rax, rdx
+    xor rax, rcx
+    add rsp, 8
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret

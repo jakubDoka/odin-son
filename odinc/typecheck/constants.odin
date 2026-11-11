@@ -42,6 +42,17 @@ constant_binary :: proc(
 			)
 		case base == .Typeid:
 			value = constant_compare(lhs.typeida, rhs.typeida, op)
+		case is_of(base, ^Bit_Set):
+			sub, super := lhs.uint, rhs.uint
+			if op == .Gt || op == .Gt_Eq do sub, super = super, sub
+			if op == .Cmp_Eq || op == .Not_Eq {
+				value = constant_compare(lhs.uint, rhs.uint, op)
+			} else {
+				value =
+					sub &~ super == 0 && (op == .Lt_Eq || op == .Gt_Eq || sub != super)
+			}
+		case is_of(base, ^Bit_Field):
+			value = constant_compare(lhs.uint, rhs.uint, op)
 		case in_set(base, FLOAT_TYPES):
 			value = constant_compare(lhs.float, rhs.float, op)
 		case in_set(base, UNSIGNED_TYPES):
@@ -112,7 +123,10 @@ constant_binary :: proc(
 		return result
 	}
 
-	if !in_set(base, INTEGER_TYPES) {
+	if is_of(base, ^Bit_Set) {
+		if op == .Add do op = .Or
+		if op == .Sub do op = .And_Not
+	} else if !in_set(base, INTEGER_TYPES) {
 		return error(
 			ctx,
 			node,
@@ -249,6 +263,28 @@ typecheck_conversion :: proc(
 		res := new_clone(src^, ctx.types.allocator)
 		res.type = dst
 		res.untyped = false
+		return res
+	}
+
+	// odin converts a bit_field like the integer backing it
+	if bf, ok := unpack_type(src.type).(^Bit_Field); ok {
+		backing := new_clone(src^, ctx.types.allocator)
+		backing.type = bf.backing
+		if src.known && in_set(bf.backing, SIGNED_TYPES) {
+			shift := uint(64 - type_size(bf.backing) * 8)
+			backing.int = (backing.int << shift) >> shift
+		}
+		return typecheck_conversion(ctx, node, dst, backing, strict)
+	}
+	if bf, ok := unpack_type(dst).(^Bit_Field); ok {
+		res := typecheck_conversion(ctx, node, bf.backing, src, strict)
+		if res.type == .Invalid_Type do return res
+
+		res = new_clone(res^, ctx.types.allocator)
+		res.type = dst
+		if res.known && type_size(dst) < 8 {
+			res.uint &= u64(1) << uint(type_size(dst) * 8) - 1
+		}
 		return res
 	}
 

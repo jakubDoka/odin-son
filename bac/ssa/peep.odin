@@ -46,6 +46,9 @@ fold_un_op :: proc(
 		value = ~oper
 	case .Neg:
 		value = -oper
+	case .Popcnt:
+		bits := uint(bac.DT_SIZE[src_ty] * 8)
+		value = i64(intrinsics.count_ones(u64(oper) & (max(u64) >> (64 - bits))))
 	case .Cast:
 		assert((src_ty in bac.FLOAT_DTS) != (dst_ty in bac.FLOAT_DTS))
 		if src_ty == .F32 {
@@ -720,7 +723,7 @@ peep :: proc(
 		} else {
 			bac.peep_ctx_add_trigger(ctx, if_.inps[1], id)
 		}
-	case .Neg ..= .U_Conv:
+	case .Neg ..= .U_Conv, .Popcnt:
 		op := Un_Op(node.itype)
 		oper := expand_node(ctx.prc, node.inps[0])
 		coper := bac.get_extra(ctx.prc, oper, CInt)

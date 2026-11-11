@@ -1,0 +1,1163 @@
+=========== OPT LEVEL: none-quick ===========
+combine:
+    push rbx
+    mov rax, rdi
+    or al, sil
+    movzx eax, al
+    mov rcx, rsi
+    not cl
+    and cl, dil
+    movzx ecx, cl
+    imul rdx, rax, 0x100
+    add rdx, rcx
+    imul rdx, rdx, 0x100
+    mov rbx, rdi
+    and bl, sil
+    movzx ebx, bl
+    add rdx, rbx
+    imul rdx, rdx, 0x100
+    add rdx, rax
+    imul rax, rdx, 0x100
+    mov rdx, rdi
+    xor dl, sil
+    movzx edx, dl
+    add rax, rdx
+    imul rax, rax, 0x100
+    add rax, rcx
+    pop rbx
+    ret
+compare:
+    push rbx
+    push rbp
+    mov rax, 1
+    cmp dil, sil
+    setne cl
+    movzx ecx, cl
+    mov rdx, rdi
+    not dl
+    and dl, sil
+    cmp dl, 0
+    sete dl
+    movzx edx, dl
+    cmp dil, sil
+    sete bl
+    movzx ebx, bl
+    xor ebp, ebp
+    test bl, bl
+    cmovne rbp, rax
+    mov rax, rbp
+    or rax, 2
+    test cl, cl
+    mov rbx, rbp
+    cmovne rbx, rax
+    not sil
+    and sil, dil
+    cmp sil, 0
+    sete al
+    movzx eax, al
+    mov rbp, rbx
+    or rbp, 4
+    test al, al
+    cmovne rbx, rbp
+    mov rbp, rbx
+    or rbp, 8
+    and al, cl
+    test al, al
+    mov rax, rbx
+    cmovne rax, rbp
+    mov rbx, rax
+    or rbx, 0x10
+    test dl, dl
+    cmovne rax, rbx
+    mov rbx, rax
+    or rbx, 0x20
+    and dl, cl
+    test dl, dl
+    cmovne rax, rbx
+    pop rbp
+    pop rbx
+    ret
+membership:
+    push rbx
+    mov rax, 1
+    mov rcx, rsi
+    movzx edx, dil
+    shrx edx, edx, ecx
+    xor ebx, ebx
+    cmp cl, 0x20
+    cmovb ebx, edx
+    mov rcx, rbx
+    and cl, 1
+    cmp cl, 0
+    setne dl
+    movzx edx, dl
+    xor ebx, ebx
+    test dl, dl
+    cmovne rbx, rax
+    mov rdx, rbx
+    or rdx, 2
+    cmp cl, 0
+    mov rax, rbx
+    cmove rax, rdx
+    pop rbx
+    ret
+invert:
+    mov rax, rdi
+    not al
+    and al, -0x67
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    mov sil, -0x70
+    mov dil, 0x11
+    call combine
+    mov rbx, rax
+    mov sil, 8
+    xor edi, edi
+    call combine
+    mov rbp, rax
+    mov sil, 0x11
+    mov dil, 1
+    call compare
+    mov r12, rax
+    mov dil, 0x11
+    mov sil, 1
+    call compare
+    mov r13, rax
+    mov sil, 0x10
+    mov dil, 0x10
+    call compare
+    mov r14, rax
+    mov dil, 8
+    mov sil, 0x10
+    call compare
+    mov r15, rax
+    mov rsi, 7
+    mov dil, -0x78
+    call membership
+    mov.q [rsp], rax
+    xor esi, esi
+    mov dil, -0x78
+    call membership
+    mov.q [rsp + 0x8], rax
+    mov rsi, 3
+    xor edi, edi
+    call membership
+    mov.q [rsp + 0x10], rax
+    mov dil, 0x10
+    call invert
+    mov.q [rsp + 0x18], rax
+    xor edi, edi
+    call invert
+    mov.q [rsp + 0x20], rax
+    mov dil, 0x10
+    call invert
+    mov rcx, rbx
+    add rcx, 0x30000000
+    xor rcx, rbp
+    imul rcx, rcx, 0x40
+    add rcx, r12
+    imul rcx, rcx, 0x40
+    add rcx, r13
+    imul rcx, rcx, 0x40
+    add rcx, r14
+    imul rcx, rcx, 0x40
+    add rcx, r15
+    imul rcx, rcx, 4
+    mov.q rdx, [rsp]
+    add rcx, rdx
+    imul rcx, rcx, 4
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    imul rcx, rcx, 4
+    mov.q rdx, [rsp + 0x10]
+    add rcx, rdx
+    imul rcx, rcx, 0x100
+    add rcx, 0x10
+    imul rcx, rcx, 0x100
+    mov.q rdx, [rsp + 0x18]
+    movzx edx, dl
+    add rcx, rdx
+    imul rcx, rcx, 0x100
+    mov.q rdx, [rsp + 0x20]
+    movzx edx, dl
+    add rcx, rdx
+    imul rcx, rcx, 0x10
+    movzx eax, al
+    popcnt rax, rax
+    lea rax, [rcx + rax*4 + 0x1]
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+combine:
+    mov rax, rdi
+    or al, sil
+    movzx r8d, al
+    mov rax, rsi
+    not al
+    and al, dil
+    movzx ecx, al
+    imul rax, r8, 0x100
+    add rax, rcx
+    imul rdx, rax, 0x100
+    mov rax, rdi
+    and al, sil
+    movzx eax, al
+    add rdx, rax
+    imul rax, rdx, 0x100
+    add rax, r8
+    imul rdx, rax, 0x100
+    mov rax, rdi
+    xor al, sil
+    movzx eax, al
+    add rdx, rax
+    imul rax, rdx, 0x100
+    add rax, rcx
+    ret
+compare:
+    mov rcx, 1
+    cmp dil, sil
+    setne r9b
+    movzx r9d, r9b
+    mov rax, rdi
+    not al
+    and al, sil
+    cmp al, 0
+    sete r8b
+    movzx r8d, r8b
+    cmp dil, sil
+    sete al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rcx
+    mov rax, rdx
+    or rax, 2
+    test r9b, r9b
+    cmovne rdx, rax
+    not sil
+    and sil, dil
+    cmp sil, 0
+    sete al
+    movzx eax, al
+    mov rcx, rdx
+    or rcx, 4
+    test al, al
+    mov rsi, rdx
+    cmovne rsi, rcx
+    mov rdx, rsi
+    or rdx, 8
+    and al, r9b
+    test al, al
+    cmovne rsi, rdx
+    mov rax, rsi
+    or rax, 0x10
+    test r8b, r8b
+    cmovne rsi, rax
+    mov rdx, rsi
+    or rdx, 0x20
+    mov rcx, r9
+    mov rax, r8
+    and al, cl
+    test al, al
+    mov rax, rsi
+    cmovne rax, rdx
+    ret
+membership:
+    mov r8, 1
+    mov rdx, rsi
+    movzx eax, dil
+    shrx ecx, eax, edx
+    xor eax, eax
+    cmp dl, 0x20
+    cmovb eax, ecx
+    mov rdx, rax
+    and dl, 1
+    cmp dl, 0
+    setne cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, r8
+    mov rcx, rax
+    or rcx, 2
+    cmp dl, 0
+    cmove rax, rcx
+    ret
+invert:
+    mov rax, rdi
+    not al
+    and al, -0x67
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    mov sil, -0x70
+    mov dil, 0x11
+    call combine
+    mov.q [rsp + 0x20], rax
+    mov sil, 8
+    xor edi, edi
+    call combine
+    mov.q [rsp + 0x18], rax
+    mov sil, 0x11
+    mov dil, 1
+    call compare
+    mov.q [rsp + 0x10], rax
+    mov dil, 0x11
+    mov sil, 1
+    call compare
+    mov.q [rsp + 0x8], rax
+    mov sil, 0x10
+    mov dil, 0x10
+    call compare
+    mov.q [rsp], rax
+    mov dil, 8
+    mov sil, 0x10
+    call compare
+    mov r15, rax
+    mov rsi, 7
+    mov dil, -0x78
+    call membership
+    mov r14, rax
+    xor esi, esi
+    mov dil, -0x78
+    call membership
+    mov r13, rax
+    mov rsi, 3
+    xor edi, edi
+    call membership
+    mov r12, rax
+    mov dil, 0x10
+    call invert
+    mov rbp, rax
+    xor edi, edi
+    call invert
+    mov rbx, rax
+    mov dil, 0x10
+    call invert
+    mov rdx, rax
+    mov.q rax, [rsp + 0x20]
+    add rax, 0x30000000
+    mov.q rcx, [rsp + 0x18]
+    xor rax, rcx
+    imul rcx, rax, 0x40
+    mov.q rax, [rsp + 0x10]
+    add rcx, rax
+    imul rcx, rcx, 0x40
+    mov.q rax, [rsp + 0x8]
+    add rcx, rax
+    imul rcx, rcx, 0x40
+    mov.q rax, [rsp]
+    add rcx, rax
+    imul rcx, rcx, 0x40
+    add rcx, r15
+    imul rcx, rcx, 4
+    add rcx, r14
+    imul rcx, rcx, 4
+    add rcx, r13
+    imul rcx, rcx, 4
+    add rcx, r12
+    imul rax, rcx, 0x100
+    add rax, 0x10
+    imul rcx, rax, 0x100
+    movzx eax, bpl
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    movzx eax, bl
+    add rcx, rax
+    imul rcx, rcx, 0x10
+    movzx eax, dl
+    popcnt rax, rax
+    lea rax, [rcx + rax*4 + 0x1]
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+combine:
+    push rbx
+    mov rax, rdi
+    or al, sil
+    movzx eax, al
+    mov rcx, rsi
+    not cl
+    and cl, dil
+    movzx ecx, cl
+    imul rdx, rax, 0x100
+    add rdx, rcx
+    imul rdx, rdx, 0x100
+    mov rbx, rdi
+    and bl, sil
+    movzx ebx, bl
+    add rdx, rbx
+    imul rdx, rdx, 0x100
+    add rdx, rax
+    imul rax, rdx, 0x100
+    mov rdx, rdi
+    xor dl, sil
+    movzx edx, dl
+    add rax, rdx
+    imul rax, rax, 0x100
+    add rax, rcx
+    pop rbx
+    ret
+compare:
+    push rbx
+    push rbp
+    mov rax, 1
+    cmp dil, sil
+    setne cl
+    movzx ecx, cl
+    mov rdx, rdi
+    not dl
+    and dl, sil
+    cmp dl, 0
+    sete dl
+    movzx edx, dl
+    cmp dil, sil
+    sete bl
+    movzx ebx, bl
+    xor ebp, ebp
+    test bl, bl
+    cmovne rbp, rax
+    mov rax, rbp
+    or rax, 2
+    test cl, cl
+    mov rbx, rbp
+    cmovne rbx, rax
+    not sil
+    and sil, dil
+    cmp sil, 0
+    sete al
+    movzx eax, al
+    mov rbp, rbx
+    or rbp, 4
+    test al, al
+    cmovne rbx, rbp
+    mov rbp, rbx
+    or rbp, 8
+    and al, cl
+    test al, al
+    mov rax, rbx
+    cmovne rax, rbp
+    mov rbx, rax
+    or rbx, 0x10
+    test dl, dl
+    cmovne rax, rbx
+    mov rbx, rax
+    or rbx, 0x20
+    and dl, cl
+    test dl, dl
+    cmovne rax, rbx
+    pop rbp
+    pop rbx
+    ret
+membership:
+    push rbx
+    mov rax, 1
+    mov rcx, rsi
+    movzx edx, dil
+    shrx edx, edx, ecx
+    xor ebx, ebx
+    cmp cl, 0x20
+    cmovb ebx, edx
+    mov rcx, rbx
+    and cl, 1
+    cmp cl, 0
+    setne dl
+    movzx edx, dl
+    xor ebx, ebx
+    test dl, dl
+    cmovne rbx, rax
+    mov rdx, rbx
+    or rdx, 2
+    cmp cl, 0
+    mov rax, rbx
+    cmove rax, rdx
+    pop rbx
+    ret
+invert:
+    mov rax, rdi
+    not al
+    and al, -0x67
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    mov sil, -0x70
+    mov dil, 0x11
+    call combine
+    mov rbx, rax
+    mov sil, 8
+    xor edi, edi
+    call combine
+    mov rbp, rax
+    mov sil, 0x11
+    mov dil, 1
+    call compare
+    mov r12, rax
+    mov dil, 0x11
+    mov sil, 1
+    call compare
+    mov r13, rax
+    mov sil, 0x10
+    mov dil, 0x10
+    call compare
+    mov r14, rax
+    mov dil, 8
+    mov sil, 0x10
+    call compare
+    mov r15, rax
+    mov rsi, 7
+    mov dil, -0x78
+    call membership
+    mov.q [rsp], rax
+    xor esi, esi
+    mov dil, -0x78
+    call membership
+    mov.q [rsp + 0x8], rax
+    mov rsi, 3
+    xor edi, edi
+    call membership
+    mov.q [rsp + 0x10], rax
+    mov dil, 0x10
+    call invert
+    mov.q [rsp + 0x18], rax
+    xor edi, edi
+    call invert
+    mov.q [rsp + 0x20], rax
+    mov dil, 0x10
+    call invert
+    mov rcx, rbx
+    add rcx, 0x30000000
+    xor rcx, rbp
+    imul rcx, rcx, 0x40
+    add rcx, r12
+    imul rcx, rcx, 0x40
+    add rcx, r13
+    imul rcx, rcx, 0x40
+    add rcx, r14
+    imul rcx, rcx, 0x40
+    add rcx, r15
+    imul rcx, rcx, 4
+    mov.q rdx, [rsp]
+    add rcx, rdx
+    imul rcx, rcx, 4
+    mov.q rdx, [rsp + 0x8]
+    add rcx, rdx
+    imul rcx, rcx, 4
+    mov.q rdx, [rsp + 0x10]
+    add rcx, rdx
+    imul rcx, rcx, 0x100
+    add rcx, 0x10
+    imul rcx, rcx, 0x100
+    mov.q rdx, [rsp + 0x18]
+    movzx edx, dl
+    add rcx, rdx
+    imul rcx, rcx, 0x100
+    mov.q rdx, [rsp + 0x20]
+    movzx edx, dl
+    add rcx, rdx
+    imul rcx, rcx, 0x10
+    movzx eax, al
+    popcnt rax, rax
+    lea rax, [rcx + rax*4 + 0x1]
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+combine:
+    mov rax, rdi
+    or al, sil
+    movzx r8d, al
+    mov rax, rsi
+    not al
+    and al, dil
+    movzx ecx, al
+    imul rax, r8, 0x100
+    add rax, rcx
+    imul rdx, rax, 0x100
+    mov rax, rdi
+    and al, sil
+    movzx eax, al
+    add rdx, rax
+    imul rax, rdx, 0x100
+    add rax, r8
+    imul rdx, rax, 0x100
+    mov rax, rdi
+    xor al, sil
+    movzx eax, al
+    add rdx, rax
+    imul rax, rdx, 0x100
+    add rax, rcx
+    ret
+compare:
+    mov rcx, 1
+    cmp dil, sil
+    setne r9b
+    movzx r9d, r9b
+    mov rax, rdi
+    not al
+    and al, sil
+    cmp al, 0
+    sete r8b
+    movzx r8d, r8b
+    cmp dil, sil
+    sete al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rcx
+    mov rax, rdx
+    or rax, 2
+    test r9b, r9b
+    cmovne rdx, rax
+    not sil
+    and sil, dil
+    cmp sil, 0
+    sete al
+    movzx eax, al
+    mov rcx, rdx
+    or rcx, 4
+    test al, al
+    mov rsi, rdx
+    cmovne rsi, rcx
+    mov rdx, rsi
+    or rdx, 8
+    and al, r9b
+    test al, al
+    cmovne rsi, rdx
+    mov rax, rsi
+    or rax, 0x10
+    test r8b, r8b
+    cmovne rsi, rax
+    mov rdx, rsi
+    or rdx, 0x20
+    mov rcx, r9
+    mov rax, r8
+    and al, cl
+    test al, al
+    mov rax, rsi
+    cmovne rax, rdx
+    ret
+membership:
+    mov r8, 1
+    mov rdx, rsi
+    movzx eax, dil
+    shrx ecx, eax, edx
+    xor eax, eax
+    cmp dl, 0x20
+    cmovb eax, ecx
+    mov rdx, rax
+    and dl, 1
+    cmp dl, 0
+    setne cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, r8
+    mov rcx, rax
+    or rcx, 2
+    cmp dl, 0
+    cmove rax, rcx
+    ret
+invert:
+    mov rax, rdi
+    not al
+    and al, -0x67
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    mov sil, -0x70
+    mov dil, 0x11
+    call combine
+    mov.q [rsp + 0x20], rax
+    mov sil, 8
+    xor edi, edi
+    call combine
+    mov.q [rsp + 0x18], rax
+    mov sil, 0x11
+    mov dil, 1
+    call compare
+    mov.q [rsp + 0x10], rax
+    mov dil, 0x11
+    mov sil, 1
+    call compare
+    mov.q [rsp + 0x8], rax
+    mov sil, 0x10
+    mov dil, 0x10
+    call compare
+    mov.q [rsp], rax
+    mov dil, 8
+    mov sil, 0x10
+    call compare
+    mov r15, rax
+    mov rsi, 7
+    mov dil, -0x78
+    call membership
+    mov r14, rax
+    xor esi, esi
+    mov dil, -0x78
+    call membership
+    mov r13, rax
+    mov rsi, 3
+    xor edi, edi
+    call membership
+    mov r12, rax
+    mov dil, 0x10
+    call invert
+    mov rbp, rax
+    xor edi, edi
+    call invert
+    mov rbx, rax
+    mov dil, 0x10
+    call invert
+    mov rdx, rax
+    mov.q rax, [rsp + 0x20]
+    add rax, 0x30000000
+    mov.q rcx, [rsp + 0x18]
+    xor rax, rcx
+    imul rcx, rax, 0x40
+    mov.q rax, [rsp + 0x10]
+    add rcx, rax
+    imul rcx, rcx, 0x40
+    mov.q rax, [rsp + 0x8]
+    add rcx, rax
+    imul rcx, rcx, 0x40
+    mov.q rax, [rsp]
+    add rcx, rax
+    imul rcx, rcx, 0x40
+    add rcx, r15
+    imul rcx, rcx, 4
+    add rcx, r14
+    imul rcx, rcx, 4
+    add rcx, r13
+    imul rcx, rcx, 4
+    add rcx, r12
+    imul rax, rcx, 0x100
+    add rax, 0x10
+    imul rcx, rax, 0x100
+    movzx eax, bpl
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    movzx eax, bl
+    add rcx, rax
+    imul rcx, rcx, 0x10
+    movzx eax, dl
+    popcnt rax, rax
+    lea rax, [rcx + rax*4 + 0x1]
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+combine:
+    mov rax, rdi
+    or al, sil
+    movzx r8d, al
+    mov rax, rsi
+    not al
+    and al, dil
+    movzx ecx, al
+    imul rax, r8, 0x100
+    add rax, rcx
+    imul rdx, rax, 0x100
+    mov rax, rdi
+    and al, sil
+    movzx eax, al
+    add rdx, rax
+    imul rax, rdx, 0x100
+    add rax, r8
+    imul rdx, rax, 0x100
+    mov rax, rdi
+    xor al, sil
+    movzx eax, al
+    add rdx, rax
+    imul rax, rdx, 0x100
+    add rax, rcx
+    ret
+compare:
+    mov rcx, 1
+    cmp dil, sil
+    setne r9b
+    movzx r9d, r9b
+    mov rax, rdi
+    not al
+    and al, sil
+    cmp al, 0
+    sete r8b
+    movzx r8d, r8b
+    cmp dil, sil
+    sete al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rcx
+    mov rax, rdx
+    or rax, 2
+    test r9b, r9b
+    cmovne rdx, rax
+    not sil
+    and sil, dil
+    cmp sil, 0
+    sete al
+    movzx eax, al
+    mov rcx, rdx
+    or rcx, 4
+    test al, al
+    mov rsi, rdx
+    cmovne rsi, rcx
+    mov rdx, rsi
+    or rdx, 8
+    and al, r9b
+    test al, al
+    cmovne rsi, rdx
+    mov rax, rsi
+    or rax, 0x10
+    test r8b, r8b
+    cmovne rsi, rax
+    mov rdx, rsi
+    or rdx, 0x20
+    mov rcx, r9
+    mov rax, r8
+    and al, cl
+    test al, al
+    mov rax, rsi
+    cmovne rax, rdx
+    ret
+membership:
+    mov r8, 1
+    mov rdx, rsi
+    movzx eax, dil
+    shrx ecx, eax, edx
+    xor eax, eax
+    cmp dl, 0x20
+    cmovb eax, ecx
+    mov rdx, rax
+    and dl, 1
+    cmp dl, 0
+    setne cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, r8
+    mov rcx, rax
+    or rcx, 2
+    cmp dl, 0
+    cmove rax, rcx
+    ret
+invert:
+    mov rax, rdi
+    not al
+    and al, -0x67
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x28
+    mov sil, -0x70
+    mov dil, 0x11
+    call combine
+    mov.q [rsp + 0x20], rax
+    mov sil, 8
+    xor edi, edi
+    call combine
+    mov.q [rsp + 0x18], rax
+    mov sil, 0x11
+    mov dil, 1
+    call compare
+    mov.q [rsp + 0x10], rax
+    mov dil, 0x11
+    mov sil, 1
+    call compare
+    mov.q [rsp + 0x8], rax
+    mov sil, 0x10
+    mov dil, 0x10
+    call compare
+    mov.q [rsp], rax
+    mov dil, 8
+    mov sil, 0x10
+    call compare
+    mov r15, rax
+    mov rsi, 7
+    mov dil, -0x78
+    call membership
+    mov r14, rax
+    xor esi, esi
+    mov dil, -0x78
+    call membership
+    mov r13, rax
+    mov rsi, 3
+    xor edi, edi
+    call membership
+    mov r12, rax
+    mov dil, 0x10
+    call invert
+    mov rbp, rax
+    xor edi, edi
+    call invert
+    mov rbx, rax
+    mov dil, 0x10
+    call invert
+    mov rdx, rax
+    mov.q rax, [rsp + 0x20]
+    add rax, 0x30000000
+    mov.q rcx, [rsp + 0x18]
+    xor rax, rcx
+    imul rcx, rax, 0x40
+    mov.q rax, [rsp + 0x10]
+    add rcx, rax
+    imul rcx, rcx, 0x40
+    mov.q rax, [rsp + 0x8]
+    add rcx, rax
+    imul rcx, rcx, 0x40
+    mov.q rax, [rsp]
+    add rcx, rax
+    imul rcx, rcx, 0x40
+    add rcx, r15
+    imul rcx, rcx, 4
+    add rcx, r14
+    imul rcx, rcx, 4
+    add rcx, r13
+    imul rcx, rcx, 4
+    add rcx, r12
+    imul rax, rcx, 0x100
+    add rax, 0x10
+    imul rcx, rax, 0x100
+    movzx eax, bpl
+    add rcx, rax
+    imul rcx, rcx, 0x100
+    movzx eax, bl
+    add rcx, rax
+    imul rcx, rcx, 0x10
+    movzx eax, dl
+    popcnt rax, rax
+    lea rax, [rcx + rax*4 + 0x1]
+    add rsp, 0x28
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========
+combine:
+    mov rax, rdi
+    or al, sil
+    movzx r8d, al
+    mov rax, rsi
+    not al
+    and al, dil
+    movzx ecx, al
+    imul rax, r8, 0x100
+    add rax, rcx
+    imul rdx, rax, 0x100
+    mov rax, rdi
+    and al, sil
+    movzx eax, al
+    add rdx, rax
+    imul rax, rdx, 0x100
+    add rax, r8
+    imul rdx, rax, 0x100
+    mov rax, rdi
+    xor al, sil
+    movzx eax, al
+    add rdx, rax
+    imul rax, rdx, 0x100
+    add rax, rcx
+    ret
+compare:
+    mov rcx, 1
+    cmp dil, sil
+    setne r9b
+    movzx r9d, r9b
+    mov rax, rdi
+    not al
+    and al, sil
+    cmp al, 0
+    sete r8b
+    movzx r8d, r8b
+    cmp dil, sil
+    sete al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rcx
+    mov rax, rdx
+    or rax, 2
+    test r9b, r9b
+    cmovne rdx, rax
+    not sil
+    and sil, dil
+    cmp sil, 0
+    sete al
+    movzx eax, al
+    mov rcx, rdx
+    or rcx, 4
+    test al, al
+    mov rsi, rdx
+    cmovne rsi, rcx
+    mov rdx, rsi
+    or rdx, 8
+    and al, r9b
+    test al, al
+    cmovne rsi, rdx
+    mov rax, rsi
+    or rax, 0x10
+    test r8b, r8b
+    cmovne rsi, rax
+    mov rdx, rsi
+    or rdx, 0x20
+    mov rcx, r9
+    mov rax, r8
+    and al, cl
+    test al, al
+    mov rax, rsi
+    cmovne rax, rdx
+    ret
+membership:
+    mov r8, 1
+    mov rdx, rsi
+    movzx eax, dil
+    shrx ecx, eax, edx
+    xor eax, eax
+    cmp dl, 0x20
+    cmovb eax, ecx
+    mov rdx, rax
+    and dl, 1
+    cmp dl, 0
+    setne cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, r8
+    mov rcx, rax
+    or rcx, 2
+    cmp dl, 0
+    cmove rax, rcx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    push r13
+    push r14
+    push r15
+    sub rsp, 0x18
+    mov sil, -0x70
+    mov dil, 0x11
+    call combine
+    mov.q [rsp + 0x8], rax
+    mov sil, 8
+    xor edi, edi
+    call combine
+    mov.q [rsp], rax
+    mov sil, 0x11
+    mov dil, 1
+    call compare
+    mov r15, rax
+    mov dil, 0x11
+    mov sil, 1
+    call compare
+    mov r14, rax
+    mov sil, 0x10
+    mov dil, 0x10
+    call compare
+    mov r13, rax
+    mov dil, 8
+    mov sil, 0x10
+    call compare
+    mov r12, rax
+    mov rsi, 7
+    mov dil, -0x78
+    call membership
+    mov rbp, rax
+    xor esi, esi
+    mov dil, -0x78
+    call membership
+    mov rbx, rax
+    mov rsi, 3
+    xor edi, edi
+    call membership
+    mov rdx, rax
+    mov.q rax, [rsp + 0x8]
+    add rax, 0x30000000
+    mov.q rcx, [rsp]
+    xor rax, rcx
+    imul rcx, rax, 0x40
+    add rcx, r15
+    imul rcx, rcx, 0x40
+    add rcx, r14
+    imul rcx, rcx, 0x40
+    add rcx, r13
+    imul rcx, rcx, 0x40
+    add rcx, r12
+    imul rcx, rcx, 4
+    add rcx, rbp
+    imul rcx, rcx, 4
+    add rcx, rbx
+    imul rcx, rcx, 4
+    add rcx, rdx
+    imul rax, rcx, 0x100
+    add rax, 0x10
+    imul rax, rax, 0x100
+    add rax, 0x89
+    imul rax, rax, 0x100
+    add rax, 0x99
+    imul rax, rax, 0x10
+    add rax, 0xd
+    add rsp, 0x18
+    pop r15
+    pop r14
+    pop r13
+    pop r12
+    pop rbp
+    pop rbx
+    ret

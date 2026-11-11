@@ -31,6 +31,10 @@ Its preffered to use static tables over big swich statements that just select a
 value if that saves code. Of course if the table would be prohibitively big,
 compared to what entryes are actualy populated dont do this.
 
+We order the node types so that we can minimize the complexity of the switch
+statements. This is apparent mainly with kinds that dont emit any nodes, binary
+operators and unary operators.
+
 ### Project layout
 
 The project is split into 2 main libraries:

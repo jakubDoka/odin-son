@@ -297,13 +297,14 @@ enum {
 	bac_Node_Type_U_Conv = 64,
 	bac_Node_Type_Splat = 65,
 	bac_Node_Type_Ctz = 66,
-	bac_Node_Type_Simd_Extract_Lsbs = 67,
-	bac_Node_Type_Simd_Extract_Msbs = 68,
-	bac_Node_Type_Simd_Reduce_Add_Bisect = 69,
-	bac_Node_Type_Select = 70,
-	bac_Node_Type_Thread_Id = 71,
-	bac_Node_Type_Lane_Id = 72,
-	bac_Node_Type_Uniform_Addr = 73,
+	bac_Node_Type_Popcnt = 67,
+	bac_Node_Type_Simd_Extract_Lsbs = 68,
+	bac_Node_Type_Simd_Extract_Msbs = 69,
+	bac_Node_Type_Simd_Reduce_Add_Bisect = 70,
+	bac_Node_Type_Select = 71,
+	bac_Node_Type_Thread_Id = 72,
+	bac_Node_Type_Lane_Id = 73,
+	bac_Node_Type_Uniform_Addr = 74,
 };
 struct Slice_Of_Slice_Of_bac_i64 {
 	Slice_Of_bac_i64 *data;
@@ -465,9 +466,10 @@ enum {
 	bac_Un_Op_U_Conv = 64,
 	bac_Un_Op_Splat = 65,
 	bac_Un_Op_Ctz = 66,
-	bac_Un_Op_Simd_Extract_Lsbs = 67,
-	bac_Un_Op_Simd_Extract_Msbs = 68,
-	bac_Un_Op_Simd_Reduce_Add_Bisect = 69,
+	bac_Un_Op_Popcnt = 67,
+	bac_Un_Op_Simd_Extract_Lsbs = 68,
+	bac_Un_Op_Simd_Extract_Msbs = 69,
+	bac_Un_Op_Simd_Reduce_Add_Bisect = 70,
 };
 enum {
 	bac_Reloc_Size_r32 = 0,

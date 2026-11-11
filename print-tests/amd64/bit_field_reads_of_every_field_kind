@@ -1,0 +1,505 @@
+=========== OPT LEVEL: none-quick ===========
+mix:
+    imul rax, rdi, 0x100
+    and rsi, 0xff
+    add rax, rsi
+    ret
+read_flags:
+    push rbx
+    mov rbx, rdi
+    mov rax, rbx
+    and eax, 7
+    movzx edi, al
+    mov rax, rbx
+    shl eax, 0x18
+    sar eax, 0x1b
+    movsx rsi, ax
+    call mix
+    mov rcx, rbx
+    shr ecx, 8
+    and ecx, 1
+    cmp ecx, 0
+    setne cl
+    movzx ecx, cl
+    movzx esi, cl
+    mov rdi, rax
+    call mix
+    mov rcx, rbx
+    shr ecx, 9
+    and ecx, 7
+    movzx esi, cl
+    mov rdi, rax
+    call mix
+    mov rcx, rbx
+    shr ecx, 0xc
+    and ecx, 0xfffff
+    mov ecx, ecx
+    shl rcx, 0x20
+    xor rax, rcx
+    pop rbx
+    ret
+read_mixed:
+    push rbx
+    mov rbx, rdi
+    mov rax, rbx
+    shl ax, 0xe
+    sar ax, 0xe
+    movsx rdi, al
+    mov rax, rbx
+    shl ax, 0xa
+    sar ax, 0xc
+    movsx rsi, al
+    call mix
+    mov rcx, rbx
+    shr cx, 6
+    and cx, 3
+    cmp cx, 0
+    setne cl
+    movzx ecx, cl
+    movzx esi, cl
+    mov rdi, rax
+    call mix
+    mov rcx, rbx
+    shr cx, 8
+    and cx, 0xff
+    movzx esi, cx
+    mov rdi, rax
+    call mix
+    pop rbx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    movabs rdi, 0xabcdefed
+    call read_flags
+    mov rbx, rax
+    mov rdi, 0xc7b
+    call read_flags
+    mov rbp, rax
+    mov rdi, 0xa5e2
+    call read_mixed
+    mov r12, rax
+    mov rdi, 0x1b1
+    call read_mixed
+    imul rcx, rbp, 3
+    mov rdx, rbx
+    xor rdx, rcx
+    mov rcx, rdx
+    mov rdx, r12
+    shl rdx, 8
+    xor rcx, rdx
+    xor rcx, rax
+    mov rax, rcx
+    movabs rcx, 0x600000b19554a
+    xor rax, rcx
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+mix:
+    imul rax, rdi, 0x100
+    and rsi, 0xff
+    add rax, rsi
+    ret
+read_flags:
+    push rbx
+    mov rbx, rdi
+    mov rax, rbx
+    and eax, 7
+    movzx edi, al
+    mov rax, rbx
+    shl eax, 0x18
+    sar eax, 0x1b
+    movsx rsi, ax
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr eax, 8
+    and eax, 1
+    cmp eax, 0
+    setne al
+    movzx eax, al
+    movzx esi, al
+    mov rdi, rcx
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr eax, 9
+    and eax, 7
+    movzx esi, al
+    mov rdi, rcx
+    call mix
+    mov rcx, rbx
+    shr ecx, 0xc
+    and ecx, 0xfffff
+    mov ecx, ecx
+    shl rcx, 0x20
+    xor rax, rcx
+    pop rbx
+    ret
+read_mixed:
+    push rbx
+    mov rbx, rdi
+    mov rax, rbx
+    shl ax, 0xe
+    sar ax, 0xe
+    movsx rdi, al
+    mov rax, rbx
+    shl ax, 0xa
+    sar ax, 0xc
+    movsx rsi, al
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr ax, 6
+    and ax, 3
+    cmp ax, 0
+    setne al
+    movzx eax, al
+    movzx esi, al
+    mov rdi, rcx
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr ax, 8
+    and ax, 0xff
+    movzx esi, ax
+    mov rdi, rcx
+    call mix
+    pop rbx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    movabs rdi, 0xabcdefed
+    call read_flags
+    mov r12, rax
+    mov rdi, 0xc7b
+    call read_flags
+    mov rbx, rax
+    mov rdi, 0xa5e2
+    call read_mixed
+    mov rbp, rax
+    mov rdi, 0x1b1
+    call read_mixed
+    mov rcx, rax
+    imul rdx, rbx, 3
+    mov rax, r12
+    xor rax, rdx
+    mov rdx, rbp
+    shl rdx, 8
+    xor rax, rdx
+    xor rax, rcx
+    movabs rcx, 0x600000b19554a
+    xor rax, rcx
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+mix:
+    imul rax, rdi, 0x100
+    and rsi, 0xff
+    add rax, rsi
+    ret
+read_flags:
+    push rbx
+    mov rbx, rdi
+    mov rax, rbx
+    and eax, 7
+    movzx edi, al
+    mov rax, rbx
+    shl eax, 0x18
+    sar eax, 0x1b
+    movsx rsi, ax
+    call mix
+    mov rcx, rbx
+    shr ecx, 8
+    and ecx, 1
+    cmp ecx, 0
+    setne cl
+    movzx ecx, cl
+    movzx esi, cl
+    mov rdi, rax
+    call mix
+    mov rcx, rbx
+    shr ecx, 9
+    and ecx, 7
+    movzx esi, cl
+    mov rdi, rax
+    call mix
+    mov rcx, rbx
+    shr ecx, 0xc
+    and ecx, 0xfffff
+    mov ecx, ecx
+    shl rcx, 0x20
+    xor rax, rcx
+    pop rbx
+    ret
+read_mixed:
+    push rbx
+    mov rbx, rdi
+    mov rax, rbx
+    shl ax, 0xe
+    sar ax, 0xe
+    movsx rdi, al
+    mov rax, rbx
+    shl ax, 0xa
+    sar ax, 0xc
+    movsx rsi, al
+    call mix
+    mov rcx, rbx
+    shr cx, 6
+    and cx, 3
+    cmp cx, 0
+    setne cl
+    movzx ecx, cl
+    movzx esi, cl
+    mov rdi, rax
+    call mix
+    mov rcx, rbx
+    shr cx, 8
+    and cx, 0xff
+    movzx esi, cx
+    mov rdi, rax
+    call mix
+    pop rbx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    movabs rdi, 0xabcdefed
+    call read_flags
+    mov rbx, rax
+    mov rdi, 0xc7b
+    call read_flags
+    mov rbp, rax
+    mov rdi, 0xa5e2
+    call read_mixed
+    mov r12, rax
+    mov rdi, 0x1b1
+    call read_mixed
+    imul rcx, rbp, 3
+    mov rdx, rbx
+    xor rdx, rcx
+    mov rcx, rdx
+    mov rdx, r12
+    shl rdx, 8
+    xor rcx, rdx
+    xor rcx, rax
+    mov rax, rcx
+    movabs rcx, 0x600000b19554a
+    xor rax, rcx
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+mix:
+    imul rax, rdi, 0x100
+    and rsi, 0xff
+    add rax, rsi
+    ret
+read_flags:
+    push rbx
+    mov rbx, rdi
+    mov rax, rbx
+    and eax, 7
+    movzx edi, al
+    mov rax, rbx
+    shl eax, 0x18
+    sar eax, 0x1b
+    movsx rsi, ax
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr eax, 8
+    and eax, 1
+    cmp eax, 0
+    setne al
+    movzx eax, al
+    movzx esi, al
+    mov rdi, rcx
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr eax, 9
+    and eax, 7
+    movzx esi, al
+    mov rdi, rcx
+    call mix
+    mov rcx, rbx
+    shr ecx, 0xc
+    and ecx, 0xfffff
+    mov ecx, ecx
+    shl rcx, 0x20
+    xor rax, rcx
+    pop rbx
+    ret
+read_mixed:
+    push rbx
+    mov rbx, rdi
+    mov rax, rbx
+    shl ax, 0xe
+    sar ax, 0xe
+    movsx rdi, al
+    mov rax, rbx
+    shl ax, 0xa
+    sar ax, 0xc
+    movsx rsi, al
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr ax, 6
+    and ax, 3
+    cmp ax, 0
+    setne al
+    movzx eax, al
+    movzx esi, al
+    mov rdi, rcx
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr ax, 8
+    and ax, 0xff
+    movzx esi, ax
+    mov rdi, rcx
+    call mix
+    pop rbx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    movabs rdi, 0xabcdefed
+    call read_flags
+    mov r12, rax
+    mov rdi, 0xc7b
+    call read_flags
+    mov rbx, rax
+    mov rdi, 0xa5e2
+    call read_mixed
+    mov rbp, rax
+    mov rdi, 0x1b1
+    call read_mixed
+    mov rcx, rax
+    imul rdx, rbx, 3
+    mov rax, r12
+    xor rax, rdx
+    mov rdx, rbp
+    shl rdx, 8
+    xor rax, rdx
+    xor rax, rcx
+    movabs rcx, 0x600000b19554a
+    xor rax, rcx
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: all ===========
+mix:
+    imul rax, rdi, 0x100
+    and rsi, 0xff
+    add rax, rsi
+    ret
+read_flags:
+    push rbx
+    mov rbx, rdi
+    mov rax, rbx
+    and eax, 7
+    movzx edi, al
+    mov rax, rbx
+    shl eax, 0x18
+    sar eax, 0x1b
+    movsx rsi, ax
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr eax, 8
+    and eax, 1
+    cmp eax, 0
+    setne al
+    movzx eax, al
+    movzx esi, al
+    mov rdi, rcx
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr eax, 9
+    and eax, 7
+    movzx esi, al
+    mov rdi, rcx
+    call mix
+    mov rcx, rbx
+    shr ecx, 0xc
+    and ecx, 0xfffff
+    mov ecx, ecx
+    shl rcx, 0x20
+    xor rax, rcx
+    pop rbx
+    ret
+read_mixed:
+    push rbx
+    mov rbx, rdi
+    mov rax, rbx
+    shl ax, 0xe
+    sar ax, 0xe
+    movsx rdi, al
+    mov rax, rbx
+    shl ax, 0xa
+    sar ax, 0xc
+    movsx rsi, al
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr ax, 6
+    and ax, 3
+    cmp ax, 0
+    setne al
+    movzx eax, al
+    movzx esi, al
+    mov rdi, rcx
+    call mix
+    mov rcx, rax
+    mov rax, rbx
+    shr ax, 8
+    and ax, 0xff
+    movzx esi, ax
+    mov rdi, rcx
+    call mix
+    pop rbx
+    ret
+main:
+    push rbx
+    push rbp
+    push r12
+    movabs rdi, 0xabcdefed
+    call read_flags
+    mov r12, rax
+    mov rdi, 0xc7b
+    call read_flags
+    mov rbx, rax
+    mov rdi, 0xa5e2
+    call read_mixed
+    mov rbp, rax
+    mov rdi, 0x1b1
+    call read_mixed
+    mov rcx, rax
+    imul rdx, rbx, 3
+    mov rax, r12
+    xor rax, rdx
+    mov rdx, rbp
+    shl rdx, 8
+    xor rax, rdx
+    xor rax, rcx
+    movabs rcx, 0x600000b19554a
+    xor rax, rcx
+    pop r12
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: aggresive ===========

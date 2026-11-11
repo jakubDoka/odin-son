@@ -138,6 +138,7 @@ when SPEC_NOT_PRESENT {
 		Zip1,
 		Addv128,
 		Umov,
+		Cnt,
 		Lslv,
 		Asrv,
 		Lsrv,
@@ -261,6 +262,17 @@ peep :: proc(
 		return guard
 	case .Ctz:
 		return bac.normalize_ctz(ctx, node, .I32, struct{}{})
+	case .Popcnt:
+		// fmov d, x does not clear garbage above a narrow operand
+		ext := bac.normalize_popcnt(ctx, node, .I64, struct{}{})
+		if ext != nil do return ext
+
+		vec := bac.add_un_op(ctx, "pcv", .Cast, .F64, node.inps[0])
+		cnt := add_cnt(ctx, "pcc", .F64, vec)
+		sum := add_addv128(ctx, "pcs", .F64, cnt, lane = .I8)
+		return bac.add_un_op(ctx, "pcr", .Cast, node.dt, sum)
+	case .Conv, .U_Conv:
+		return bac.fold_bit_count_conv(ctx, node, struct{}{})
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -408,11 +420,15 @@ meta_of :: #force_inline proc(
 		unreachable()
 	case:
 		fallthrough
-	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs, .Simd_Extract_Msbs:
+	case .Nil ..=
+	     .Dbg_Scope,
+	     .Simd_Extract_Lsbs,
+	     .Simd_Extract_Msbs,
+	     .Popcnt:
 		fmt.panicf("should not reach this: %v", node)
 	case .Poison ..= .Global, .Jump, .Always, .Trap:
 		return {out = IOUT}
-	case .Simd_Reduce_Add_Bisect, .Addv128, .Umov:
+	case .Simd_Reduce_Add_Bisect, .Addv128, .Umov, .Cnt:
 		return {out = out, masks = VEC_MASKS[:1]}
 	case .Splat:
 		return {out = out, masks = GPA_MASKS[:1]}
@@ -779,6 +795,7 @@ emit_instr :: proc(
 	     .Dbg_Scope,
 	     .Simd_Extract_Lsbs,
 	     .Simd_Extract_Msbs,
+	     .Popcnt,
 	     .Rem,
 	     .U_Rem:
 		fmt.panicf("should not reach this: %v", node)
@@ -829,6 +846,12 @@ emit_instr :: proc(
 			ctx.code,
 			op | lsz_pow << 22 | u32(src.index) << 5 | u32(dst.index),
 		)
+	case .Cnt:
+		dst := reg_of(ctx, instr)
+		src := reg_of(ctx, node.inps[0])
+
+		// cnt $dst.8b, $src.8b
+		emit_op(ctx.code, 0x0E205800 | u32(src.index) << 5 | u32(dst.index))
 	case .Ctz:
 		CLZ: u32 = 0x5AC01000
 		RBIT: u32 = 0x5AC00000

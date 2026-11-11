@@ -225,7 +225,11 @@ peep :: proc(
 		)
 	case .Ctz:
 		return bac.normalize_ctz(ctx, node, .I32, struct{}{})
+	case .Popcnt:
+		return bac.normalize_popcnt(ctx, node, .I32, struct{}{})
 	case .Conv, .U_Conv:
+		if res := bac.fold_bit_count_conv(ctx, node, struct{}{}); res != nil do return res
+
 		if inp.dt not_in bac.INT_DTS ||
 		   node.dt not_in bac.INT_DTS ||
 		   inp.dt >= node.dt {
@@ -443,6 +447,7 @@ meta_of :: #force_inline proc(
 	     .Splat,
 	     .Simd_Extract_Msbs,
 	     .Ctz,
+	     .Popcnt,
 	     .WASM_Shl ..=
 	     .WASM_U_Shr,
 	     .Select,
@@ -655,7 +660,8 @@ pre_regalloc_hook :: proc(
 		     .Extract_Lane_U,
 		     .Splat,
 		     .Simd_Extract_Msbs,
-		     .Ctz:
+		     .Ctz,
+		     .Popcnt:
 			return {def = true, input_count = 1}
 		case .CInt, .Local_Addr, .Ret, .Param, .Global_Addr, .Proc_Addr:
 			return {def = true}
@@ -1066,7 +1072,7 @@ emit_instr :: proc(ctx: ^Ctx, instr: bac.Node_ID, block_idx: int, _: $T) {
 		}
 	case .WASM_Shl ..= .WASM_U_Shr, .Select:
 		emit_op(ctx.code, op)
-	case .Add ..= .U_Rem, .Drop, .Not, .Ctz:
+	case .Add ..= .U_Rem, .Drop, .Not, .Ctz, .Popcnt:
 		if node.dt == .V128 {
 			fmt.assertf(lane_op != .V128_Load, "%v", node)
 			emit_op_fd(ctx.code, lane_op)

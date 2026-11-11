@@ -1041,9 +1041,64 @@ normalize_ctz :: proc(
 		)
 		ext := add_bin_op(ctx, "bctzo", .Or, min_width, node.inps[0], bctzg)
 		worklist_add(ctx, ctx.worklist, ext)
-		return add_un_op(ctx, "bctz", .Ctz, min_width, ext)
+		res := add_un_op(ctx, "bctz", .Ctz, min_width, ext)
+		worklist_add(ctx, ctx.worklist, res)
+		return add_un_op(ctx, "bctzn", .U_Conv, node.dt, res)
 	}
 	return nil
+}
+
+normalize_popcnt :: proc(
+	ctx: ^Proc,
+	node: Expanded_Node,
+	min_width: Node_Datatype,
+	_: $T,
+) -> Maybe(Node_ID) {
+	assert(node.itype == .Popcnt)
+	if get_node(ctx, node.inps[0]).dt < min_width {
+		ext := add_un_op(ctx, "bpcx", .U_Conv, min_width, node.inps[0])
+		worklist_add(ctx, ctx.worklist, ext)
+		// users get to widen the popcnt before the target lowers it
+		for out in node.outs do worklist_add(ctx, ctx.worklist, out.id)
+		res := add_un_op(ctx, "bpc", .Popcnt, node.dt, ext)
+		worklist_add(ctx, ctx.worklist, res)
+		return res
+	}
+	return nil
+}
+
+// Bit counts fit any integer width, so extending one is the same as counting
+// at the wider width, and the narrowing left by normalize_ctz is lossless.
+fold_bit_count_conv :: proc(
+	ctx: ^Proc,
+	node: Expanded_Node,
+	_: $T,
+) -> Maybe(Node_ID) {
+	assert(node.itype == .Conv || node.itype == .U_Conv)
+	if node.dt not_in INT_DTS do return nil
+	inp := expand_node(ctx, node.inps[0])
+
+	if inp.itype == .Popcnt {
+		zext := expand_node(ctx, inp.inps[0])
+		if node.dt <= inp.dt || zext.itype != .U_Conv do return nil
+		if get_node(ctx, zext.inps[0]).dt >= node.dt do return nil
+
+		wide := add_un_op(ctx, "bcfx", .U_Conv, node.dt, zext.inps[0])
+		worklist_add(ctx, ctx.worklist, wide)
+		res := add_un_op(ctx, "bcfp", .Popcnt, node.dt, wide)
+		worklist_add(ctx, ctx.worklist, res)
+		return res
+	}
+
+	if (inp.itype != .Conv && inp.itype != .U_Conv) || inp.dt not_in INT_DTS {
+		return nil
+	}
+
+	cnt := expand_node(ctx, inp.inps[0])
+	if cnt.itype != .Ctz do return nil
+
+	if cnt.dt == node.dt do return inp.inps[0]
+	return add_un_op(ctx, "bcfc", .U_Conv, node.dt, inp.inps[0])
 }
 
 lsbs_to_msbs :: proc(ctx: ^Proc, node: Expanded_Node, _: $T) -> Node_ID {

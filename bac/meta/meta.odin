@@ -924,6 +924,7 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.U_Conv = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Splat = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Ctz = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
+	.Popcnt = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Simd_Extract_Lsbs = {
 		args = {"oprnd"},
 		group = "Un_Op",

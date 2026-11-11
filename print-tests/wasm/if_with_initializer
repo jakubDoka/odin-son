@@ -1,0 +1,1418 @@
+=========== OPT LEVEL: none-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64) (result i64)))
+  (type (;2;) (func (result i64)))
+  (func $next (type 0) (param i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.const 16
+    i64.add
+    local.tee 0
+    i64.store align=1
+    local.get 0
+    return
+    end
+  )
+  (func $classify (type 1) (param i64) (result i64)
+    (local i64 i64 i64 i64)
+    block
+      block
+        i64.const 48
+        local.set 1
+        local.get 0
+        i64.const 3
+        i64.mul
+        local.tee 2
+        i64.const 48
+        i64.gt_s
+        br_if 0
+        block
+          local.get 2
+          local.get 0
+          i64.add
+          local.tee 0
+          i64.const 16
+          i64.gt_s
+          br_if 0
+          block
+            local.get 0
+            i64.const 1
+            i64.sub
+            local.tee 3
+            i64.const 0
+            i64.lt_s
+            br_if 0
+            local.get 2
+            local.get 0
+            i64.add
+            local.get 3
+            i64.add
+            local.set 4
+            br 3
+          end
+          local.get 3
+          local.get 2
+          i64.mul
+          local.set 4
+          br 2
+        end
+        local.get 0
+        local.get 2
+        i64.add
+        local.set 4
+        br 1
+      end
+      local.get 2
+      local.get 1
+      i64.sub
+      local.set 4
+    end
+    local.get 4
+    return
+    end
+  )
+  (func $main (type 2) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64 i64)
+    global.get 0
+    i64.const 8
+    i64.sub
+    global.set 0
+    i64.const 2
+    local.set 0
+    i64.const 0
+    local.set 1
+    global.get 1
+    local.tee 2
+    i64.load align=1
+    local.set 3
+    local.get 3
+    i64.const 2
+    i64.sub
+    local.set 3
+    i64.const 1
+    local.set 4
+    i64.const 20
+    local.set 5
+    i64.const 0
+    local.set 6
+    block
+      loop
+        local.get 2
+        i64.load align=1
+        local.set 7
+        local.get 3
+        local.get 7
+        local.get 5
+        i64.add
+        i64.ge_s
+        br_if 1
+        local.get 3
+        call $classify
+        local.set 8
+        local.get 6
+        local.get 8
+        i64.add
+        local.set 6
+        local.get 3
+        i64.const 1
+        i64.add
+        local.set 3
+        br 0
+      end
+    end
+    local.get 7
+    i64.const 5
+    i64.add
+    local.tee 3
+    i64.const 0
+    i64.ne
+    if
+      local.get 6
+      local.get 3
+      i64.add
+      local.set 6
+    end
+    block
+      block
+        global.get 0
+        i64.const 0
+        i64.add
+        local.tee 3
+        local.get 7
+        i64.store align=1
+        local.get 3
+        call $next
+        local.set 5
+        local.get 3
+        local.get 5
+        i64.store align=1
+        local.get 3
+        call $next
+        drop
+        global.get 0
+        i64.load align=1
+        local.set 3
+        local.get 2
+        i64.load align=1
+        local.set 2
+        local.get 6
+        i64.const 4352
+        i64.add
+        local.get 6
+        i64.const 256
+        i64.add
+        local.get 5
+        i64.const 16
+        i64.eq
+        select
+        local.tee 5
+        i64.const 8192
+        i64.add
+        local.get 5
+        local.get 3
+        i64.const 32
+        i64.eq
+        select
+        local.get 3
+        i64.add
+        local.set 3
+        local.get 2
+        local.get 4
+        i64.add
+        local.tee 2
+        local.get 1
+        i64.gt_s
+        br_if 0
+        br 1
+      end
+      block
+        local.get 2
+        i64.const 2
+        i64.mul
+        local.tee 1
+        local.get 0
+        i64.eq
+        br_if 0
+        br 1
+      end
+      local.get 1
+      i64.const 64
+      i64.add
+      local.tee 0
+      i64.const 66
+      i64.eq
+      if
+        local.get 3
+        local.get 0
+        i64.add
+        local.set 3
+      end
+      local.get 3
+      local.get 2
+      local.get 1
+      i64.add
+      i64.add
+      local.set 3
+    end
+    local.get 3
+    global.get 0
+    i64.const 8
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 17)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (global (;1;) i64   i64.const 1048576
+)
+  (export "main" (func 2))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048584
+ "")
+)
+=========== OPT LEVEL: none ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64) (result i64)))
+  (type (;2;) (func (result i64)))
+  (func $next (type 0) (param i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.const 16
+    i64.add
+    local.tee 0
+    i64.store align=1
+    local.get 0
+    return
+    end
+  )
+  (func $classify (type 1) (param i64) (result i64)
+    (local i64 i64)
+    block
+      block
+        i64.const 48
+        local.set 1
+        local.get 0
+        i64.const 3
+        i64.mul
+        local.tee 2
+        i64.const 48
+        i64.gt_s
+        br_if 0
+        block
+          local.get 2
+          local.get 0
+          i64.add
+          local.tee 1
+          i64.const 16
+          i64.gt_s
+          br_if 0
+          block
+            local.get 1
+            i64.const 1
+            i64.sub
+            local.tee 0
+            i64.const 0
+            i64.lt_s
+            br_if 0
+            local.get 2
+            local.get 1
+            i64.add
+            local.get 0
+            i64.add
+            local.set 0
+            br 3
+          end
+          local.get 0
+          local.get 2
+          i64.mul
+          local.set 0
+          br 2
+        end
+        local.get 1
+        local.get 2
+        i64.add
+        local.set 0
+        br 1
+      end
+      local.get 2
+      local.get 1
+      i64.sub
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 2) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64 i64)
+    global.get 0
+    i64.const 8
+    i64.sub
+    global.set 0
+    i64.const 2
+    local.set 8
+    i64.const 0
+    local.set 7
+    global.get 1
+    local.tee 6
+    i64.load align=1
+    local.set 0
+    local.get 0
+    i64.const 2
+    i64.sub
+    local.set 0
+    i64.const 1
+    local.set 5
+    i64.const 20
+    local.set 4
+    i64.const 0
+    local.set 3
+    block
+      loop
+        local.get 6
+        i64.load align=1
+        local.set 2
+        local.get 0
+        local.get 2
+        local.get 4
+        i64.add
+        i64.ge_s
+        br_if 1
+        local.get 0
+        call $classify
+        local.set 1
+        local.get 3
+        local.get 1
+        i64.add
+        local.set 3
+        local.get 0
+        i64.const 1
+        i64.add
+        local.set 0
+        br 0
+      end
+    end
+    local.get 2
+    i64.const 5
+    i64.add
+    local.tee 0
+    i64.const 0
+    i64.ne
+    if
+      local.get 3
+      local.get 0
+      i64.add
+      local.set 3
+    end
+    block
+      block
+        global.get 0
+        i64.const 0
+        i64.add
+        local.tee 1
+        local.get 2
+        i64.store align=1
+        local.get 1
+        call $next
+        local.set 0
+        local.get 1
+        local.get 0
+        i64.store align=1
+        local.get 1
+        call $next
+        drop
+        global.get 0
+        i64.load align=1
+        local.set 2
+        local.get 6
+        i64.load align=1
+        local.set 1
+        local.get 3
+        i64.const 4352
+        i64.add
+        local.get 3
+        i64.const 256
+        i64.add
+        local.get 0
+        i64.const 16
+        i64.eq
+        select
+        local.tee 0
+        i64.const 8192
+        i64.add
+        local.get 0
+        local.get 2
+        i64.const 32
+        i64.eq
+        select
+        local.get 2
+        i64.add
+        local.set 0
+        local.get 1
+        local.get 5
+        i64.add
+        local.tee 3
+        local.get 7
+        i64.gt_s
+        br_if 0
+        br 1
+      end
+      block
+        local.get 3
+        i64.const 2
+        i64.mul
+        local.tee 2
+        local.get 8
+        i64.eq
+        br_if 0
+        br 1
+      end
+      local.get 2
+      i64.const 64
+      i64.add
+      local.tee 1
+      i64.const 66
+      i64.eq
+      if
+        local.get 0
+        local.get 1
+        i64.add
+        local.set 0
+      end
+      local.get 0
+      local.get 3
+      local.get 2
+      i64.add
+      i64.add
+      local.set 0
+    end
+    local.get 0
+    global.get 0
+    i64.const 8
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 17)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (global (;1;) i64   i64.const 1048576
+)
+  (export "main" (func 2))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048584
+ "")
+)
+=========== OPT LEVEL: moderate-quick ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64) (result i64)))
+  (type (;2;) (func (result i64)))
+  (func $next (type 0) (param i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.const 16
+    i64.add
+    local.tee 0
+    i64.store align=1
+    local.get 0
+    return
+    end
+  )
+  (func $classify (type 1) (param i64) (result i64)
+    (local i64 i64 i64 i64)
+    block
+      block
+        i64.const 48
+        local.set 1
+        local.get 0
+        i64.const 3
+        i64.mul
+        local.tee 2
+        i64.const 48
+        i64.gt_s
+        br_if 0
+        block
+          local.get 2
+          local.get 0
+          i64.add
+          local.tee 0
+          i64.const 16
+          i64.gt_s
+          br_if 0
+          block
+            local.get 0
+            i64.const 1
+            i64.sub
+            local.tee 3
+            i64.const 0
+            i64.lt_s
+            br_if 0
+            local.get 2
+            local.get 0
+            i64.add
+            local.get 3
+            i64.add
+            local.set 4
+            br 3
+          end
+          local.get 3
+          local.get 2
+          i64.mul
+          local.set 4
+          br 2
+        end
+        local.get 0
+        local.get 2
+        i64.add
+        local.set 4
+        br 1
+      end
+      local.get 2
+      local.get 1
+      i64.sub
+      local.set 4
+    end
+    local.get 4
+    return
+    end
+  )
+  (func $main (type 2) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64 i64)
+    global.get 0
+    i64.const 8
+    i64.sub
+    global.set 0
+    i64.const 2
+    local.set 0
+    i64.const 0
+    local.set 1
+    global.get 1
+    local.tee 2
+    i64.load align=1
+    local.set 3
+    local.get 3
+    i64.const 2
+    i64.sub
+    local.set 3
+    i64.const 1
+    local.set 4
+    i64.const 20
+    local.set 5
+    i64.const 0
+    local.set 6
+    block
+      loop
+        local.get 2
+        i64.load align=1
+        local.set 7
+        local.get 3
+        local.get 7
+        local.get 5
+        i64.add
+        i64.ge_s
+        br_if 1
+        local.get 3
+        call $classify
+        local.set 8
+        local.get 6
+        local.get 8
+        i64.add
+        local.set 6
+        local.get 3
+        i64.const 1
+        i64.add
+        local.set 3
+        br 0
+      end
+    end
+    local.get 7
+    i64.const 5
+    i64.add
+    local.tee 3
+    i64.const 0
+    i64.ne
+    if
+      local.get 6
+      local.get 3
+      i64.add
+      local.set 6
+    end
+    block
+      block
+        global.get 0
+        i64.const 0
+        i64.add
+        local.tee 3
+        local.get 7
+        i64.store align=1
+        local.get 3
+        call $next
+        local.set 5
+        local.get 3
+        local.get 5
+        i64.store align=1
+        local.get 3
+        call $next
+        drop
+        global.get 0
+        i64.load align=1
+        local.set 3
+        local.get 2
+        i64.load align=1
+        local.set 2
+        local.get 6
+        i64.const 4352
+        i64.add
+        local.get 6
+        i64.const 256
+        i64.add
+        local.get 5
+        i64.const 16
+        i64.eq
+        select
+        local.tee 5
+        i64.const 8192
+        i64.add
+        local.get 5
+        local.get 3
+        i64.const 32
+        i64.eq
+        select
+        local.get 3
+        i64.add
+        local.set 3
+        local.get 2
+        local.get 4
+        i64.add
+        local.tee 2
+        local.get 1
+        i64.gt_s
+        br_if 0
+        br 1
+      end
+      block
+        local.get 2
+        i64.const 2
+        i64.mul
+        local.tee 1
+        local.get 0
+        i64.eq
+        br_if 0
+        br 1
+      end
+      local.get 1
+      i64.const 64
+      i64.add
+      local.tee 0
+      i64.const 66
+      i64.eq
+      if
+        local.get 3
+        local.get 0
+        i64.add
+        local.set 3
+      end
+      local.get 3
+      local.get 2
+      local.get 1
+      i64.add
+      i64.add
+      local.set 3
+    end
+    local.get 3
+    global.get 0
+    i64.const 8
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 17)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (global (;1;) i64   i64.const 1048576
+)
+  (export "main" (func 2))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048584
+ "")
+)
+=========== OPT LEVEL: moderate ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64) (result i64)))
+  (type (;2;) (func (result i64)))
+  (func $next (type 0) (param i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.const 16
+    i64.add
+    local.tee 0
+    i64.store align=1
+    local.get 0
+    return
+    end
+  )
+  (func $classify (type 1) (param i64) (result i64)
+    (local i64 i64)
+    block
+      block
+        i64.const 48
+        local.set 1
+        local.get 0
+        i64.const 3
+        i64.mul
+        local.tee 2
+        i64.const 48
+        i64.gt_s
+        br_if 0
+        block
+          local.get 2
+          local.get 0
+          i64.add
+          local.tee 1
+          i64.const 16
+          i64.gt_s
+          br_if 0
+          block
+            local.get 1
+            i64.const 1
+            i64.sub
+            local.tee 0
+            i64.const 0
+            i64.lt_s
+            br_if 0
+            local.get 2
+            local.get 1
+            i64.add
+            local.get 0
+            i64.add
+            local.set 0
+            br 3
+          end
+          local.get 0
+          local.get 2
+          i64.mul
+          local.set 0
+          br 2
+        end
+        local.get 1
+        local.get 2
+        i64.add
+        local.set 0
+        br 1
+      end
+      local.get 2
+      local.get 1
+      i64.sub
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 2) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64 i64)
+    global.get 0
+    i64.const 8
+    i64.sub
+    global.set 0
+    i64.const 2
+    local.set 8
+    i64.const 0
+    local.set 7
+    global.get 1
+    local.tee 6
+    i64.load align=1
+    local.set 0
+    local.get 0
+    i64.const 2
+    i64.sub
+    local.set 0
+    i64.const 1
+    local.set 5
+    i64.const 20
+    local.set 4
+    i64.const 0
+    local.set 3
+    block
+      loop
+        local.get 6
+        i64.load align=1
+        local.set 2
+        local.get 0
+        local.get 2
+        local.get 4
+        i64.add
+        i64.ge_s
+        br_if 1
+        local.get 0
+        call $classify
+        local.set 1
+        local.get 3
+        local.get 1
+        i64.add
+        local.set 3
+        local.get 0
+        i64.const 1
+        i64.add
+        local.set 0
+        br 0
+      end
+    end
+    local.get 2
+    i64.const 5
+    i64.add
+    local.tee 0
+    i64.const 0
+    i64.ne
+    if
+      local.get 3
+      local.get 0
+      i64.add
+      local.set 3
+    end
+    block
+      block
+        global.get 0
+        i64.const 0
+        i64.add
+        local.tee 1
+        local.get 2
+        i64.store align=1
+        local.get 1
+        call $next
+        local.set 0
+        local.get 1
+        local.get 0
+        i64.store align=1
+        local.get 1
+        call $next
+        drop
+        global.get 0
+        i64.load align=1
+        local.set 2
+        local.get 6
+        i64.load align=1
+        local.set 1
+        local.get 3
+        i64.const 4352
+        i64.add
+        local.get 3
+        i64.const 256
+        i64.add
+        local.get 0
+        i64.const 16
+        i64.eq
+        select
+        local.tee 0
+        i64.const 8192
+        i64.add
+        local.get 0
+        local.get 2
+        i64.const 32
+        i64.eq
+        select
+        local.get 2
+        i64.add
+        local.set 0
+        local.get 1
+        local.get 5
+        i64.add
+        local.tee 3
+        local.get 7
+        i64.gt_s
+        br_if 0
+        br 1
+      end
+      block
+        local.get 3
+        i64.const 2
+        i64.mul
+        local.tee 2
+        local.get 8
+        i64.eq
+        br_if 0
+        br 1
+      end
+      local.get 2
+      i64.const 64
+      i64.add
+      local.tee 1
+      i64.const 66
+      i64.eq
+      if
+        local.get 0
+        local.get 1
+        i64.add
+        local.set 0
+      end
+      local.get 0
+      local.get 3
+      local.get 2
+      i64.add
+      i64.add
+      local.set 0
+    end
+    local.get 0
+    global.get 0
+    i64.const 8
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 17)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (global (;1;) i64   i64.const 1048576
+)
+  (export "main" (func 2))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048584
+ "")
+)
+=========== OPT LEVEL: all ===========
+(module
+  (type (;0;) (func (param i64) (result i64)))
+  (type (;1;) (func (param i64) (result i64)))
+  (type (;2;) (func (result i64)))
+  (func $next (type 0) (param i64) (result i64)
+    (local i64)
+    local.get 0
+    i64.load align=1
+    local.set 1
+    local.get 0
+    local.get 1
+    i64.const 16
+    i64.add
+    local.tee 0
+    i64.store align=1
+    local.get 0
+    return
+    end
+  )
+  (func $classify (type 1) (param i64) (result i64)
+    (local i64 i64)
+    block
+      block
+        i64.const 48
+        local.set 1
+        local.get 0
+        i64.const 3
+        i64.mul
+        local.tee 2
+        i64.const 48
+        i64.gt_s
+        br_if 0
+        block
+          local.get 2
+          local.get 0
+          i64.add
+          local.tee 1
+          i64.const 16
+          i64.gt_s
+          br_if 0
+          block
+            local.get 1
+            i64.const 1
+            i64.sub
+            local.tee 0
+            i64.const 0
+            i64.lt_s
+            br_if 0
+            local.get 2
+            local.get 1
+            i64.add
+            local.get 0
+            i64.add
+            local.set 0
+            br 3
+          end
+          local.get 0
+          local.get 2
+          i64.mul
+          local.set 0
+          br 2
+        end
+        local.get 1
+        local.get 2
+        i64.add
+        local.set 0
+        br 1
+      end
+      local.get 2
+      local.get 1
+      i64.sub
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (func $main (type 2) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64 i64)
+    global.get 0
+    i64.const 8
+    i64.sub
+    global.set 0
+    i64.const 2
+    local.set 8
+    i64.const 0
+    local.set 7
+    global.get 1
+    local.tee 6
+    i64.load align=1
+    local.set 0
+    local.get 0
+    i64.const 2
+    i64.sub
+    local.set 0
+    i64.const 1
+    local.set 5
+    i64.const 20
+    local.set 4
+    i64.const 0
+    local.set 3
+    block
+      loop
+        local.get 6
+        i64.load align=1
+        local.set 2
+        local.get 0
+        local.get 2
+        local.get 4
+        i64.add
+        i64.ge_s
+        br_if 1
+        local.get 0
+        call $classify
+        local.set 1
+        local.get 3
+        local.get 1
+        i64.add
+        local.set 3
+        local.get 0
+        i64.const 1
+        i64.add
+        local.set 0
+        br 0
+      end
+    end
+    local.get 2
+    i64.const 5
+    i64.add
+    local.tee 0
+    i64.const 0
+    i64.ne
+    if
+      local.get 3
+      local.get 0
+      i64.add
+      local.set 3
+    end
+    block
+      block
+        global.get 0
+        i64.const 0
+        i64.add
+        local.tee 1
+        local.get 2
+        i64.store align=1
+        local.get 1
+        call $next
+        local.set 0
+        local.get 1
+        local.get 0
+        i64.store align=1
+        local.get 1
+        call $next
+        drop
+        global.get 0
+        i64.load align=1
+        local.set 2
+        local.get 6
+        i64.load align=1
+        local.set 1
+        local.get 3
+        i64.const 4352
+        i64.add
+        local.get 3
+        i64.const 256
+        i64.add
+        local.get 0
+        i64.const 16
+        i64.eq
+        select
+        local.tee 0
+        i64.const 8192
+        i64.add
+        local.get 0
+        local.get 2
+        i64.const 32
+        i64.eq
+        select
+        local.get 2
+        i64.add
+        local.set 0
+        local.get 1
+        local.get 5
+        i64.add
+        local.tee 3
+        local.get 7
+        i64.gt_s
+        br_if 0
+        br 1
+      end
+      block
+        local.get 3
+        i64.const 2
+        i64.mul
+        local.tee 2
+        local.get 8
+        i64.eq
+        br_if 0
+        br 1
+      end
+      local.get 2
+      i64.const 64
+      i64.add
+      local.tee 1
+      i64.const 66
+      i64.eq
+      if
+        local.get 0
+        local.get 1
+        i64.add
+        local.set 0
+      end
+      local.get 0
+      local.get 3
+      local.get 2
+      i64.add
+      i64.add
+      local.set 0
+    end
+    local.get 0
+    global.get 0
+    i64.const 8
+    i64.add
+    global.set 0
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 17)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (global (;1;) i64   i64.const 1048576
+)
+  (export "main" (func 2))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048584
+ "")
+)
+=========== OPT LEVEL: aggresive ===========
+(module
+  (type (;0;) (func (result i64)))
+  (func $main (type 0) (result i64)
+    (local i64 i64 i64 i64 i64 i64 i64 i64 i64 i64 i64 i64 i64 i64)
+    block
+      block
+        i64.const 2
+        local.set 13
+        global.get 1
+        i64.load align=1
+        local.set 12
+        local.get 12
+        i64.const 5
+        i64.add
+        local.set 11
+        i64.const 16
+        local.set 10
+        i64.const 1
+        local.set 9
+        i64.const 0
+        local.set 8
+        local.get 12
+        i64.const 2
+        i64.sub
+        local.tee 0
+        local.get 12
+        i64.const 20
+        i64.add
+        local.tee 7
+        i64.ge_s
+        br_if 0
+        i64.const 3
+        local.set 6
+        i64.const 48
+        local.set 5
+        i64.const 0
+        local.set 1
+        loop
+          block
+            block
+              local.get 0
+              local.get 6
+              i64.mul
+              local.tee 4
+              i64.const 48
+              i64.gt_s
+              br_if 0
+              block
+                local.get 4
+                local.get 0
+                i64.add
+                local.tee 3
+                i64.const 16
+                i64.gt_s
+                br_if 0
+                block
+                  local.get 3
+                  i64.const 1
+                  i64.sub
+                  local.tee 2
+                  i64.const 0
+                  i64.lt_s
+                  br_if 0
+                  local.get 4
+                  local.get 3
+                  i64.add
+                  local.get 2
+                  i64.add
+                  local.set 2
+                  br 3
+                end
+                local.get 2
+                local.get 4
+                i64.mul
+                local.set 2
+                br 2
+              end
+              local.get 3
+              local.get 4
+              i64.add
+              local.set 2
+              br 1
+            end
+            local.get 4
+            local.get 5
+            i64.sub
+            local.set 2
+          end
+          local.get 1
+          local.get 2
+          i64.add
+          local.set 1
+          local.get 0
+          i64.const 1
+          i64.add
+          local.tee 0
+          local.get 7
+          i64.ge_s
+          i32.eqz
+          br_if 0
+        end
+        local.get 1
+        local.get 11
+        i64.add
+        local.set 0
+        br 1
+      end
+      i64.const 0
+      local.set 1
+      local.get 11
+      local.set 0
+    end
+    block
+      block
+        local.get 0
+        local.get 1
+        local.get 11
+        i64.const 0
+        i64.ne
+        select
+        local.tee 0
+        i64.const 4352
+        i64.add
+        local.get 0
+        i64.const 256
+        i64.add
+        local.get 12
+        i64.const 16
+        i64.add
+        local.get 10
+        i64.eq
+        select
+        local.tee 0
+        i64.const 8192
+        i64.add
+        local.get 0
+        local.get 12
+        i64.const 32
+        i64.add
+        local.tee 0
+        i64.const 32
+        i64.eq
+        select
+        local.get 0
+        i64.add
+        local.set 0
+        local.get 12
+        local.get 9
+        i64.add
+        local.tee 3
+        local.get 8
+        i64.gt_s
+        br_if 0
+        br 1
+      end
+      block
+        local.get 3
+        i64.const 2
+        i64.mul
+        local.tee 2
+        local.get 13
+        i64.eq
+        br_if 0
+        br 1
+      end
+      local.get 2
+      i64.const 64
+      i64.add
+      local.tee 1
+      i64.const 66
+      i64.eq
+      if
+        local.get 0
+        local.get 1
+        i64.add
+        local.set 0
+      end
+      local.get 0
+      local.get 3
+      local.get 2
+      i64.add
+      i64.add
+      local.set 0
+    end
+    local.get 0
+    return
+    end
+  )
+  (table (;0;) 1 1 funcref)
+  (memory (;0;) 17)
+  (global (;0;) (mut i64)   i64.const 1048576
+)
+  (global (;1;) i64   i64.const 1048576
+)
+  (export "main" (func 0))
+  (export "__stack_pointer" (global 0))
+  (export "memory" (memory 0))
+  (elem (;0;)   i32.const 1
+ func)
+  (data (;0;)   i64.const 1048584
+ "")
+)

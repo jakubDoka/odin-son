@@ -5,7 +5,7 @@ Reg_Kind :: bac.Reg_Kind
 
 Class_Flag :: bac.Class_Flag
 
-import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta2/meta2.odin(209:3)
+import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta2/meta2.odin(210:3)
 
 @(tag = "api", rodata, export, link_name = "bac_arm_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
@@ -24,6 +24,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		0b10, // Zip1
 		0b10, // Addv128
 		0b10000000, // Umov
+		0b10, // Cnt
 		0b10, // Lslv
 		0b10, // Asrv
 		0b10, // Lsrv
@@ -35,6 +36,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		0, // Zip1 -> No_Extra
 		0, // Addv128 -> No_Extra
 		1, // Umov -> Arm_Op
+		0, // Cnt -> No_Extra
 		0, // Lslv -> No_Extra
 		0, // Asrv -> No_Extra
 		0, // Lsrv -> No_Extra
@@ -46,6 +48,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		{}, // Zip1
 		{}, // Addv128
 		{}, // Umov
+		{}, // Cnt
 		{}, // Lslv
 		{}, // Asrv
 		{}, // Lsrv
@@ -57,6 +60,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		bac.No_Extra,
 		bac.No_Extra,
 		Arm_Op,
+		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -132,6 +136,7 @@ Node_Type :: enum u16 {
 	U_Conv,
 	Splat,
 	Ctz,
+	Popcnt,
 	Simd_Extract_Lsbs,
 	Simd_Extract_Msbs,
 	Simd_Reduce_Add_Bisect,
@@ -145,6 +150,7 @@ Node_Type :: enum u16 {
 	Zip1,
 	Addv128,
 	Umov,
+	Cnt,
 	Lslv,
 	Asrv,
 	Lsrv,
@@ -192,6 +198,9 @@ add_umov :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Dataty
 	return bac.add_raw(prc, name, u16(Node_Type.Umov), dt, {vec}, extra = &Arm_Op{
 		aux = aux,
 	})
+}
+add_cnt :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Cnt), dt, {vec})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

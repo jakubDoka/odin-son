@@ -1,0 +1,63 @@
+=========== OPT LEVEL: none-quick ===========
+bits:
+    movsd.q [rsp - 0x8], xmm0
+    mov.q rax, [rsp - 0x8]
+    ret
+main:
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf2b]
+    call bits
+    shr rax, 0x34
+    add rsp, 8
+    ret
+=========== OPT LEVEL: none ===========
+bits:
+    movsd.q [rsp - 0x8], xmm0
+    mov.q rax, [rsp - 0x8]
+    ret
+main:
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf48]
+    call bits
+    shr rax, 0x34
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+bits:
+    movsd.q [rsp - 0x8], xmm0
+    mov.q rax, [rsp - 0x8]
+    ret
+main:
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf2b]
+    call bits
+    shr rax, 0x34
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate ===========
+bits:
+    movsd.q [rsp - 0x8], xmm0
+    mov.q rax, [rsp - 0x8]
+    ret
+main:
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf48]
+    call bits
+    shr rax, 0x34
+    add rsp, 8
+    ret
+=========== OPT LEVEL: all ===========
+bits:
+    movq rax, xmm0
+    ret
+main:
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf4f]
+    call bits
+    shr rax, 0x34
+    add rsp, 8
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 0x400
+    ret

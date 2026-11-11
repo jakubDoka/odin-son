@@ -1371,14 +1371,15 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			r: ^ast.Node,
 		) {
 			ty := get_node_type(r)
+			regs := x86_reg_class_classify(ty) or_else panic("")
 			vl := emit_nodes(ctx, {}, r)
 			if type_to_dt(ty) == .Void {
 				assert(vl.is_lvalue)
 				size := type_size(ty)
-				values[i^] = emit_arbitrary_load(ctx, vl.id, size)
+				values[i^] = emit_arbitrary_load(ctx, vl.id, size, unit = regs[0])
 				i^ += 1
 				if size > 8 {
-					values[i^] = emit_arbitrary_load(ctx, vl.id, size, 8)
+					values[i^] = emit_arbitrary_load(ctx, vl.id, size, 8, unit = regs[1])
 					i^ += 1
 				}
 			} else {
@@ -2447,7 +2448,10 @@ emit_call :: proc(
 			if u, ok := unpack_type(par_ty).(^typecheck.Union); ok && ty != par_ty {
 				ptr := alloca(ctx, "uarg", par_ty)
 				store_union(ctx, ptr, vl, u, ty)
-				ty, vl = par_ty, {id = ptr, is_lvalue = true}
+				ty, vl = par_ty, {
+						id        = ptr,
+						is_lvalue = true,
+					}
 			}
 			lower_call_arg(ctx, args, &lctx, ty, vl)
 		}
@@ -2504,9 +2508,11 @@ emit_call :: proc(
 			size := type_size(ty)
 			d := dest != 0 ? dest : alloca(ctx, "sret", ty, zeroed = false)
 
+			class, _ := x86_reg_class_classify(ty)
+
 			for i in 0 ..< (size + 7) / 8 {
 				rid := u32(i)
-				vl := ssa.add_call_ret(ctx, call_end, .I64)
+				vl := ssa.add_call_ret(ctx, call_end, class[i])
 				emit_arbitrary_store(ctx, d, vl, size, i * 8)
 			}
 

@@ -1,0 +1,194 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    push rbx
+    push rbp
+    movsd.q xmm0, [rip + 0xf38]
+    movsd.q [rsp - 0x8], xmm0
+    cmp.d [rsp - 0x4], 0x3ff00000
+    sete al
+    movzx eax, al
+    test al, al
+    jne 1
+    jmp 2
+1:
+    cmp.d [rsp - 0x8], 0
+    sete al
+    movzx eax, al
+2:
+    mov.q rcx, [rsp - 0x8]
+    mov rdx, 1
+    mov.d [rsp - 0x8], 1
+    mov.q rbx, [rsp - 0x8]
+    movabs rbp, 0x3ff0000000000000
+    cmp rcx, rbp
+    sete cl
+    movzx ecx, cl
+    xor ebp, ebp
+    test cl, cl
+    cmovne rbp, rdx
+    mov rcx, rbp
+    add rcx, 2
+    test al, al
+    mov rax, rbp
+    cmovne rax, rcx
+    mov rcx, rax
+    add rcx, 4
+    movabs rdx, 0x3ff0000000000001
+    cmp rbx, rdx
+    cmove rax, rcx
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    movsd.q xmm0, [rip + 0xf59]
+    movsd.q [rsp - 0x8], xmm0
+    cmp.d [rsp - 0x4], 0x3ff00000
+    sete dil
+    movzx edi, dil
+    test dil, dil
+    jne 1
+    jmp 2
+1:
+    cmp.d [rsp - 0x8], 0
+    sete dil
+    movzx edi, dil
+2:
+    mov.q rdx, [rsp - 0x8]
+    mov rcx, 1
+    mov.d [rsp - 0x8], 1
+    mov.q rsi, [rsp - 0x8]
+    movabs rax, 0x3ff0000000000000
+    cmp rdx, rax
+    sete al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rcx
+    mov rax, rdx
+    add rax, 2
+    test dil, dil
+    cmovne rdx, rax
+    mov rcx, rdx
+    add rcx, 4
+    movabs rax, 0x3ff0000000000001
+    cmp rsi, rax
+    mov rax, rdx
+    cmove rax, rcx
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    push rbx
+    push rbp
+    movsd.q xmm0, [rip + 0xf38]
+    movsd.q [rsp - 0x8], xmm0
+    cmp.d [rsp - 0x4], 0x3ff00000
+    sete al
+    movzx eax, al
+    test al, al
+    jne 1
+    jmp 2
+1:
+    cmp.d [rsp - 0x8], 0
+    sete al
+    movzx eax, al
+2:
+    mov.q rcx, [rsp - 0x8]
+    mov rdx, 1
+    mov.d [rsp - 0x8], 1
+    mov.q rbx, [rsp - 0x8]
+    movabs rbp, 0x3ff0000000000000
+    cmp rcx, rbp
+    sete cl
+    movzx ecx, cl
+    xor ebp, ebp
+    test cl, cl
+    cmovne rbp, rdx
+    mov rcx, rbp
+    add rcx, 2
+    test al, al
+    mov rax, rbp
+    cmovne rax, rcx
+    mov rcx, rax
+    add rcx, 4
+    movabs rdx, 0x3ff0000000000001
+    cmp rbx, rdx
+    cmove rax, rcx
+    pop rbp
+    pop rbx
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    movsd.q xmm0, [rip + 0xf59]
+    movsd.q [rsp - 0x8], xmm0
+    cmp.d [rsp - 0x4], 0x3ff00000
+    sete dil
+    movzx edi, dil
+    test dil, dil
+    jne 1
+    jmp 2
+1:
+    cmp.d [rsp - 0x8], 0
+    sete dil
+    movzx edi, dil
+2:
+    mov.q rdx, [rsp - 0x8]
+    mov rcx, 1
+    mov.d [rsp - 0x8], 1
+    mov.q rsi, [rsp - 0x8]
+    movabs rax, 0x3ff0000000000000
+    cmp rdx, rax
+    sete al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rcx
+    mov rax, rdx
+    add rax, 2
+    test dil, dil
+    cmovne rdx, rax
+    mov rcx, rdx
+    add rcx, 4
+    movabs rax, 0x3ff0000000000001
+    cmp rsi, rax
+    mov rax, rdx
+    cmove rax, rcx
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    movsd.q xmm0, [rip + 0xf59]
+    movsd.q [rsp - 0x8], xmm0
+    cmp.d [rsp - 0x4], 0x3ff00000
+    sete dil
+    movzx edi, dil
+    test dil, dil
+    jne 1
+    jmp 2
+1:
+    cmp.d [rsp - 0x8], 0
+    sete dil
+    movzx edi, dil
+2:
+    mov.q rdx, [rsp - 0x8]
+    mov rcx, 1
+    mov.d [rsp - 0x8], 1
+    mov.q rsi, [rsp - 0x8]
+    movabs rax, 0x3ff0000000000000
+    cmp rdx, rax
+    sete al
+    movzx eax, al
+    xor edx, edx
+    test al, al
+    cmovne rdx, rcx
+    mov rax, rdx
+    add rax, 2
+    test dil, dil
+    cmovne rdx, rax
+    mov rcx, rdx
+    add rcx, 4
+    movabs rax, 0x3ff0000000000001
+    cmp rsi, rax
+    mov rax, rdx
+    cmove rax, rcx
+    ret
+=========== OPT LEVEL: aggresive ===========

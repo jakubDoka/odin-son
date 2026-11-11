@@ -333,11 +333,6 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 
 	ctx.dont_delete = false
 
-	for phi in ctx.deleted_lazy_phys {
-		if get_node(prc, phi).rtype == bac.DEAD_NODE_KIND do continue
-		bac.subsume(prc, bac.get_inputs(prc, phi)[1], phi)
-	}
-
 	if len(ctx.scope) > int(ctx.threads_start) {
 		for einp in bac.get_inputs(ctx, ctx.end) {
 			if bac.is_end_ctrl(prc, einp) {
@@ -356,6 +351,11 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				}
 			}
 		}
+	}
+
+	for phi in ctx.deleted_lazy_phys {
+		if get_node(prc, phi).rtype == bac.DEAD_NODE_KIND do continue
+		bac.subsume(prc, bac.get_inputs(prc, phi)[1], phi)
 	}
 
 	if !ODIN_DISABLE_ASSERT {
@@ -415,6 +415,14 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				fmt.panicf("%v", cnode.node)
 			}
 
+			if !ODIN_DISABLE_ASSERT {
+				for slot in ctx.scope {
+					if !slot.is_loop {
+						assert(get_node(ctx, slot.node).rtype != bac.DEAD_NODE_KIND)
+					}
+				}
+			}
+
 			fin_outs: [dynamic]bac.Node_Output
 			for cout in outs {
 				conode := expand_node(ctx, cout.id)
@@ -422,12 +430,13 @@ memopt :: proc(prc: ^bac.Proc) -> (optimized: bool) {
 				#partial switch conode.itype {
 				case .Load:
 					if id, ok := get_edited_node_idx(ctx, conode); ok {
+						value := get_scope_value(ctx, ctx.scope, id)
 						if id < ctx.threads_start {
-							value := get_scope_value(ctx, ctx.scope, id)
+							if get_node(ctx, value).dt != conode.dt {
+								value = bac.add_un_op(ctx, "mcst", .Cast, conode.dt, value)
+							}
 							bac.subsume(ctx, value, cout.id)
 						} else {
-							value := get_scope_value(ctx, ctx.scope, id)
-
 							bac.set_input(ctx, cout.id, 1, value, subsume_on_intern = true)
 						}
 					} else {

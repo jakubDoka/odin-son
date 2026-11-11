@@ -1,0 +1,138 @@
+=========== OPT LEVEL: none-quick ===========
+main:
+    mov.d [rsp - 0x18], 0x4030201
+    mov.q [rsp - 0x14], 0
+    mov.d [rsp - 0xc], 0
+    xor eax, eax
+1:
+    cmp rax, 3
+    jge 2
+    mov rcx, rax
+    imul ecx, ecx, 0x100
+    mov rdx, rax
+    add rdx, 1
+    mov.d [rsp + rax*4 - 0x14], ecx
+    mov rax, rdx
+    jmp 1
+2:
+    movzx.b eax, [rsp - 0x15]
+    xor ecx, ecx
+3:
+    cmp rcx, 3
+    jge 4
+    movzx.b edx, [rsp + rcx*4 - 0x13]
+    add rax, rdx
+    add rcx, 1
+    jmp 3
+4:
+    ret
+=========== OPT LEVEL: none ===========
+main:
+    mov.d [rsp - 0x18], 0x4030201
+    mov.q [rsp - 0x14], 0
+    mov.d [rsp - 0xc], 0
+    xor eax, eax
+1:
+    cmp rax, 3
+    jge 2
+    mov rcx, rax
+    imul edx, ecx, 0x100
+    mov rcx, rax
+    add rcx, 1
+    mov.d [rsp + rax*4 - 0x14], edx
+    mov rax, rcx
+    jmp 1
+2:
+    movzx.b eax, [rsp - 0x15]
+    xor edx, edx
+3:
+    cmp rdx, 3
+    jge 4
+    movzx.b ecx, [rsp + rdx*4 - 0x13]
+    add rax, rcx
+    add rdx, 1
+    jmp 3
+4:
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+main:
+    mov.d [rsp - 0x18], 0x4030201
+    mov.q [rsp - 0x14], 0
+    mov.d [rsp - 0xc], 0
+    xor eax, eax
+1:
+    cmp rax, 3
+    jge 2
+    mov rcx, rax
+    imul ecx, ecx, 0x100
+    mov rdx, rax
+    add rdx, 1
+    mov.d [rsp + rax*4 - 0x14], ecx
+    mov rax, rdx
+    jmp 1
+2:
+    movzx.b eax, [rsp - 0x15]
+    xor ecx, ecx
+3:
+    cmp rcx, 3
+    jge 4
+    movzx.b edx, [rsp + rcx*4 - 0x13]
+    add rax, rdx
+    add rcx, 1
+    jmp 3
+4:
+    ret
+=========== OPT LEVEL: moderate ===========
+main:
+    mov.d [rsp - 0x18], 0x4030201
+    mov.q [rsp - 0x14], 0
+    mov.d [rsp - 0xc], 0
+    xor eax, eax
+1:
+    cmp rax, 3
+    jge 2
+    mov rcx, rax
+    imul edx, ecx, 0x100
+    mov rcx, rax
+    add rcx, 1
+    mov.d [rsp + rax*4 - 0x14], edx
+    mov rax, rcx
+    jmp 1
+2:
+    movzx.b eax, [rsp - 0x15]
+    xor edx, edx
+3:
+    cmp rdx, 3
+    jge 4
+    movzx.b ecx, [rsp + rdx*4 - 0x13]
+    add rax, rcx
+    add rdx, 1
+    jmp 3
+4:
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    mov.q [rsp - 0x14], 0
+    mov.d [rsp - 0xc], 0
+    xor eax, eax
+1:
+    mov rcx, rax
+    imul ecx, ecx, 0x100
+    mov.d [rsp + rax*4 - 0x14], ecx
+    add rax, 1
+    cmp rax, 3
+    jl 1
+    mov.d [rsp - 0x18], 0x4030201
+    movzx.b eax, [rsp - 0x15]
+    xor esi, esi
+2:
+    movzx.b edx, [rsp + rsi*4 - 0x13]
+    add rsi, 1
+    cmp rsi, 3
+    setge cl
+    movzx ecx, cl
+    add rax, rdx
+    test cl, cl
+    je 2
+    ret
+=========== OPT LEVEL: aggresive ===========

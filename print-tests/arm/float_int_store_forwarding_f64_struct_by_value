@@ -1,0 +1,109 @@
+=========== OPT LEVEL: none-quick ===========
+twice:
+    adr x0, 0xf64
+    ldr d1, [x0]
+    fmul d0, d0, d1
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    adr x0, 0xf5c
+    ldr d0, [x0]
+    bl 0xfffffff0
+    movz x0, #1
+    movz x1, #0
+    adr x2, 0xf64
+    ldr d1, [x2]
+    fcmp d0, d1
+    csel x0, x0, x1, eq
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: none ===========
+twice:
+    adr x0, 0xf80
+    ldr d1, [x0]
+    fmul d0, d0, d1
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    adr x0, 0xf78
+    ldr d0, [x0]
+    bl 0xfffffff0
+    movz x2, #1
+    movz x1, #0
+    adr x0, 0xf80
+    ldr d1, [x0]
+    fcmp d0, d1
+    csel x0, x2, x1, eq
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+twice:
+    adr x0, 0xf64
+    ldr d1, [x0]
+    fmul d0, d0, d1
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    adr x0, 0xf5c
+    ldr d0, [x0]
+    bl 0xfffffff0
+    movz x0, #1
+    movz x1, #0
+    adr x2, 0xf64
+    ldr d1, [x2]
+    fcmp d0, d1
+    csel x0, x0, x1, eq
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: moderate ===========
+twice:
+    adr x0, 0xf80
+    ldr d1, [x0]
+    fmul d0, d0, d1
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    adr x0, 0xf78
+    ldr d0, [x0]
+    bl 0xfffffff0
+    movz x2, #1
+    movz x1, #0
+    adr x0, 0xf80
+    ldr d1, [x0]
+    fcmp d0, d1
+    csel x0, x2, x1, eq
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: all ===========
+twice:
+    adr x0, 0xf80
+    ldr d1, [x0]
+    fmul d0, d0, d1
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    adr x0, 0xf78
+    ldr d0, [x0]
+    bl 0xfffffff0
+    movz x2, #1
+    movz x1, #0
+    adr x0, 0xf80
+    ldr d1, [x0]
+    fcmp d0, d1
+    csel x0, x2, x1, eq
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #1
+    ret

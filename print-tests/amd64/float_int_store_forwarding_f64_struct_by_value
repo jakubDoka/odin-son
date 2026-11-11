@@ -1,0 +1,84 @@
+=========== OPT LEVEL: none-quick ===========
+twice:
+    mulsd.q xmm0, [rip + 0xf3c]
+    ret
+main:
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf36]
+    call twice
+    mov rcx, 1
+    xor eax, eax
+    ucomisd.q xmm0, [rip + 0xf26]
+    jp 2
+    cmove rax, rcx
+2:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: none ===========
+twice:
+    mulsd.q xmm0, [rip + 0xf59]
+    ret
+main:
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf53]
+    call twice
+    mov rcx, 1
+    xor eax, eax
+    ucomisd.q xmm0, [rip + 0xf43]
+    jp 2
+    cmove rax, rcx
+2:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+twice:
+    mulsd.q xmm0, [rip + 0xf3c]
+    ret
+main:
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf36]
+    call twice
+    mov rcx, 1
+    xor eax, eax
+    ucomisd.q xmm0, [rip + 0xf26]
+    jp 2
+    cmove rax, rcx
+2:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate ===========
+twice:
+    mulsd.q xmm0, [rip + 0xf59]
+    ret
+main:
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf53]
+    call twice
+    mov rcx, 1
+    xor eax, eax
+    ucomisd.q xmm0, [rip + 0xf43]
+    jp 2
+    cmove rax, rcx
+2:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: all ===========
+twice:
+    mulsd.q xmm0, [rip + 0xf59]
+    ret
+main:
+    sub rsp, 8
+    movsd.q xmm0, [rip + 0xf53]
+    call twice
+    mov rcx, 1
+    xor eax, eax
+    ucomisd.q xmm0, [rip + 0xf43]
+    jp 2
+    cmove rax, rcx
+2:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 1
+    ret

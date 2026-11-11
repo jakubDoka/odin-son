@@ -1,0 +1,125 @@
+=========== OPT LEVEL: none-quick ===========
+from_bits:
+    sub sp, sp, #16
+    add x1, sp, #0
+    str x0, [x1]
+    ldr d0, [x1]
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    movn x0, #65535
+    movk x0, #0, lsl #16
+    movk x0, #0, lsl #32
+    movk x0, #49152, lsl #48
+    bl 0xffffffe8
+    movz x0, #1
+    movz x1, #0
+    adr x2, 0xf4c
+    ldr d1, [x2]
+    fcmp d0, d1
+    csel x0, x0, x1, eq
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: none ===========
+from_bits:
+    sub sp, sp, #16
+    add x1, sp, #0
+    str x0, [x1]
+    ldr d0, [x1]
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    movn x0, #65535
+    movk x0, #0, lsl #16
+    movk x0, #0, lsl #32
+    movk x0, #49152, lsl #48
+    bl 0xffffffe8
+    movz x2, #1
+    movz x1, #0
+    adr x0, 0xf68
+    ldr d1, [x0]
+    fcmp d0, d1
+    csel x0, x2, x1, eq
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+from_bits:
+    sub sp, sp, #16
+    add x1, sp, #0
+    str x0, [x1]
+    ldr d0, [x1]
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    movn x0, #65535
+    movk x0, #0, lsl #16
+    movk x0, #0, lsl #32
+    movk x0, #49152, lsl #48
+    bl 0xffffffe8
+    movz x0, #1
+    movz x1, #0
+    adr x2, 0xf4c
+    ldr d1, [x2]
+    fcmp d0, d1
+    csel x0, x0, x1, eq
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: moderate ===========
+from_bits:
+    sub sp, sp, #16
+    add x1, sp, #0
+    str x0, [x1]
+    ldr d0, [x1]
+    add sp, sp, #16
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    movn x0, #65535
+    movk x0, #0, lsl #16
+    movk x0, #0, lsl #32
+    movk x0, #49152, lsl #48
+    bl 0xffffffe8
+    movz x2, #1
+    movz x1, #0
+    adr x0, 0xf68
+    ldr d1, [x0]
+    fcmp d0, d1
+    csel x0, x2, x1, eq
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: all ===========
+from_bits:
+    fmov d0, x0
+    ret
+main:
+    sub sp, sp, #16
+    stp x29, x30, [xzr]
+    movn x0, #65535
+    movk x0, #0, lsl #16
+    movk x0, #0, lsl #32
+    movk x0, #49152, lsl #48
+    bl 0xfffffff8
+    movz x2, #1
+    movz x1, #0
+    adr x0, 0xf78
+    ldr d1, [x0]
+    fcmp d0, d1
+    csel x0, x2, x1, eq
+    ldp x29, x30, [xzr]
+    add sp, sp, #16
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    movz x0, #1
+    ret

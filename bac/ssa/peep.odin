@@ -1198,12 +1198,11 @@ peep :: proc(
 					offset = off
 				case .Load:
 					for &slot in slots {
-						if slot.offset == off {
-							assert(slot.size == bac.DT_SIZE[onode.dt])
+						if slot.offset >= off &&
+						   off + bac.DT_SIZE[onode.dt] >= slot.offset + slot.size {
 							if slot.state == .Uninit {
 								slot.state = .Needs_Init
 							}
-							break
 						}
 					}
 				case:

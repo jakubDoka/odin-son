@@ -1,0 +1,88 @@
+=========== OPT LEVEL: none-quick ===========
+from_bits:
+    mov.q [rsp - 0x8], rdi
+    movsd.q xmm0, [rsp - 0x8]
+    ret
+main:
+    sub rsp, 8
+    movabs rdi, -0x4000000000000000
+    call from_bits
+    mov rcx, 1
+    xor eax, eax
+    ucomisd.q xmm0, [rip + 0xf12]
+    jp 2
+    cmove rax, rcx
+2:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: none ===========
+from_bits:
+    mov.q [rsp - 0x8], rdi
+    movsd.q xmm0, [rsp - 0x8]
+    ret
+main:
+    sub rsp, 8
+    movabs rdi, -0x4000000000000000
+    call from_bits
+    mov rcx, 1
+    xor eax, eax
+    ucomisd.q xmm0, [rip + 0xf2f]
+    jp 2
+    cmove rax, rcx
+2:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate-quick ===========
+from_bits:
+    mov.q [rsp - 0x8], rdi
+    movsd.q xmm0, [rsp - 0x8]
+    ret
+main:
+    sub rsp, 8
+    movabs rdi, -0x4000000000000000
+    call from_bits
+    mov rcx, 1
+    xor eax, eax
+    ucomisd.q xmm0, [rip + 0xf12]
+    jp 2
+    cmove rax, rcx
+2:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: moderate ===========
+from_bits:
+    mov.q [rsp - 0x8], rdi
+    movsd.q xmm0, [rsp - 0x8]
+    ret
+main:
+    sub rsp, 8
+    movabs rdi, -0x4000000000000000
+    call from_bits
+    mov rcx, 1
+    xor eax, eax
+    ucomisd.q xmm0, [rip + 0xf2f]
+    jp 2
+    cmove rax, rcx
+2:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: all ===========
+from_bits:
+    movq xmm0, rdi
+    ret
+main:
+    sub rsp, 8
+    movabs rdi, -0x4000000000000000
+    call from_bits
+    mov rcx, 1
+    xor eax, eax
+    ucomisd.q xmm0, [rip + 0xf36]
+    jp 2
+    cmove rax, rcx
+2:
+    add rsp, 8
+    ret
+=========== OPT LEVEL: aggresive ===========
+main:
+    mov rax, 1
+    ret

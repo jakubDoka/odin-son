@@ -2,6 +2,65 @@
 #![deny(unsafe_op_in_unsafe_fn)]
 #![allow(clippy::missing_safety_doc)]
 
+#[macro_export]
+macro_rules! abi_enum {
+    (
+        #[derive(AbiEnum)]
+        #[repr($repr:ident)]
+        #[abi(raw = $raw_name:ident, counter = $counter:ident, size = $size:literal, align = $align:literal)]
+        pub enum $name:ident {
+            $($variant_name:ident $(= $variant_value:literal)?,)*
+        }
+    ) => {
+        #[repr($repr)]
+        #[allow(dead_code)]
+        enum $counter {
+            $($variant_name $(= $variant_value)?,)*
+        }
+
+        pub type $raw_name = $repr;
+
+        #[repr(transparent)]
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
+        pub struct $name(pub $raw_name);
+        #[allow(non_upper_case_globals)]
+        impl $name {
+            $(pub const $variant_name: Self = Self($counter::$variant_name as $repr);)*
+        }
+
+        const _: () = assert!(::core::mem::size_of::<$name>() == $size);
+        const _: () = assert!(::core::mem::align_of::<$name>() == $align);
+    };
+}
+
+#[macro_export]
+macro_rules! abi_struct {
+    (
+        #[derive(AbiStruct)]
+        #[repr(C, $layout:ident($align:literal))]
+        #[abi(size = $size:literal)]
+        pub $kind:ident $name:ident {
+            $(#[abi(offset = $offset:literal)] pub $field:ident: $type:ty,)*
+        }
+    ) => {
+        #[repr(C, $layout($align))]
+        #[derive(Clone, Copy)]
+        pub $kind $name {
+            $(pub $field: $type,)*
+        }
+
+        impl Default for $name {
+            fn default() -> Self {
+                unsafe { ::core::mem::zeroed() }
+            }
+        }
+
+        $(const _: () = assert!(::core::mem::offset_of!($name, $field) == $offset);)*
+        const _: () = assert!(::core::mem::size_of::<$name>() == $size);
+        const _: () = assert!(::core::mem::align_of::<$name>() == $align);
+    };
+}
+
 #[cfg(feature = "alloc")]
 extern crate alloc;
 
@@ -351,7 +410,7 @@ impl<'a> Builder<'a> {
         unsafe {
             sys::bac_find_node(
                 self.proc.raw_ptr(),
-                NodeType::Mem.0,
+                sys::Node_Type::Mem,
                 self.check(self.entry()).0,
                 &mut id,
             )
@@ -468,7 +527,7 @@ impl Call {
             ..Default::default()
         };
         for (slot, dt) in raw.rets.iter_mut().zip(returns) {
-            *slot = dt.0;
+            *slot = *dt;
         }
         raw.flags.set_ret_count(returns.len() as u64);
         Self(raw)
@@ -550,9 +609,6 @@ impl CallConv {
 pub fn ssa_spec() -> &'static NodeSpec {
     unsafe { &*ptr::addr_of!(sys::bac_ssa_SPEC).cast() }
 }
-pub fn anal_spec() -> &'static NodeSpec {
-    unsafe { &*ptr::addr_of!(sys::bac_anal_SPEC).cast() }
-}
 pub fn amd64_spec() -> &'static NodeSpec {
     unsafe { &*ptr::addr_of!(sys::bac_amd64_SPEC).cast() }
 }
@@ -600,7 +656,7 @@ impl<'p, 'a> CodegenEmitCtx<'p, 'a> {
     }
 
     pub fn set_regalloc_mode(&mut self, mode: RegallocMode) -> &mut Self {
-        self.raw.regalloc_mode = mode.0;
+        self.raw.regalloc_mode = mode;
         self
     }
 
@@ -663,7 +719,7 @@ impl Proc<'_> {
         scope: NodeId,
         state: &mut sys::ssa_Loop_State,
     ) {
-        unsafe { sys::bac_loop_control(variant.0, self.raw_ptr(), scope.0, state) };
+        unsafe { sys::bac_loop_control(variant, self.raw_ptr(), scope.0, state) };
     }
 
     pub unsafe fn inline_stencil(&self, call: NodeId, from: &Stencil) {
@@ -725,7 +781,7 @@ impl AbiParam {
     pub fn new(datatypes: &[Datatype]) -> Self {
         let mut dt = FixedCapDynArray::new();
         for datatype in datatypes {
-            dt.push(datatype.0);
+            dt.push(*datatype);
         }
         Self {
             dt,

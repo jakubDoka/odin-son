@@ -111,6 +111,28 @@ rust_type :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info, hint := "") -> string {
 	return name
 }
 
+rust_struct_open :: proc(
+	f: ^os.File,
+	name: string,
+	ty: ^runtime.Type_Info,
+	kind := "struct",
+	layout := "align",
+) {
+	fmt.fprintfln(
+		f,
+		"crate::abi_struct! {{\n    #[derive(AbiStruct)]\n    #[repr(C, %v(%v))]\n    #[abi(size = %v)]\n    pub %v %v {{",
+		layout,
+		ty.align,
+		ty.size,
+		kind,
+		name,
+	)
+}
+
+rust_struct_field :: proc(f: ^os.File, name, type: string, offset: uintptr) {
+	fmt.fprintfln(f, "        #[abi(offset = %v)] pub %v: %v,", offset, name, type)
+}
+
 rust_default :: proc(f: ^os.File, name: string, generics := "") {
 	fmt.fprintfln(
 		f,
@@ -126,27 +148,32 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 	base := runtime.type_info_base(ty)
 	#partial switch t in base.variant {
 	case ^runtime.Type_Info_Enum:
-		fmt.fprintfln(f, "pub type %v = %v;", name, rust_type(g, t.base))
-		for field in reflect.enum_fields_zipped(ty.id) {
-			fmt.fprintfln(
-				f,
-				"pub const %v_%v: %v = %v;",
-				name,
-				field.name,
-				name,
-				field.value,
-			)
+		fmt.fprintfln(
+			f,
+			"crate::abi_enum! {{\n    #[derive(AbiEnum)]\n    #[repr(%v)]\n    #[abi(raw = %v_Raw, counter = %v_Counter, size = %v, align = %v)]\n    pub enum %v {{",
+			rust_type(g, t.base),
+			name,
+			name,
+			ty.size,
+			ty.align,
+			name,
+		)
+		next: reflect.Type_Info_Enum_Value
+		for field, i in reflect.enum_fields_zipped(ty.id) {
+			if i == 0 || field.value != next {
+				fmt.fprintfln(f, "        %v = %v,", field.name, field.value)
+			} else {
+				fmt.fprintfln(f, "        %v,", field.name)
+			}
+			next = field.value + 1
 		}
+		fmt.fprintln(f, "    }\n}")
 	case ^runtime.Type_Info_Bit_Set:
 		fmt.fprintfln(f, "pub type %v = u%v;", name, ty.size * 8)
 	case ^runtime.Type_Info_Bit_Field:
-		fmt.fprintfln(
-			f,
-			"#[repr(C, align(%v))]\n#[derive(Clone, Copy)]\npub struct %v {{ pub bytes: [u8; %v] }}",
-			ty.align,
-			name,
-			ty.size,
-		)
+		rust_struct_open(f, name, ty)
+		rust_struct_field(f, "bytes", fmt.tprintf("[u8; %v]", ty.size), 0)
+		fmt.fprintln(f, "    }\n}")
 		if ty.size <= 8 {
 			fmt.fprintfln(f, "impl %v {{", name)
 			for field in reflect.bit_fields_zipped(base.id) {
@@ -178,56 +205,28 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 		max_align := 1
 		for field in t.types[:t.field_count] do max_align = max(max_align, field.align)
 		layout := "packed" if max_align > ty.align else "align"
-		fmt.fprintfln(
-			f,
-			"#[repr(C, %v(%v))]\n#[derive(Clone, Copy)]\npub %v %v {{",
-			layout,
-			ty.align,
-			kind,
-			name,
-		)
+		rust_struct_open(f, name, ty, kind, layout)
 		for field, i in reflect.struct_fields_zipped(base.id) {
 			fname := field.name
 			if fname == "_" do fname = fmt.tprintf("field_%v", i)
-			fmt.fprintfln(
+			rust_struct_field(
 				f,
-				"pub %v: %v,",
 				rust_ident(fname),
 				rust_type(g, field.type, fmt.tprintf("%v_%v", name, fname)),
+				field.offset,
 			)
 		}
-		fmt.fprintln(f, "}")
-		for field, i in reflect.struct_fields_zipped(base.id) {
-			fname := field.name
-			if fname == "_" do fname = fmt.tprintf("field_%v", i)
-			fmt.fprintfln(
-				f,
-				"const _: () = assert!(core::mem::offset_of!(%v, %v) == %v);",
-				name,
-				rust_ident(fname),
-				t.offsets[i],
-			)
-		}
+		fmt.fprintln(f, "    }\n}")
 	case ^runtime.Type_Info_Union:
 		if t.tag_type == nil {
-			fmt.fprintfln(
-				f,
-				"#[repr(C, align(%v))]\n#[derive(Clone, Copy)]\npub union %v {{",
-				ty.align,
-				name,
-			)
-			for v, i in t.variants do fmt.fprintfln(f, "pub variant_%v: %v,", i, rust_type(g, v, fmt.tprintf("%v_variant_%v", name, i)))
-			fmt.fprintln(f, "}")
+			rust_struct_open(f, name, ty, "union")
+			for v, i in t.variants do rust_struct_field(f, fmt.tprintf("variant_%v", i), rust_type(g, v, fmt.tprintf("%v_variant_%v", name, i)), 0)
 		} else {
-			fmt.fprintfln(
-				f,
-				"#[repr(C, align(%v))]\n#[derive(Clone, Copy)]\npub struct %v {{ pub payload: [u8; %v], pub tag: %v }}",
-				ty.align,
-				name,
-				t.tag_offset,
-				rust_type(g, t.tag_type),
-			)
+			rust_struct_open(f, name, ty)
+			rust_struct_field(f, "payload", fmt.tprintf("[u8; %v]", t.tag_offset), 0)
+			rust_struct_field(f, "tag", rust_type(g, t.tag_type), t.tag_offset)
 		}
+		fmt.fprintln(f, "    }\n}")
 	case ^runtime.Type_Info_Fixed_Capacity_Dynamic_Array:
 		fmt.fprintfln(
 			f,
@@ -240,10 +239,11 @@ rust_decl :: proc(g: ^Rust_Gen, ty: ^runtime.Type_Info) {
 		fmt.fprintfln(f, "pub type %v = %v;", name, rust_type(g, base))
 	}
 	#partial switch _ in base.variant {
-	case ^runtime.Type_Info_Bit_Field,
+	case ^runtime.Type_Info_Enum,
+	     ^runtime.Type_Info_Bit_Field,
 	     ^runtime.Type_Info_Struct,
 	     ^runtime.Type_Info_Union:
-		rust_default(f, name)
+		return
 	}
 	fmt.fprintfln(
 		f,
@@ -424,18 +424,7 @@ generate_rust_api :: proc(api: []API_Proc) {
 		name := strings.trim_prefix(e.odin, "bac_")
 		for ty in g.pending {
 			if g.names[ty.id] != name do continue
-			zero_valid := false
-			for field in reflect.enum_fields_zipped(ty.id) do zero_valid ||= field.value == 0
-			fmt.fprintfln(
-				f,
-				"#[repr(transparent)]\n#[derive(Clone, Copy, Debug, PartialEq, Eq%v)]\npub struct %v(pub(crate) sys::%v);\n#[allow(non_upper_case_globals)]\nimpl %v {{",
-				", Default" if zero_valid else "",
-				e.rust,
-				name,
-				e.rust,
-			)
-			for field in reflect.enum_fields_zipped(ty.id) do fmt.fprintfln(f, "pub const %v: Self = Self(sys::%v_%v);", field.name, name, field.name)
-			fmt.fprintln(f, "}")
+			fmt.fprintfln(f, "pub use sys::%v as %v;", name, e.rust)
 		}
 	}
 	for receiver in ([?]string{"Proc", "Builder", "IfState", "LoopState", "BlockState"}) {
@@ -556,16 +545,14 @@ generate_rust_api :: proc(api: []API_Proc) {
 						fmt.fprintf(f, "core::ptr::from_mut(%v).cast(),", name)
 					case "&mut IfState", "&mut LoopState", "&mut BlockState":
 						fmt.fprintf(f, "%v,", name)
-					case "NodeId",
-					     "Datatype",
-					     "NodeType",
-					     "BinOp",
-					     "UnOp",
-					     "Lane",
-					     "LoopControl",
-					     "RegallocMode",
-					     "Call":
+					case "NodeId", "Call":
 						fmt.fprintf(f, "%v.0,", name)
+					case "NodeType":
+						if raw := rust_type(&g, ty); raw != "ssa_Node_Type" {
+							fmt.fprintf(f, "sys::%v(%v.0),", raw, name)
+						} else {
+							fmt.fprintf(f, "%v,", name)
+						}
 					case:
 						fmt.fprintf(f, "%v,", name)
 					}

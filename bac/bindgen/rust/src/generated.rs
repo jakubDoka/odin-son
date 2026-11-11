@@ -5,183 +5,13 @@
     clippy::too_many_arguments
 )]
 use crate::*;
-#[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub struct Datatype(pub(crate) sys::Node_Datatype);
-#[allow(non_upper_case_globals)]
-impl Datatype {
-    pub const Void: Self = Self(sys::Node_Datatype_Void);
-    pub const Mem: Self = Self(sys::Node_Datatype_Mem);
-    pub const I8: Self = Self(sys::Node_Datatype_I8);
-    pub const I16: Self = Self(sys::Node_Datatype_I16);
-    pub const I32: Self = Self(sys::Node_Datatype_I32);
-    pub const I64: Self = Self(sys::Node_Datatype_I64);
-    pub const F32: Self = Self(sys::Node_Datatype_F32);
-    pub const F64: Self = Self(sys::Node_Datatype_F64);
-    pub const V128: Self = Self(sys::Node_Datatype_V128);
-    pub const V256: Self = Self(sys::Node_Datatype_V256);
-    pub const V512: Self = Self(sys::Node_Datatype_V512);
-}
-#[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub struct NodeType(pub(crate) sys::ssa_Node_Type);
-#[allow(non_upper_case_globals)]
-impl NodeType {
-    pub const Nil: Self = Self(sys::ssa_Node_Type_Nil);
-    pub const Entry: Self = Self(sys::ssa_Node_Type_Entry);
-    pub const Then: Self = Self(sys::ssa_Node_Type_Then);
-    pub const Else: Self = Self(sys::ssa_Node_Type_Else);
-    pub const Region: Self = Self(sys::ssa_Node_Type_Region);
-    pub const Loop: Self = Self(sys::ssa_Node_Type_Loop);
-    pub const Call_End: Self = Self(sys::ssa_Node_Type_Call_End);
-    pub const End: Self = Self(sys::ssa_Node_Type_End);
-    pub const Dbg_Sym_Decl: Self = Self(sys::ssa_Node_Type_Dbg_Sym_Decl);
-    pub const Dbg_Sym_Update: Self = Self(sys::ssa_Node_Type_Dbg_Sym_Update);
-    pub const Dbg_Scope: Self = Self(sys::ssa_Node_Type_Dbg_Scope);
-    pub const If: Self = Self(sys::ssa_Node_Type_If);
-    pub const Jump: Self = Self(sys::ssa_Node_Type_Jump);
-    pub const Trap: Self = Self(sys::ssa_Node_Type_Trap);
-    pub const Call: Self = Self(sys::ssa_Node_Type_Call);
-    pub const Always: Self = Self(sys::ssa_Node_Type_Always);
-    pub const Return: Self = Self(sys::ssa_Node_Type_Return);
-    pub const Poison: Self = Self(sys::ssa_Node_Type_Poison);
-    pub const Mem: Self = Self(sys::ssa_Node_Type_Mem);
-    pub const Split_Mem: Self = Self(sys::ssa_Node_Type_Split_Mem);
-    pub const Merge_Mem: Self = Self(sys::ssa_Node_Type_Merge_Mem);
-    pub const Sym: Self = Self(sys::ssa_Node_Type_Sym);
-    pub const Local: Self = Self(sys::ssa_Node_Type_Local);
-    pub const Global: Self = Self(sys::ssa_Node_Type_Global);
-    pub const Param: Self = Self(sys::ssa_Node_Type_Param);
-    pub const Ret: Self = Self(sys::ssa_Node_Type_Ret);
-    pub const Phi: Self = Self(sys::ssa_Node_Type_Phi);
-    pub const CInt: Self = Self(sys::ssa_Node_Type_CInt);
-    pub const Add: Self = Self(sys::ssa_Node_Type_Add);
-    pub const Sub: Self = Self(sys::ssa_Node_Type_Sub);
-    pub const And: Self = Self(sys::ssa_Node_Type_And);
-    pub const Or: Self = Self(sys::ssa_Node_Type_Or);
-    pub const Xor: Self = Self(sys::ssa_Node_Type_Xor);
-    pub const Eq: Self = Self(sys::ssa_Node_Type_Eq);
-    pub const Ne: Self = Self(sys::ssa_Node_Type_Ne);
-    pub const Le: Self = Self(sys::ssa_Node_Type_Le);
-    pub const Lt: Self = Self(sys::ssa_Node_Type_Lt);
-    pub const Gt: Self = Self(sys::ssa_Node_Type_Gt);
-    pub const Ge: Self = Self(sys::ssa_Node_Type_Ge);
-    pub const U_Lt: Self = Self(sys::ssa_Node_Type_U_Lt);
-    pub const U_Gt: Self = Self(sys::ssa_Node_Type_U_Gt);
-    pub const U_Le: Self = Self(sys::ssa_Node_Type_U_Le);
-    pub const U_Ge: Self = Self(sys::ssa_Node_Type_U_Ge);
-    pub const Shl: Self = Self(sys::ssa_Node_Type_Shl);
-    pub const Shr: Self = Self(sys::ssa_Node_Type_Shr);
-    pub const U_Shr: Self = Self(sys::ssa_Node_Type_U_Shr);
-    pub const Mul: Self = Self(sys::ssa_Node_Type_Mul);
-    pub const Div: Self = Self(sys::ssa_Node_Type_Div);
-    pub const U_Div: Self = Self(sys::ssa_Node_Type_U_Div);
-    pub const Rem: Self = Self(sys::ssa_Node_Type_Rem);
-    pub const U_Rem: Self = Self(sys::ssa_Node_Type_U_Rem);
-    pub const U_Mul_Hi: Self = Self(sys::ssa_Node_Type_U_Mul_Hi);
-    pub const And_Not: Self = Self(sys::ssa_Node_Type_And_Not);
-    pub const Split: Self = Self(sys::ssa_Node_Type_Split);
-    pub const Local_Addr: Self = Self(sys::ssa_Node_Type_Local_Addr);
-    pub const Global_Addr: Self = Self(sys::ssa_Node_Type_Global_Addr);
-    pub const Proc_Addr: Self = Self(sys::ssa_Node_Type_Proc_Addr);
-    pub const Copy: Self = Self(sys::ssa_Node_Type_Copy);
-    pub const Set: Self = Self(sys::ssa_Node_Type_Set);
-    pub const Store: Self = Self(sys::ssa_Node_Type_Store);
-    pub const Load: Self = Self(sys::ssa_Node_Type_Load);
-    pub const Neg: Self = Self(sys::ssa_Node_Type_Neg);
-    pub const Not: Self = Self(sys::ssa_Node_Type_Not);
-    pub const Cast: Self = Self(sys::ssa_Node_Type_Cast);
-    pub const Conv: Self = Self(sys::ssa_Node_Type_Conv);
-    pub const U_Conv: Self = Self(sys::ssa_Node_Type_U_Conv);
-    pub const Splat: Self = Self(sys::ssa_Node_Type_Splat);
-    pub const Ctz: Self = Self(sys::ssa_Node_Type_Ctz);
-    pub const Popcnt: Self = Self(sys::ssa_Node_Type_Popcnt);
-    pub const Simd_Extract_Lsbs: Self = Self(sys::ssa_Node_Type_Simd_Extract_Lsbs);
-    pub const Simd_Extract_Msbs: Self = Self(sys::ssa_Node_Type_Simd_Extract_Msbs);
-    pub const Simd_Reduce_Add_Bisect: Self = Self(sys::ssa_Node_Type_Simd_Reduce_Add_Bisect);
-    pub const Select: Self = Self(sys::ssa_Node_Type_Select);
-    pub const Thread_Id: Self = Self(sys::ssa_Node_Type_Thread_Id);
-    pub const Lane_Id: Self = Self(sys::ssa_Node_Type_Lane_Id);
-    pub const Uniform_Addr: Self = Self(sys::ssa_Node_Type_Uniform_Addr);
-    pub const Scope: Self = Self(sys::ssa_Node_Type_Scope);
-    pub const Lazy_Phi: Self = Self(sys::ssa_Node_Type_Lazy_Phi);
-}
-#[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct BinOp(pub(crate) sys::Bin_Op);
-#[allow(non_upper_case_globals)]
-impl BinOp {
-    pub const Add: Self = Self(sys::Bin_Op_Add);
-    pub const Sub: Self = Self(sys::Bin_Op_Sub);
-    pub const And: Self = Self(sys::Bin_Op_And);
-    pub const Or: Self = Self(sys::Bin_Op_Or);
-    pub const Xor: Self = Self(sys::Bin_Op_Xor);
-    pub const Eq: Self = Self(sys::Bin_Op_Eq);
-    pub const Ne: Self = Self(sys::Bin_Op_Ne);
-    pub const Le: Self = Self(sys::Bin_Op_Le);
-    pub const Lt: Self = Self(sys::Bin_Op_Lt);
-    pub const Gt: Self = Self(sys::Bin_Op_Gt);
-    pub const Ge: Self = Self(sys::Bin_Op_Ge);
-    pub const U_Lt: Self = Self(sys::Bin_Op_U_Lt);
-    pub const U_Gt: Self = Self(sys::Bin_Op_U_Gt);
-    pub const U_Le: Self = Self(sys::Bin_Op_U_Le);
-    pub const U_Ge: Self = Self(sys::Bin_Op_U_Ge);
-    pub const Shl: Self = Self(sys::Bin_Op_Shl);
-    pub const Shr: Self = Self(sys::Bin_Op_Shr);
-    pub const U_Shr: Self = Self(sys::Bin_Op_U_Shr);
-    pub const Mul: Self = Self(sys::Bin_Op_Mul);
-    pub const Div: Self = Self(sys::Bin_Op_Div);
-    pub const U_Div: Self = Self(sys::Bin_Op_U_Div);
-    pub const Rem: Self = Self(sys::Bin_Op_Rem);
-    pub const U_Rem: Self = Self(sys::Bin_Op_U_Rem);
-    pub const U_Mul_Hi: Self = Self(sys::Bin_Op_U_Mul_Hi);
-    pub const And_Not: Self = Self(sys::Bin_Op_And_Not);
-}
-#[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub struct UnOp(pub(crate) sys::Un_Op);
-#[allow(non_upper_case_globals)]
-impl UnOp {
-    pub const Neg: Self = Self(sys::Un_Op_Neg);
-    pub const Not: Self = Self(sys::Un_Op_Not);
-    pub const Cast: Self = Self(sys::Un_Op_Cast);
-    pub const Conv: Self = Self(sys::Un_Op_Conv);
-    pub const U_Conv: Self = Self(sys::Un_Op_U_Conv);
-    pub const Splat: Self = Self(sys::Un_Op_Splat);
-    pub const Ctz: Self = Self(sys::Un_Op_Ctz);
-    pub const Popcnt: Self = Self(sys::Un_Op_Popcnt);
-    pub const Simd_Extract_Lsbs: Self = Self(sys::Un_Op_Simd_Extract_Lsbs);
-    pub const Simd_Extract_Msbs: Self = Self(sys::Un_Op_Simd_Extract_Msbs);
-    pub const Simd_Reduce_Add_Bisect: Self = Self(sys::Un_Op_Simd_Reduce_Add_Bisect);
-}
-#[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub struct Lane(pub(crate) sys::Lane_Type);
-#[allow(non_upper_case_globals)]
-impl Lane {
-    pub const I8: Self = Self(sys::Lane_Type_I8);
-    pub const I16: Self = Self(sys::Lane_Type_I16);
-    pub const I32: Self = Self(sys::Lane_Type_I32);
-    pub const I64: Self = Self(sys::Lane_Type_I64);
-    pub const F32: Self = Self(sys::Lane_Type_F32);
-    pub const F64: Self = Self(sys::Lane_Type_F64);
-}
-#[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub struct LoopControl(pub(crate) sys::ssa_Loop_Control);
-#[allow(non_upper_case_globals)]
-impl LoopControl {
-    pub const Break: Self = Self(sys::ssa_Loop_Control_Break);
-    pub const Continue: Self = Self(sys::ssa_Loop_Control_Continue);
-}
-#[repr(transparent)]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Default)]
-pub struct RegallocMode(pub(crate) sys::Regalloc_Mode);
-#[allow(non_upper_case_globals)]
-impl RegallocMode {
-    pub const with_scan: Self = Self(sys::Regalloc_Mode_with_scan);
-    pub const with_coloring: Self = Self(sys::Regalloc_Mode_with_coloring);
-}
+pub use sys::Bin_Op as BinOp;
+pub use sys::Lane_Type as Lane;
+pub use sys::Node_Datatype as Datatype;
+pub use sys::Regalloc_Mode as RegallocMode;
+pub use sys::Un_Op as UnOp;
+pub use sys::ssa_Loop_Control as LoopControl;
+pub use sys::ssa_Node_Type as NodeType;
 impl Proc<'_> {
     pub unsafe fn r#push_scope_value(
         &self,
@@ -250,7 +80,7 @@ impl Proc<'_> {
         r#idx: u32,
     ) -> NodeId {
         let result =
-            unsafe { sys::bac_add_param(self.raw_ptr(), r#name.into(), r#dt.0, r#entry.0, r#idx) };
+            unsafe { sys::bac_add_param(self.raw_ptr(), r#name.into(), r#dt, r#entry.0, r#idx) };
         let result = NodeId(result);
         result
     }
@@ -266,7 +96,7 @@ impl Proc<'_> {
             sys::bac_add_phi(
                 self.raw_ptr(),
                 r#name.into(),
-                r#dt.0,
+                r#dt,
                 r#reg.0,
                 r#lhs.0,
                 r#rhs.0,
@@ -304,7 +134,7 @@ impl Proc<'_> {
         r#idx: u32,
     ) -> NodeId {
         let result =
-            unsafe { sys::bac_add_ret(self.raw_ptr(), r#name.into(), r#dt.0, r#call_end.0, r#idx) };
+            unsafe { sys::bac_add_ret(self.raw_ptr(), r#name.into(), r#dt, r#call_end.0, r#idx) };
         let result = NodeId(result);
         result
     }
@@ -331,7 +161,7 @@ impl Proc<'_> {
             sys::bac_add_select(
                 self.raw_ptr(),
                 r#name.into(),
-                r#dt.0,
+                r#dt,
                 r#on_true.0,
                 r#on_false.0,
                 r#condition.0,
@@ -364,7 +194,7 @@ impl Proc<'_> {
         result
     }
     pub unsafe fn r#add_split(&self, r#name: &str, r#dt: Datatype, r#dest: NodeId) -> NodeId {
-        let result = unsafe { sys::bac_add_split(self.raw_ptr(), r#name.into(), r#dt.0, r#dest.0) };
+        let result = unsafe { sys::bac_add_split(self.raw_ptr(), r#name.into(), r#dt, r#dest.0) };
         let result = NodeId(result);
         result
     }
@@ -426,7 +256,7 @@ impl Proc<'_> {
             sys::bac_add_load(
                 self.raw_ptr(),
                 r#name.into(),
-                r#dt.0,
+                r#dt,
                 r#ctrl.0,
                 r#mem.0,
                 r#addr.0,
@@ -457,10 +287,10 @@ impl Proc<'_> {
             sys::bac_add_un_op(
                 self.raw_ptr(),
                 r#name.into(),
-                r#type.0,
-                r#dt.0,
+                r#type,
+                r#dt,
                 r#oprnd.0,
-                r#lane.0,
+                r#lane,
             )
         };
         let result = NodeId(result);
@@ -476,12 +306,15 @@ impl Proc<'_> {
     }
     pub unsafe fn r#find_node(&self, r#kind: NodeType, r#on: NodeId) -> (NodeId, bool) {
         let mut out0 = Default::default();
-        let result = unsafe { sys::bac_find_node(self.raw_ptr(), r#kind.0, r#on.0, &mut out0) };
+        let result = unsafe {
+            sys::bac_find_node(self.raw_ptr(), sys::Node_Type(r#kind.0), r#on.0, &mut out0)
+        };
         let result = (NodeId(out0), result);
         result
     }
     pub unsafe fn r#find_or_create_node(&self, r#kind: NodeType) -> NodeId {
-        let result = unsafe { sys::bac_find_or_create_node(self.raw_ptr(), r#kind.0) };
+        let result =
+            unsafe { sys::bac_find_or_create_node(self.raw_ptr(), sys::Node_Type(r#kind.0)) };
         let result = NodeId(result);
         result
     }
@@ -605,7 +438,7 @@ impl Proc<'_> {
                 r#addr.0,
                 r#rsize,
                 r#extra_offset,
-                r#unit.0,
+                r#unit,
             )
         };
         let result = NodeId(result);
@@ -624,7 +457,7 @@ impl Proc<'_> {
             sys::bac_add_field_load(
                 self.raw_ptr(),
                 r#name.into(),
-                r#dt.0,
+                r#dt,
                 r#cfg.0,
                 r#mem.0,
                 r#base.0,
@@ -676,7 +509,7 @@ impl Proc<'_> {
                 r#rvalue.0,
                 r#rsize,
                 r#extra_offset,
-                r#unit.0,
+                r#unit,
             )
         };
         let result = NodeId(result);
@@ -699,9 +532,8 @@ impl Proc<'_> {
         r#reg: NodeId,
         r#lhs: NodeId,
     ) -> NodeId {
-        let result = unsafe {
-            sys::bac_add_lazy_phi(self.raw_ptr(), r#name.into(), r#dt.0, r#reg.0, r#lhs.0)
-        };
+        let result =
+            unsafe { sys::bac_add_lazy_phi(self.raw_ptr(), r#name.into(), r#dt, r#reg.0, r#lhs.0) };
         let result = NodeId(result);
         result
     }
@@ -764,7 +596,7 @@ impl Proc<'_> {
         result
     }
     pub unsafe fn r#add_c_int(&self, r#name: &str, r#dt: Datatype, r#value: i64) -> NodeId {
-        let result = unsafe { sys::bac_add_c_int(self.raw_ptr(), r#name.into(), r#dt.0, r#value) };
+        let result = unsafe { sys::bac_add_c_int(self.raw_ptr(), r#name.into(), r#dt, r#value) };
         let result = NodeId(result);
         result
     }
@@ -792,11 +624,11 @@ impl Proc<'_> {
             sys::bac_add_bin_op(
                 self.raw_ptr(),
                 r#name.into(),
-                r#type.0,
-                r#dt.0,
+                r#type,
+                r#dt,
                 r#lhs.0,
                 r#rhs.0,
-                r#lane.0,
+                r#lane,
             )
         };
         let result = NodeId(result);

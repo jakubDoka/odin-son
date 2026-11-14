@@ -24334,6 +24334,24 @@ main :: proc() -> int {
 }
 `, 0)
 }
+@(test) widen_elimination :: proc(t: ^testing.T) {
+
+
+
+main_ :: proc() -> int {
+	@(static) v: u8 = 10
+	return int(v + v * v - v & v ~ v | v)
+}
+
+run_test(t, `widen_elimination`, `
+package main
+
+main :: proc() -> int {
+	@(static) v: u8 = 10
+	return int(v + v * v - v & v ~ v | v)
+}
+`, main_())
+}
 @(test) fuzz_0092546c2ab7b49f :: proc(t: ^testing.T) {
 run_test(t, "fuzz_0092546c2ab7b49f", string(#load("../fuzz/crashes/0092546c2ab7b49f.odin")), 0,
 				diff = false, no_run = true)
@@ -26320,6 +26338,7 @@ NAMES := []string{
 `int128_divide_and_modulo_through_libgcc`,
 `int128_float_conversions_through_libgcc`,
 `fail_int128_literals_and_unsupported_uses`,
+`widen_elimination`,
 `fuzz_0092546c2ab7b49f`,
 `fuzz_00f1be4a1ea4c499`,
 `fuzz_0203aad88c140351`,
@@ -38454,6 +38473,14 @@ main :: proc() -> int {
 	return v
 }
 `,
+`
+package main
+
+main :: proc() -> int {
+	@(static) v: u8 = 10
+	return int(v + v * v - v & v ~ v | v)
+}
+`,
 `#load("../fuzz/crashes/0092546c2ab7b49f.odin")`,
 `#load("../fuzz/crashes/00f1be4a1ea4c499.odin")`,
 `#load("../fuzz/crashes/0203aad88c140351.odin")`,
@@ -38856,6 +38883,7 @@ main :: proc() -> int {
 `#load("../fuzz/crashes/regalloc_ioob.odin")`,
 }
 IS_FUZZ := []bool{
+false,
 false,
 false,
 false,

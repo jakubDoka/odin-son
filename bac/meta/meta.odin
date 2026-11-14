@@ -848,6 +848,13 @@ SIMPLE_BINOP_CLASS :: Class_Spec {
 	api   = true,
 }
 
+SIMPLE_WIDENING_BINOP_CLASS :: Class_Spec {
+	args  = {"lhs", "rhs"},
+	group = "Bin_Op",
+	flags = {.Comutes, .Interned, .Widening},
+	api   = true,
+}
+
 Cfg :: bac.Cfg
 Tup :: bac.Tup
 
@@ -868,9 +875,13 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 		flags = {.Interned, .Clonable},
 		api = true,
 	},
-	.Add = SIMPLE_BINOP_CLASS,
-	.Sub = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.Mul = SIMPLE_BINOP_CLASS,
+	.Add = SIMPLE_WIDENING_BINOP_CLASS,
+	.Sub = {
+		args = {"lhs", "rhs"},
+		group = "Bin_Op",
+		flags = {.Interned, .Widening},
+	},
+	.Mul = SIMPLE_WIDENING_BINOP_CLASS,
 	.Eq = SIMPLE_BINOP_CLASS,
 	.Ne = SIMPLE_BINOP_CLASS,
 	.Le = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
@@ -879,15 +890,19 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.Ge = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Div = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Rem = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.And = SIMPLE_BINOP_CLASS,
-	.Or = SIMPLE_BINOP_CLASS,
-	.Xor = SIMPLE_BINOP_CLASS,
+	.And = SIMPLE_WIDENING_BINOP_CLASS,
+	.Or = SIMPLE_WIDENING_BINOP_CLASS,
+	.Xor = SIMPLE_WIDENING_BINOP_CLASS,
 	.And_Not = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Neg = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}, api = true},
 	.Not = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Cast = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
-	.Conv = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
-	.U_Conv = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
+	.Conv = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned, .Widening}},
+	.U_Conv = {
+		args = {"oprnd"},
+		group = "Un_Op",
+		flags = {.Interned, .Widening},
+	},
 	.Splat = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Ctz = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Popcnt = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},

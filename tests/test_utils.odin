@@ -420,7 +420,11 @@ run_test :: proc(
 		switch level.vm {
 		case .Native, .Arm:
 			// the got relocations name the imported procedure by its id
-			imported_offsets := make([]uintptr, len(ctx.procs), context.temp_allocator)
+			imported_offsets := make(
+				[]uintptr,
+				len(ctx.procs),
+				context.temp_allocator,
+			)
 			for p, i in ctx.procs[1:] {
 				if p.lit.body == nil {
 					// fuzzed sources name symbols that exist nowhere, and nothing

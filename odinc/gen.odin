@@ -957,6 +957,7 @@ emit_proc_code :: proc(
 
 	// We are doing this with different spec now
 	bac.apply_peeps(peep_ctx)
+	bac.widen_elim(ctx)
 
 	bac.compact(ctx)
 
@@ -1310,7 +1311,10 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 						if type_to_dt(lhs_ty) == .Void {
 							tmp := alloca(ctx, "masst", lhs_ty, zeroed = false)
 							store_value(ctx, "masst", tmp, value, lhs_ty)
-							value = {id = tmp, is_lvalue = true}
+							value = {
+								id        = tmp,
+								is_lvalue = true,
+							}
 						} else {
 							value = Value(to_rvalue(ctx, value, rhs))
 						}
@@ -1423,7 +1427,15 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		lhs_ty := get_node_type(d.left)
 		if typecheck.is_wide(lhs_ty) {
 			rhsv := emit_wide_operand(ctx, d.op.kind, d.right)
-			wide := emit_wide_binary(ctx, prop.dest, d.op.kind, lhs_ty, lhsv, rhsv, d.right)
+			wide := emit_wide_binary(
+				ctx,
+				prop.dest,
+				d.op.kind,
+				lhs_ty,
+				lhsv,
+				rhsv,
+				d.right,
+			)
 			bac.unpin(ctx, lhsv.id)
 			res, lvalue = unpack(wide)
 			break
@@ -1468,7 +1480,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		case .Sub, .Xor:
 			if typecheck.is_wide(ty) {
 				operand := emit_nodes(ctx, {}, d.expr)
-				res, lvalue = unpack(emit_wide_unary(ctx, prop.dest, d.op.kind, ty, operand))
+				res, lvalue = unpack(
+					emit_wide_unary(ctx, prop.dest, d.op.kind, ty, operand),
+				)
 				break
 			}
 			operand := emit_rvalue(ctx, {}, d.expr)
@@ -1996,7 +2010,9 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		src_ty := get_node_type(d.expr)
 		if d.tok.kind != .Transmute &&
 		   (typecheck.is_wide(ty) || typecheck.is_wide(src_ty)) {
-			res, lvalue = unpack(emit_wide_conversion(ctx, prop.dest, ty, src_ty, inner))
+			res, lvalue = unpack(
+				emit_wide_conversion(ctx, prop.dest, ty, src_ty, inner),
+			)
 		} else if dt == .Void {
 			res, lvalue = inner.id, true
 			// a #simd vector lives in a register
@@ -2058,7 +2074,10 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			for v in clause.list {
 				eq: Node_ID
 				if wide {
-					condw := Value{id = condv, is_lvalue = true}
+					condw := Value {
+						id        = condv,
+						is_lvalue = true,
+					}
 					cv := emit_nodes(ctx, {}, v)
 					eq = emit_wide_binary(ctx, 0, .Cmp_Eq, cond_ty, condw, cv, v).id
 				} else {
@@ -2421,7 +2440,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		case .card:
 			bs := unpack_type(get_node_type(d.args[0])).(^typecheck.Bit_Set)
 			set := emit_rvalue(ctx, {}, d.args[0])
-			count := bac.add_un_op(ctx, "card", .Popcnt, type_to_dt(bs.underlying), set)
+			count := bac.add_un_op(
+				ctx,
+				"card",
+				.Popcnt,
+				type_to_dt(bs.underlying),
+				set,
+			)
 			res = emit_conversion(ctx, ty, bs.underlying, count)
 			break match
 		case .raw_data:
@@ -2614,7 +2639,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			if typecheck.is_wide(base_meta.typeida) || typecheck.is_wide(src_ty) {
 				inner := emit_nodes(ctx, {}, d.args[0])
 				res, lvalue = unpack(
-					emit_wide_conversion(ctx, prop.dest, base_meta.typeida, src_ty, inner),
+					emit_wide_conversion(
+						ctx,
+						prop.dest,
+						base_meta.typeida,
+						src_ty,
+						inner,
+					),
 				)
 				break match
 			}
@@ -3126,7 +3157,12 @@ emit_wide_binary :: proc(
 	a := wide_load(ctx, lhs)
 
 	if op == .Shl || op == .Shr || op == .U_Shr {
-		return wide_store(ctx, dest, ty, emit_wide_shift(ctx, op, a, rhs, rhs_node))
+		return wide_store(
+			ctx,
+			dest,
+			ty,
+			emit_wide_shift(ctx, op, a, rhs, rhs_node),
+		)
 	}
 
 	b := wide_load(ctx, rhs)
@@ -3233,9 +3269,15 @@ emit_wide_shift :: proc(
 		case n == 64:
 			r = {a[1], sign(ctx, op, a)}
 		case n < 128 && op == .Shl:
-			r = {c(ctx, 0), bac.add_bin_op(ctx, "wshl", .Shl, .I64, a[0], c(ctx, n - 64))}
+			r = {
+				c(ctx, 0),
+				bac.add_bin_op(ctx, "wshl", .Shl, .I64, a[0], c(ctx, n - 64)),
+			}
 		case n < 128:
-			r = {bac.add_bin_op(ctx, "wshr", op, .I64, a[1], c(ctx, n - 64)), sign(ctx, op, a)}
+			r = {
+				bac.add_bin_op(ctx, "wshr", op, .I64, a[1], c(ctx, n - 64)),
+				sign(ctx, op, a),
+			}
 		case:
 			r = {sign(ctx, op, a), sign(ctx, op, a)}
 		}
@@ -3340,7 +3382,10 @@ emit_wide_conversion :: proc(
 
 	if typecheck.is_wide(src) {
 		a := wide_load(ctx, value)
-		signed := typecheck.in_set(typecheck.constant_base_type(src), typecheck.SIGNED_TYPES)
+		signed := typecheck.in_set(
+			typecheck.constant_base_type(src),
+			typecheck.SIGNED_TYPES,
+		)
 		low := a[0]
 		if typecheck.strip_named(dst) == .Bool {
 			low = bac.add_bin_op(ctx, "wbool", .Or, .I64, a[0], a[1])
@@ -3350,12 +3395,27 @@ emit_wide_conversion :: proc(
 
 	base := src
 	if bf, ok := unpack_type(src).(^typecheck.Bit_Field); ok do base = bf.backing
-	signed := typecheck.in_set(typecheck.constant_base_type(base), typecheck.SIGNED_TYPES)
+	signed := typecheck.in_set(
+		typecheck.constant_base_type(base),
+		typecheck.SIGNED_TYPES,
+	)
 
 	r: Wide
-	r[0] = emit_conversion(ctx, signed ? .I64 : .U64, src, to_rvalue(ctx, value, src))
+	r[0] = emit_conversion(
+		ctx,
+		signed ? .I64 : .U64,
+		src,
+		to_rvalue(ctx, value, src),
+	)
 	if signed {
-		r[1] = bac.add_bin_op(ctx, "wsext", .Shr, .I64, r[0], bac.add_c_int(ctx, "wsext", .I64, 63))
+		r[1] = bac.add_bin_op(
+			ctx,
+			"wsext",
+			.Shr,
+			.I64,
+			r[0],
+			bac.add_c_int(ctx, "wsext", .I64, 63),
+		)
 	} else {
 		r[1] = bac.add_c_int(ctx, "wzext", .I64, 0)
 	}

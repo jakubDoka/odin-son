@@ -491,14 +491,16 @@ schedule_graph :: proc(
 				fmt.assertf(is_cfg(prc, olca), "%v", onode.node)
 
 				if onode.itype == .Phi {
-					jmp := get_inputs(prc, olca)[out.idx - 1]
-					olca = get_inputs(prc, jmp)[0]
+					olca = get_inputs(prc, olca)[out.idx - 1]
+					if !has_flag(ctx.prc, olca, .Is_Basic_Block_Start) {
+						olca = get_inputs(prc, olca)[0]
+					}
 				}
 				lca = compute_lca(prc, lca, olca)
 			}
 		}
 
-		lca = add_mem_antydeps(ctx, node, lca)
+		lca = add_mem_antideps(ctx, node, lca)
 
 		for !has_flag(prc, lca, .Is_Basic_Block_Start) {
 			lca = get_idom(prc, lca)
@@ -519,6 +521,8 @@ schedule_graph :: proc(
 				lca = better(ctx, lctx, lca, cursor)
 			}
 		}
+
+		assert(has_flag(prc, lca, .Is_Basic_Block_Start))
 
 		fmt.assertf(lca != 0, "%v", node)
 		ctx.late_schedules[node.gvn] = lca
@@ -598,7 +602,7 @@ schedule_graph :: proc(
 			return current
 		}
 
-		add_mem_antydeps :: proc(
+		add_mem_antideps :: proc(
 			ctx: Ctx,
 			node: Expanded_Node,
 			lca: Node_ID,
@@ -643,15 +647,18 @@ schedule_graph :: proc(
 				}
 
 				if onode.itype == .Phi {
-					jmp := cnode.inps[out.idx - 1]
-					ctrl = get_inputs(ctx.prc, jmp)[0]
+					ctrl = cnode.inps[out.idx - 1]
+					if !has_flag(ctx.prc, ctrl, .Is_Basic_Block_Start) {
+						ctrl = get_inputs(ctx.prc, ctrl)[0]
+					}
 					pull_up = ctx.antidep_node[get_node(ctx.prc, ctrl).gvn] == id
 				}
 
 				fmt.assertf(
 					has_flag(ctx.prc, ctrl, .Is_Basic_Block_Start) || ctrl == 0,
-					"%v",
+					"%v %v",
 					ctrl,
+					onode,
 				)
 
 				if pull_up {

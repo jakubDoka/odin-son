@@ -340,6 +340,7 @@ enum {
 	bac_Class_Flag_Store = 3,
 	bac_Class_Flag_Load = 4,
 	bac_Class_Flag_Clonable = 5,
+	bac_Class_Flag_Widening = 6,
 };
 struct bac_Cfg {
 	bac_u32 idepth;
@@ -523,6 +524,7 @@ enum {
 	bac_Bs_Class_Flag_Store = 1 << 3,
 	bac_Bs_Class_Flag_Load = 1 << 4,
 	bac_Bs_Class_Flag_Clonable = 1 << 5,
+	bac_Bs_Class_Flag_Widening = 1 << 6,
 };
 enum {
 	bac_Bs_Opt_Flag_Sccp = 1 << 0,

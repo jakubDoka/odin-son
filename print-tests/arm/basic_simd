@@ -1088,21 +1088,20 @@ sum:
     cmp x24, x19
     b.le 5
     movz x4, #1
+    movz x1, #0
     movz x2, #0
-    movz x3, #0
 4:
-    uxtb w2, w2
-    add x1, x25, x3
+    uxtb w3, w1
+    add x1, x25, x2
     ldrb w1, [x1]
     uxtb w1, w1
-    add w2, w2, w1
-    add x3, x4, x3
-    cmp x3, x24
-    uxtb w2, w2
+    add w3, w3, w1
+    add x2, x4, x2
+    cmp x2, x24
+    uxtb w1, w3
     b.lt 4
-    uxtb w1, w0
-    uxtb w0, w2
-    add w0, w1, w0
+    uxtb w0, w0
+    add w0, w0, w3
     uxtb w0, w0
     b 5
 5:
@@ -1122,16 +1121,16 @@ main:
     movz x2, #122
     movz x1, #35
     add x3, sp, #24
-    adr x0, 0xe8c
+    adr x0, 0xe90
     bl 0x7c
     movz x2, #97
     movz x1, #35
-    adr x0, 0xe8c
+    adr x0, 0xe90
     add x3, sp, #16
     bl 0x7c
     movz x1, #35
-    adr x0, 0xe8c
-    bl 0xffffff0c
+    adr x0, 0xe90
+    bl 0xffffff10
     add x1, sp, #24
     ldr x3, [x1]
     add x1, sp, #16
@@ -1174,7 +1173,7 @@ simd_search u8:
     movz x22, #1
     movz x0, #0
     uxth w23, w0
-    adr x0, 0xe40
+    adr x0, 0xe44
     ldr q9, [x0]
     movz x0, #7
     dup v8.16b, w0
@@ -1217,7 +1216,7 @@ simd_search u8:
     sub x1, x27, x20
     mov x2, x26
     add x3, sp, #96
-    bl from_slice u8
+    bl 0x168
     add x0, sp, #96
     ldr x0, [x0]
     cmp x0, x19
@@ -1295,19 +1294,19 @@ main:
     add v0.16b, v0.16b, v1.16b
     b.lt 1
     movz x4, #1
-    movz x3, #0
+    movz x0, #0
     movz x1, #0
 2:
-    uxtb w2, w3
+    uxtb w2, w0
     adr x0, 0xf80
     add x0, x0, x1
     ldrb w0, [x0]
     uxtb w0, w0
-    add w2, w2, w0
+    add w3, w2, w0
     add x1, x4, x1
     movz x0, #35
     cmp x1, x0
-    uxtb w3, w2
+    uxtb w0, w3
     b.lt 2
     add x0, sp, #24
     ldr x2, [x0]
@@ -1318,9 +1317,8 @@ main:
     add x2, x2, x0
     addv b0, v0.16b
     fmov x0, d0
-    uxtb w1, w0
-    uxtb w0, w3
-    add w0, w1, w0
+    uxtb w0, w0
+    add w0, w0, w3
     uxtb w0, w0
     uxtb w1, w0
     movz x0, #100
@@ -1339,7 +1337,7 @@ simd_search u8:
     movz x5, #1
     movz x7, #0
     uxth w11, w7
-    adr x7, 0xec4
+    adr x7, 0xec8
     ldr q3, [x7]
     movz x7, #7
     dup v2.16b, w7

@@ -1067,7 +1067,10 @@ normalize_popcnt :: proc(
 
 // The full product of narrow operands fits twice their width, so the high half
 // is an ordinary multiply and shift there.
-normalize_u_mul_hi :: proc(ctx: ^Proc, node: $N/Expanded_Node) -> Maybe(Node_ID) {
+normalize_u_mul_hi :: proc(
+	ctx: ^Proc,
+	node: $N/Expanded_Node,
+) -> Maybe(Node_ID) {
 	assert(node.itype == .U_Mul_Hi)
 	if node.dt == .I64 do return nil
 

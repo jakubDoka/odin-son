@@ -1,5 +1,5 @@
 package bac
-// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1023:2)
+// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1038:2)
 
 INHERITANCE_TABLE :: []u16{		0b1, // Nil
 		0b1, // Entry
@@ -184,11 +184,11 @@ NODE_EXTRA_SIZES :: []u8{		1, // Nil -> Cfg
 		{}, // Ret
 		{Class_Flag.Interned}, // Phi
 		{Class_Flag.Interned, Class_Flag.Clonable}, // CInt
-		{Class_Flag.Interned, Class_Flag.Comutes}, // Add
-		{Class_Flag.Interned}, // Sub
-		{Class_Flag.Interned, Class_Flag.Comutes}, // And
-		{Class_Flag.Interned, Class_Flag.Comutes}, // Or
-		{Class_Flag.Interned, Class_Flag.Comutes}, // Xor
+		{Class_Flag.Interned, Class_Flag.Comutes, Class_Flag.Widening}, // Add
+		{Class_Flag.Interned, Class_Flag.Widening}, // Sub
+		{Class_Flag.Interned, Class_Flag.Comutes, Class_Flag.Widening}, // And
+		{Class_Flag.Interned, Class_Flag.Comutes, Class_Flag.Widening}, // Or
+		{Class_Flag.Interned, Class_Flag.Comutes, Class_Flag.Widening}, // Xor
 		{Class_Flag.Interned, Class_Flag.Comutes}, // Eq
 		{Class_Flag.Interned, Class_Flag.Comutes}, // Ne
 		{Class_Flag.Interned}, // Le
@@ -202,7 +202,7 @@ NODE_EXTRA_SIZES :: []u8{		1, // Nil -> Cfg
 		{Class_Flag.Interned}, // Shl
 		{Class_Flag.Interned}, // Shr
 		{Class_Flag.Interned}, // U_Shr
-		{Class_Flag.Interned, Class_Flag.Comutes}, // Mul
+		{Class_Flag.Interned, Class_Flag.Comutes, Class_Flag.Widening}, // Mul
 		{Class_Flag.Interned}, // Div
 		{Class_Flag.Interned}, // U_Div
 		{Class_Flag.Interned}, // Rem
@@ -220,8 +220,8 @@ NODE_EXTRA_SIZES :: []u8{		1, // Nil -> Cfg
 		{Class_Flag.Interned}, // Neg
 		{Class_Flag.Interned}, // Not
 		{Class_Flag.Interned}, // Cast
-		{Class_Flag.Interned}, // Conv
-		{Class_Flag.Interned}, // U_Conv
+		{Class_Flag.Interned, Class_Flag.Widening}, // Conv
+		{Class_Flag.Interned, Class_Flag.Widening}, // U_Conv
 		{Class_Flag.Interned}, // Splat
 		{Class_Flag.Interned}, // Ctz
 		{Class_Flag.Interned}, // Popcnt

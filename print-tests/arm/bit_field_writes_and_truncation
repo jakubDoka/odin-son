@@ -1,5 +1,5 @@
 =========== OPT LEVEL: none-quick ===========
-Error{inst_idx = 848, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 812, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 pair:
     uxtb w0, w0
     strb w0, [x2]
@@ -55,21 +55,19 @@ main:
     movk x5, #17767, lsl #16
     orr w25, w2, w5
     bic w2, w25, w21
-    movz x5, #27
+    and w5, w25, w21
+    movz x6, #27
     movz x26, #3
-    and w6, w25, w21
-    uxtb w6, w6
-    uxtb w6, w6
     movz x7, #6
     uxtb w7, w7
-    add w6, w6, w7
-    uxtb w6, w6
-    uxtb w6, w6
-    and w6, w6, w21
-    orr w2, w2, w6
-    bic w6, w2, w22
+    add w5, w5, w7
+    uxtb w5, w5
+    uxtb w5, w5
+    and w5, w5, w21
+    orr w2, w2, w5
+    bic w5, w2, w22
     lsl w2, w2, w0
-    asr w2, w2, w5
+    asr w2, w2, w6
     uxth w2, w2
     uxth w2, w2
     movz x7, #3
@@ -79,24 +77,24 @@ main:
     sxth w2, w2
     lsl w2, w2, w26
     and w2, w2, w22
-    orr w2, w6, w2
+    orr w2, w5, w2
     bic w2, w2, w3
-    movn x6, #32767
-    movk x6, #53302, lsl #16
-    orr w2, w2, w6
+    movn x5, #32767
+    movk x5, #53302, lsl #16
+    orr w2, w2, w5
     bic w2, w2, w3
     movn x3, #32767
     movk x3, #53303, lsl #16
     orr w2, w2, w3
     lsr w3, w2, w4
-    movz x6, #1
-    and w3, w3, w6
+    movz x5, #1
+    and w3, w3, w5
     cmp w3, w20
     cset w3, ne
     uxtb w3, w3
     bic w2, w2, w1
-    uxtb w6, w23
-    cmp w3, w6
+    uxtb w5, w23
+    cmp w3, w5
     cset w3, eq
     uxtb w3, w3
     lsl w3, w3, w4
@@ -104,7 +102,7 @@ main:
     orr w27, w2, w1
     bic w1, w27, w21
     lsl w0, w27, w0
-    asr w0, w0, w5
+    asr w0, w0, w6
     uxth w0, w0
     uxtb w0, w0
     uxtb w0, w0
@@ -168,14 +166,14 @@ main:
     madd x8, x8, x3, xzr
     mov w0, w0
     eor x0, x8, x0
-    movz x8, #5
+    movz x8, #3
     uxtb w8, w8
-    movz x13, #3
+    movz x13, #5
     uxtb w13, w13
     movz x14, #0
 2:
     cmp x14, x5
-    b.ge 0x368
+    b.ge 0x340
     ldrb w15, [x1]
     uxtb w15, w15
     bic w16, w15, w11
@@ -183,14 +181,8 @@ main:
     uxtb w16, w16
     madd x17, x9, x0, xzr
     and w15, w15, w11
-    uxtb w15, w15
-    uxtb w15, w15
-    add w15, w15, w13
-    uxtb w15, w15
-    uxtb w15, w15
+    add w15, w15, w8
     and w15, w15, w11
-    uxtb w15, w15
-    uxtb w15, w15
     orr w15, w16, w15
     uxtb w15, w15
     uxtb w16, w15
@@ -201,7 +193,7 @@ main:
     asr w15, w15, w7
     uxtb w15, w15
     uxtb w15, w15
-    sub w15, w15, w8
+    sub w15, w15, w13
     uxtb w15, w15
     uxtb w15, w15
     lsl w15, w15, w2
@@ -210,21 +202,19 @@ main:
     uxtb w15, w15
     uxtb w15, w15
     and w15, w15, w12
-    uxtb w15, w15
-    uxtb w15, w15
     orr w15, w16, w15
     uxtb w15, w15
     uxtb w16, w15
     add x16, x17, x16
-    sxtb w17, w15
-    asr w17, w17, w7
-    uxtb w17, w17
-    invalid
-    add x0, x16, x17
-    add x16, x10, x14
     strb w15, [x1]
-    mov x14, x16
-    b 0x29c
+    sxtb w15, w15
+    asr w15, w15, w7
+    uxtb w15, w15
+    invalid
+    add x17, x10, x14
+    add x0, x16, x15
+    mov x14, x17
+    b 0x294
 3:
     add x1, sp, #102
     str x4, [x1]
@@ -278,7 +268,7 @@ main:
     add sp, sp, #112
     ret
 =========== OPT LEVEL: none ===========
-Error{inst_idx = 848, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 812, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 pair:
     uxtb w0, w0
     strb w0, [x2]
@@ -334,11 +324,9 @@ main:
     movk x0, #17767, lsl #16
     orr w22, w5, w0
     bic w7, w22, w27
+    and w6, w22, w27
     movz x0, #27
     movz x24, #3
-    and w5, w22, w27
-    uxtb w5, w5
-    uxtb w6, w5
     movz x5, #6
     uxtb w5, w5
     add w5, w6, w5
@@ -424,9 +412,9 @@ main:
     movz x6, #21
     movz x5, #32
     cmp w4, w5
-    cset w15, cc
+    cset w14, cc
     movz x5, #31
-    cmp w15, #0
+    cmp w14, #0
     csel w5, w4, w5, ne
     mov w7, w23
     madd x10, x7, x1, xzr
@@ -447,62 +435,54 @@ main:
     madd x11, x11, x1, xzr
     mov w0, w0
     eor x0, x11, x0
-    movz x11, #5
-    uxtb w12, w11
     movz x11, #3
+    uxtb w12, w11
+    movz x11, #5
     uxtb w11, w11
     movz x13, #0
 2:
     cmp x13, x6
-    b.ge 0x364
-    ldrb w14, [x3]
-    uxtb w17, w14
-    bic w14, w17, w10
-    uxtb w14, w14
-    uxtb w16, w14
+    b.ge 0x33c
+    ldrb w15, [x3]
+    uxtb w17, w15
+    bic w15, w17, w10
+    uxtb w15, w15
+    uxtb w16, w15
     madd x0, x8, x0, xzr
-    and w14, w17, w10
-    uxtb w14, w14
-    uxtb w14, w14
-    add w14, w14, w11
-    uxtb w14, w14
-    uxtb w14, w14
-    and w14, w14, w10
-    uxtb w14, w14
-    uxtb w14, w14
-    orr w14, w16, w14
-    uxtb w16, w14
-    uxtb w14, w16
-    bic w14, w14, w9
-    uxtb w14, w14
-    uxtb w14, w14
-    sxtb w16, w16
-    asr w16, w16, w5
-    uxtb w16, w16
-    uxtb w16, w16
-    sub w16, w16, w12
-    uxtb w16, w16
-    uxtb w16, w16
-    lsl w16, w16, w4
-    cmp w15, #0
-    csel w16, w16, w19, ne
-    uxtb w16, w16
-    uxtb w16, w16
-    and w16, w16, w9
-    uxtb w16, w16
-    uxtb w16, w16
-    orr w14, w14, w16
-    uxtb w16, w14
-    uxtb w14, w16
-    add x14, x0, x14
+    and w15, w17, w10
+    add w15, w15, w12
+    and w15, w15, w10
+    orr w15, w16, w15
+    uxtb w17, w15
+    uxtb w15, w17
+    bic w15, w15, w9
+    uxtb w15, w15
+    uxtb w16, w15
+    sxtb w15, w17
+    asr w15, w15, w5
+    uxtb w15, w15
+    uxtb w15, w15
+    sub w15, w15, w11
+    uxtb w15, w15
+    uxtb w15, w15
+    lsl w15, w15, w4
+    cmp w14, #0
+    csel w15, w15, w19, ne
+    uxtb w15, w15
+    uxtb w15, w15
+    and w15, w15, w9
+    orr w15, w16, w15
+    uxtb w16, w15
+    uxtb w15, w16
+    add x15, x0, x15
+    strb w16, [x3]
     sxtb w0, w16
     asr w0, w0, w5
     uxtb w0, w0
     invalid
-    add x0, x14, x0
     add x13, x7, x13
-    strb w16, [x3]
-    b 0x29c
+    add x0, x15, x0
+    b 0x294
 3:
     add x6, sp, #102
     str x2, [x6]
@@ -556,7 +536,7 @@ main:
     add sp, sp, #112
     ret
 =========== OPT LEVEL: moderate-quick ===========
-Error{inst_idx = 848, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 812, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 pair:
     uxtb w0, w0
     strb w0, [x2]
@@ -612,21 +592,19 @@ main:
     movk x5, #17767, lsl #16
     orr w25, w2, w5
     bic w2, w25, w21
-    movz x5, #27
+    and w5, w25, w21
+    movz x6, #27
     movz x26, #3
-    and w6, w25, w21
-    uxtb w6, w6
-    uxtb w6, w6
     movz x7, #6
     uxtb w7, w7
-    add w6, w6, w7
-    uxtb w6, w6
-    uxtb w6, w6
-    and w6, w6, w21
-    orr w2, w2, w6
-    bic w6, w2, w22
+    add w5, w5, w7
+    uxtb w5, w5
+    uxtb w5, w5
+    and w5, w5, w21
+    orr w2, w2, w5
+    bic w5, w2, w22
     lsl w2, w2, w0
-    asr w2, w2, w5
+    asr w2, w2, w6
     uxth w2, w2
     uxth w2, w2
     movz x7, #3
@@ -636,24 +614,24 @@ main:
     sxth w2, w2
     lsl w2, w2, w26
     and w2, w2, w22
-    orr w2, w6, w2
+    orr w2, w5, w2
     bic w2, w2, w3
-    movn x6, #32767
-    movk x6, #53302, lsl #16
-    orr w2, w2, w6
+    movn x5, #32767
+    movk x5, #53302, lsl #16
+    orr w2, w2, w5
     bic w2, w2, w3
     movn x3, #32767
     movk x3, #53303, lsl #16
     orr w2, w2, w3
     lsr w3, w2, w4
-    movz x6, #1
-    and w3, w3, w6
+    movz x5, #1
+    and w3, w3, w5
     cmp w3, w20
     cset w3, ne
     uxtb w3, w3
     bic w2, w2, w1
-    uxtb w6, w23
-    cmp w3, w6
+    uxtb w5, w23
+    cmp w3, w5
     cset w3, eq
     uxtb w3, w3
     lsl w3, w3, w4
@@ -661,7 +639,7 @@ main:
     orr w27, w2, w1
     bic w1, w27, w21
     lsl w0, w27, w0
-    asr w0, w0, w5
+    asr w0, w0, w6
     uxth w0, w0
     uxtb w0, w0
     uxtb w0, w0
@@ -725,14 +703,14 @@ main:
     madd x8, x8, x3, xzr
     mov w0, w0
     eor x0, x8, x0
-    movz x8, #5
+    movz x8, #3
     uxtb w8, w8
-    movz x13, #3
+    movz x13, #5
     uxtb w13, w13
     movz x14, #0
 2:
     cmp x14, x5
-    b.ge 0x368
+    b.ge 0x340
     ldrb w15, [x1]
     uxtb w15, w15
     bic w16, w15, w11
@@ -740,14 +718,8 @@ main:
     uxtb w16, w16
     madd x17, x9, x0, xzr
     and w15, w15, w11
-    uxtb w15, w15
-    uxtb w15, w15
-    add w15, w15, w13
-    uxtb w15, w15
-    uxtb w15, w15
+    add w15, w15, w8
     and w15, w15, w11
-    uxtb w15, w15
-    uxtb w15, w15
     orr w15, w16, w15
     uxtb w15, w15
     uxtb w16, w15
@@ -758,7 +730,7 @@ main:
     asr w15, w15, w7
     uxtb w15, w15
     uxtb w15, w15
-    sub w15, w15, w8
+    sub w15, w15, w13
     uxtb w15, w15
     uxtb w15, w15
     lsl w15, w15, w2
@@ -767,21 +739,19 @@ main:
     uxtb w15, w15
     uxtb w15, w15
     and w15, w15, w12
-    uxtb w15, w15
-    uxtb w15, w15
     orr w15, w16, w15
     uxtb w15, w15
     uxtb w16, w15
     add x16, x17, x16
-    sxtb w17, w15
-    asr w17, w17, w7
-    uxtb w17, w17
-    invalid
-    add x0, x16, x17
-    add x16, x10, x14
     strb w15, [x1]
-    mov x14, x16
-    b 0x29c
+    sxtb w15, w15
+    asr w15, w15, w7
+    uxtb w15, w15
+    invalid
+    add x17, x10, x14
+    add x0, x16, x15
+    mov x14, x17
+    b 0x294
 3:
     add x1, sp, #102
     str x4, [x1]
@@ -835,7 +805,7 @@ main:
     add sp, sp, #112
     ret
 =========== OPT LEVEL: moderate ===========
-Error{inst_idx = 848, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 812, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 pair:
     uxtb w0, w0
     strb w0, [x2]
@@ -891,11 +861,9 @@ main:
     movk x0, #17767, lsl #16
     orr w22, w5, w0
     bic w7, w22, w27
+    and w6, w22, w27
     movz x0, #27
     movz x24, #3
-    and w5, w22, w27
-    uxtb w5, w5
-    uxtb w6, w5
     movz x5, #6
     uxtb w5, w5
     add w5, w6, w5
@@ -981,9 +949,9 @@ main:
     movz x6, #21
     movz x5, #32
     cmp w4, w5
-    cset w15, cc
+    cset w14, cc
     movz x5, #31
-    cmp w15, #0
+    cmp w14, #0
     csel w5, w4, w5, ne
     mov w7, w23
     madd x10, x7, x1, xzr
@@ -1004,62 +972,54 @@ main:
     madd x11, x11, x1, xzr
     mov w0, w0
     eor x0, x11, x0
-    movz x11, #5
-    uxtb w12, w11
     movz x11, #3
+    uxtb w12, w11
+    movz x11, #5
     uxtb w11, w11
     movz x13, #0
 2:
     cmp x13, x6
-    b.ge 0x364
-    ldrb w14, [x3]
-    uxtb w17, w14
-    bic w14, w17, w10
-    uxtb w14, w14
-    uxtb w16, w14
+    b.ge 0x33c
+    ldrb w15, [x3]
+    uxtb w17, w15
+    bic w15, w17, w10
+    uxtb w15, w15
+    uxtb w16, w15
     madd x0, x8, x0, xzr
-    and w14, w17, w10
-    uxtb w14, w14
-    uxtb w14, w14
-    add w14, w14, w11
-    uxtb w14, w14
-    uxtb w14, w14
-    and w14, w14, w10
-    uxtb w14, w14
-    uxtb w14, w14
-    orr w14, w16, w14
-    uxtb w16, w14
-    uxtb w14, w16
-    bic w14, w14, w9
-    uxtb w14, w14
-    uxtb w14, w14
-    sxtb w16, w16
-    asr w16, w16, w5
-    uxtb w16, w16
-    uxtb w16, w16
-    sub w16, w16, w12
-    uxtb w16, w16
-    uxtb w16, w16
-    lsl w16, w16, w4
-    cmp w15, #0
-    csel w16, w16, w19, ne
-    uxtb w16, w16
-    uxtb w16, w16
-    and w16, w16, w9
-    uxtb w16, w16
-    uxtb w16, w16
-    orr w14, w14, w16
-    uxtb w16, w14
-    uxtb w14, w16
-    add x14, x0, x14
+    and w15, w17, w10
+    add w15, w15, w12
+    and w15, w15, w10
+    orr w15, w16, w15
+    uxtb w17, w15
+    uxtb w15, w17
+    bic w15, w15, w9
+    uxtb w15, w15
+    uxtb w16, w15
+    sxtb w15, w17
+    asr w15, w15, w5
+    uxtb w15, w15
+    uxtb w15, w15
+    sub w15, w15, w11
+    uxtb w15, w15
+    uxtb w15, w15
+    lsl w15, w15, w4
+    cmp w14, #0
+    csel w15, w15, w19, ne
+    uxtb w15, w15
+    uxtb w15, w15
+    and w15, w15, w9
+    orr w15, w16, w15
+    uxtb w16, w15
+    uxtb w15, w16
+    add x15, x0, x15
+    strb w16, [x3]
     sxtb w0, w16
     asr w0, w0, w5
     uxtb w0, w0
     invalid
-    add x0, x14, x0
     add x13, x7, x13
-    strb w16, [x3]
-    b 0x29c
+    add x0, x15, x0
+    b 0x294
 3:
     add x6, sp, #102
     str x2, [x6]
@@ -1113,7 +1073,7 @@ main:
     add sp, sp, #112
     ret
 =========== OPT LEVEL: all ===========
-Error{inst_idx = 364, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 332, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 pair:
     uxtb w0, w0
     strb w0, [x2]
@@ -1151,22 +1111,22 @@ main:
     eor x12, x1, x0
     movz x0, #15
     uxtb w8, w0
-    movz x0, #4
+    movz x0, #240
     uxtb w7, w0
+    movz x0, #4
+    uxtb w6, w0
+    movz x0, #3
+    uxtb w5, w0
     movz x0, #32
-    cmp w7, w0
+    cmp w6, w0
     cset w16, cc
     movz x0, #31
     cmp w16, #0
-    csel w5, w7, w0, ne
-    movz x0, #240
-    uxtb w4, w0
-    movz x3, #0
-    movz x0, #3
-    uxtb w2, w0
+    csel w3, w6, w0, ne
+    movz x2, #0
     movz x0, #5
     movz x14, #0
-    movz x6, #0
+    movz x4, #0
     uxtb w1, w0
 2:
     mov x0, x12
@@ -1176,46 +1136,38 @@ main:
     uxtb w13, w13
     uxtb w14, w13
     and w13, w15, w8
-    uxtb w13, w13
-    uxtb w13, w13
-    add w13, w13, w2
-    uxtb w13, w13
-    uxtb w13, w13
+    add w13, w13, w5
     and w13, w13, w8
-    uxtb w13, w13
-    uxtb w13, w13
     orr w13, w14, w13
     uxtb w15, w13
     uxtb w13, w15
-    bic w13, w13, w4
+    bic w13, w13, w7
     uxtb w13, w13
     uxtb w14, w13
     sxtb w13, w15
-    asr w13, w13, w5
+    asr w13, w13, w3
     uxtb w13, w13
     uxtb w13, w13
     sub w13, w13, w1
     uxtb w13, w13
     uxtb w13, w13
-    lsl w13, w13, w7
+    lsl w13, w13, w6
     cmp w16, #0
-    csel w13, w13, w3, ne
+    csel w13, w13, w2, ne
     uxtb w13, w13
     uxtb w13, w13
-    and w13, w13, w4
-    uxtb w13, w13
-    uxtb w13, w13
+    and w13, w13, w7
     orr w13, w14, w13
     uxtb w14, w13
     uxtb w13, w14
     add x13, x12, x13
     sxtb w12, w14
-    asr w12, w12, w5
+    asr w12, w12, w3
     uxtb w12, w12
     invalid
-    cmp x6, x11
+    cmp x4, x11
     add x12, x13, x12
-    add x6, x6, x9
+    add x4, x4, x9
     b.lt 0xc0
     movz x1, #65535
     movk x1, #2047, lsl #16
@@ -1225,29 +1177,29 @@ main:
     add sp, sp, #32
     ret
 =========== OPT LEVEL: aggresive ===========
-Error{inst_idx = 272, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 240, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     movz x11, #21
     movz x10, #5
     movz x9, #1
     movz x0, #15
     uxtb w8, w0
-    movz x0, #4
+    movz x0, #240
     uxtb w7, w0
+    movz x0, #4
+    uxtb w6, w0
+    movz x0, #3
+    uxtb w5, w0
     movz x0, #32
-    cmp w7, w0
+    cmp w6, w0
     cset w16, cc
     movz x0, #31
     cmp w16, #0
-    csel w5, w7, w0, ne
-    movz x0, #240
-    uxtb w4, w0
-    movz x3, #0
-    movz x0, #3
-    uxtb w2, w0
+    csel w3, w6, w0, ne
+    movz x2, #0
     movz x0, #5
     movz x14, #0
-    movz x6, #0
+    movz x4, #0
     uxtb w1, w0
     movz x12, #43204
     movk x12, #21270, lsl #16
@@ -1260,46 +1212,38 @@ main:
     uxtb w13, w13
     uxtb w14, w13
     and w13, w15, w8
-    uxtb w13, w13
-    uxtb w13, w13
-    add w13, w13, w2
-    uxtb w13, w13
-    uxtb w13, w13
+    add w13, w13, w5
     and w13, w13, w8
-    uxtb w13, w13
-    uxtb w13, w13
     orr w13, w14, w13
     uxtb w15, w13
     uxtb w13, w15
-    bic w13, w13, w4
+    bic w13, w13, w7
     uxtb w13, w13
     uxtb w14, w13
     sxtb w13, w15
-    asr w13, w13, w5
+    asr w13, w13, w3
     uxtb w13, w13
     uxtb w13, w13
     sub w13, w13, w1
     uxtb w13, w13
     uxtb w13, w13
-    lsl w13, w13, w7
+    lsl w13, w13, w6
     cmp w16, #0
-    csel w13, w13, w3, ne
+    csel w13, w13, w2, ne
     uxtb w13, w13
     uxtb w13, w13
-    and w13, w13, w4
-    uxtb w13, w13
-    uxtb w13, w13
+    and w13, w13, w7
     orr w13, w14, w13
     uxtb w14, w13
     uxtb w13, w14
     add x13, x12, x13
     sxtb w12, w14
-    asr w12, w12, w5
+    asr w12, w12, w3
     uxtb w12, w12
     invalid
-    cmp x6, x11
+    cmp x4, x11
     add x12, x13, x12
-    add x6, x6, x9
+    add x4, x4, x9
     b.lt 1
     movz x1, #65535
     movk x1, #2047, lsl #16

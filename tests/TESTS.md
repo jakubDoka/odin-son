@@ -12708,3 +12708,14 @@ main :: proc() -> int {
 	return v
 }
 ```
+
+#### widen elimination
+```odin
+package main
+
+main :: proc() -> int {
+	@(static) v: u8 = 10
+	return int(v + v * v - v & v ~ v | v)
+}
+```
+

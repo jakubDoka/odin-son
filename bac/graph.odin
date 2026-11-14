@@ -6,8 +6,10 @@ import "../utils/fmt"
 import "base:intrinsics"
 import "base:runtime"
 import "core:container/queue"
+import "core:io"
 import "core:math"
 import "core:mem"
+import "core:os"
 import "core:simd"
 import "core:slice"
 
@@ -250,6 +252,7 @@ Class_Flag :: enum {
 	Store,
 	Load,
 	Clonable,
+	Widening,
 }
 
 Cfg :: struct {
@@ -1352,6 +1355,79 @@ collect_nodes :: proc(prc: ^Proc, worklist: ^Worklist, renumber := true) {
 	}
 
 	assert_live_pins(prc)
+
+	return
+}
+
+widen_elim :: proc(prc: ^Proc) -> (opted: bool) {
+	context.allocator, _ = arna.scrath(prc.temps)
+
+	worklist: Worklist
+	worklist_init(&worklist, int(prc.gvn))
+
+	collect_nodes(prc, &worklist)
+
+	Widen_Meta :: struct {
+		used_type: Node_Datatype,
+	}
+
+	widens := make([]Widen_Meta, worklist.len)
+
+	CONVS :: bit_set[Node_Type]{.Conv, .U_Conv}
+
+	for n in worklist_next(prc, &worklist) {
+		node := expand_node(prc, n)
+
+		if node.dt not_in INT_DTS || !has_flag(prc, node, .Widening) do continue
+
+		prev := widens[node.gvn].used_type
+
+		if node.itype in CONVS && node.dt < get_node(prc, node.inps[0]).dt {
+			widens[node.gvn].used_type = node.dt
+		} else {
+			msk := Node_Datatype.Void
+			for out in node.outs {
+				onode := expand_node(prc, out.id)
+				owd := widens[onode.gvn].used_type
+				if owd == .Void do owd = node.dt
+				msk = max(msk, owd)
+			}
+			widens[node.gvn].used_type = msk
+		}
+
+		if prev != widens[node.gvn].used_type {
+			for inp in node.inps {
+				worklist_add(prc, &worklist, inp)
+			}
+		}
+	}
+
+	collect_nodes(prc, &worklist, renumber = false)
+
+	for widen, i in widens {
+		if get_node(prc, worklist.data[i]).rtype == DEAD_NODE_KIND do continue
+		node := expand_node(prc, worklist.data[i])
+		if node.itype in CONVS && widen.used_type < node.dt {
+			inp := expand_node(prc, node.inps[0])
+			if inp.itype in CONVS {
+				inp_inp := expand_node(prc, inp.inps[0])
+				if widens[inp_inp.gvn].used_type == widen.used_type &&
+				   inp_inp.dt == node.dt {
+					subsume(prc, inp.inps[0], worklist.data[i])
+				}
+			}
+		}
+	}
+
+	when false {
+		context.user_ptr = raw_data(widens)
+
+		prefix :: proc(w: io.Writer, n: ^Node, b: Basic_Block) {
+			fmt.wprintf(w, "%v ", ([^]Widen_Meta)(context.user_ptr)[n.gvn].used_type)
+		}
+
+		display_graph(os.to_writer(os.stderr), prc, prefix = prefix)
+	}
 
 	return
 }

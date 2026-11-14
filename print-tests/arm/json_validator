@@ -137,21 +137,17 @@ skip_ws:
     cset w2, eq
     uxtb w2, w2
     orr w1, w1, w2
-    uxtb w1, w1
-    uxtb w1, w1
     cmp w25, w0
     cset w2, eq
     uxtb w2, w2
     orr w1, w1, w2
-    uxtb w1, w1
-    uxtb w1, w1
     cmp w22, w0
     cset w0, eq
     uxtb w0, w0
     orr w0, w1, w0
     uxtb w0, w0
     cmp w0, #0
-    b.ne 0xe4
+    b.ne 0xd4
     movz x0, #1
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -192,7 +188,7 @@ parse_lit:
     cmp x23, x0
     b.ge 0x94
     mov x0, x19
-    bl 0xfffffd84
+    bl 0xfffffd94
     uxtb w0, w0
     ldr x1, [x20]
     add x1, x1, x23
@@ -235,7 +231,7 @@ parse_string:
     stp x29, x30, [xzr, #80]
     str x0, [xzr, #96]
     ldr x0, [xzr, #96]
-    bl 0xfffffd04
+    bl 0xfffffd14
     movz x1, #34
     uxtb w1, w1
     str x1, [xzr, #104]
@@ -267,7 +263,7 @@ parse_string:
     uxtb w28, w0
 16:
     ldr x0, [xzr, #96]
-    bl 0xfffffd04
+    bl 0xfffffd14
     uxtb w0, w0
     ldr x1, [xzr, #104]
     cmp w1, w0
@@ -285,7 +281,7 @@ parse_string:
     b 0x1cc
 18:
     ldr x0, [xzr, #96]
-    bl 0xfffffd04
+    bl 0xfffffd14
     uxtb w0, w0
     ldr x2, [xzr, #104]
     cmp w2, w0
@@ -316,8 +312,8 @@ parse_string:
     cmp x29, x0
     b.ge 0x1b4
     ldr x0, [xzr, #96]
-    bl 0xfffffd04
-    bl 0xfffffd8c
+    bl 0xfffffd14
+    bl 0xfffffd9c
     uxtb w0, w0
     ldr x3, [xzr, #112]
     cmp w0, w3
@@ -371,7 +367,7 @@ parse_number:
     stp x29, x30, [xzr, #40]
     mov x19, x0
     mov x0, x19
-    bl 0xfffffac4
+    bl 0xfffffad4
     movz x1, #16
     add x20, x1, x19
     movz x21, #1
@@ -387,7 +383,7 @@ parse_number:
     str x0, [x20]
 29:
     mov x0, x19
-    bl 0xfffffac4
+    bl 0xfffffad4
     movz x1, #0
     uxtb w23, w1
     uxtb w0, w0
@@ -417,8 +413,8 @@ parse_number:
     str x0, [x20]
 31:
     mov x0, x19
-    bl 0xfffffac4
-    bl 0xfffffb40
+    bl 0xfffffad4
+    bl 0xfffffb50
     uxtb w0, w0
     cmp w0, w23
     b.eq 0x100
@@ -433,7 +429,7 @@ parse_number:
     str x0, [x20]
 33:
     mov x0, x19
-    bl 0xfffffac4
+    bl 0xfffffad4
     uxtb w0, w0
     movz x2, #46
     uxtb w2, w2
@@ -445,15 +441,15 @@ parse_number:
     add x0, x0, x21
     str x0, [x20]
     mov x0, x19
-    bl 0xfffffac4
-    bl 0xfffffb40
+    bl 0xfffffad4
+    bl 0xfffffb50
     uxtb w0, w0
     cmp w0, w23
-    b.eq 0x25c
+    b.eq 9
 35:
     mov x0, x19
-    bl 0xfffffac4
-    bl 0xfffffb40
+    bl 0xfffffad4
+    bl 0xfffffb50
     uxtb w0, w0
     cmp w0, w23
     b.eq 0x16c
@@ -463,7 +459,7 @@ parse_number:
     b 0x144
 36:
     mov x0, x19
-    bl 0xfffffac4
+    bl 0xfffffad4
     uxtb w0, w0
     movz x2, #101
     uxtb w2, w2
@@ -485,7 +481,7 @@ parse_number:
     add x0, x0, x21
     str x0, [x20]
     mov x0, x19
-    bl 0xfffffac4
+    bl 0xfffffad4
     uxtb w0, w0
     movz x2, #43
     uxtb w2, w2
@@ -506,15 +502,15 @@ parse_number:
     str x0, [x20]
 39:
     mov x0, x19
-    bl 0xfffffac4
-    bl 0xfffffb40
+    bl 0xfffffad4
+    bl 0xfffffb50
     uxtb w0, w0
     cmp w0, w23
     b.eq 0x254
 40:
     mov x0, x19
-    bl 0xfffffac4
-    bl 0xfffffb40
+    bl 0xfffffad4
+    bl 0xfffffb50
     uxtb w0, w0
     cmp w0, w23
     b.eq 0x24c
@@ -528,9 +524,8 @@ parse_number:
 42:
     movz x1, #0
     b 0x260
-43:
     movz x1, #0
-44:
+43:
     mov x0, x1
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -549,16 +544,16 @@ parse_array:
     stp x29, x30, [xzr, #32]
     mov x19, x0
     mov x0, x19
-    bl 0xfffff87c
+    bl 0xfffff88c
     uxtb w0, w0
     movz x1, #91
     uxtb w1, w1
     cmp w0, w1
     b.ne 0xe0
     mov x0, x19
-    bl 0xfffff9c8
+    bl 0xfffff9d8
     mov x0, x19
-    bl 0xfffff840
+    bl 0xfffff850
     movz x1, #93
     uxtb w20, w1
     uxtb w0, w0
@@ -568,32 +563,32 @@ parse_array:
     uxtb w21, w0
     movz x0, #44
     uxtb w22, w0
-46:
+45:
     mov x0, x19
     bl 0x284
     uxtb w0, w0
     cmp w0, w21
     b.eq 0xb8
     mov x0, x19
-    bl 0xfffff9c8
+    bl 0xfffff9d8
     mov x0, x19
-    bl 0xfffff87c
+    bl 0xfffff88c
     uxtb w0, w0
     cmp w0, w20
     b.eq 0xb0
     cmp w22, w0
     b.ne 0xa8
     b 0x6c
-47:
+46:
     movz x0, #0
     b 0xe4
-48:
+47:
     movz x0, #1
     b 0xe4
-49:
+48:
     movz x0, #0
     b 0xe4
-50:
+49:
     movz x1, #16
     add x1, x1, x19
     ldr x2, [x1]
@@ -602,9 +597,9 @@ parse_array:
     str x2, [x1]
     movz x0, #1
     b 0xe4
-51:
+50:
     movz x0, #0
-52:
+51:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -623,16 +618,16 @@ parse_object:
     stp x29, x30, [xzr, #48]
     mov x19, x0
     mov x0, x19
-    bl 0xfffff77c
+    bl 0xfffff78c
     uxtb w0, w0
     movz x1, #123
     uxtb w1, w1
     cmp w0, w1
     b.ne 0x15c
     mov x0, x19
-    bl 0xfffff8c8
+    bl 0xfffff8d8
     mov x0, x19
-    bl 0xfffff740
+    bl 0xfffff750
     movz x1, #125
     uxtb w20, w1
     uxtb w0, w0
@@ -646,11 +641,11 @@ parse_object:
     uxtb w23, w0
     movz x0, #44
     uxtb w24, w0
-54:
+53:
     mov x0, x19
-    bl 0xfffff8c8
+    bl 0xfffff8d8
     mov x0, x19
-    bl 0xfffff740
+    bl 0xfffff750
     uxtb w0, w0
     cmp w0, w22
     b.ne 0x134
@@ -660,9 +655,9 @@ parse_object:
     cmp w0, w21
     b.eq 0x12c
     mov x0, x19
-    bl 0xfffff8c8
+    bl 0xfffff8d8
     mov x0, x19
-    bl 0xfffff77c
+    bl 0xfffff78c
     uxtb w0, w0
     cmp w0, w23
     b.ne 0x124
@@ -672,20 +667,23 @@ parse_object:
     cmp w0, w21
     b.eq 0x11c
     mov x0, x19
-    bl 0xfffff8c8
+    bl 0xfffff8d8
     mov x0, x19
-    bl 0xfffff77c
+    bl 0xfffff78c
     uxtb w0, w0
     cmp w0, w20
     b.eq 0x114
     cmp w24, w0
     b.ne 0x10c
     b 0x84
-55:
+54:
     movz x0, #0
     b 0x160
-56:
+55:
     movz x0, #1
+    b 0x160
+56:
+    movz x0, #0
     b 0x160
 57:
     movz x0, #0
@@ -697,9 +695,6 @@ parse_object:
     movz x0, #0
     b 0x160
 60:
-    movz x0, #0
-    b 0x160
-61:
     movz x1, #16
     add x1, x1, x19
     ldr x2, [x1]
@@ -708,9 +703,9 @@ parse_object:
     str x2, [x1]
     movz x0, #1
     b 0x160
-62:
+61:
     movz x0, #0
-63:
+62:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -727,9 +722,9 @@ parse_value:
     stp x29, x30, [xzr, #16]
     mov x19, x0
     mov x0, x19
-    bl 0xfffff744
+    bl 0xfffff754
     mov x0, x19
-    bl 0xfffff5bc
+    bl 0xfffff5cc
     uxtb w20, w0
     movz x1, #123
     uxtb w1, w1
@@ -755,7 +750,7 @@ parse_value:
     uxtb w1, w1
     cmp w1, w20
     b.eq 0xcc
-    bl 0xfffff638
+    bl 0xfffff648
     movz x1, #45
     uxtb w1, w1
     cmp w1, w20
@@ -768,47 +763,47 @@ parse_value:
     b.ne 0xbc
     movz x3, #0
     b 0x140
-65:
+64:
     mov x0, x19
     bl 0xfffffaf8
     mov x3, x0
     b 0x140
-66:
-    adr x1, 0x529
+65:
+    adr x1, 0x539
     mov x0, x19
     movz x2, #4
     bl 0xfffff838
     mov x3, x0
     b 0x140
-67:
-    adr x1, 0x524
+66:
+    adr x1, 0x534
     movz x2, #5
     mov x0, x19
     bl 0xfffff838
     mov x3, x0
     b 0x140
-68:
-    adr x1, 0x520
+67:
+    adr x1, 0x530
     mov x0, x19
     movz x2, #4
     bl 0xfffff838
     mov x3, x0
     b 0x140
-69:
+68:
     mov x0, x19
     bl 0xfffff8f4
     mov x3, x0
     b 0x140
-70:
+69:
     mov x0, x19
     bl 0xfffffd7c
     mov x3, x0
     b 0x140
-71:
+70:
     mov x0, x19
     bl 0xfffffe7c
     mov x3, x0
-72:
+71:
     mov x0, x3
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -832,7 +827,7 @@ validate:
     movz x0, #0
     str x0, [x20]
     add x0, sp, #32
-    bl 0xfffff5ec
+    bl 0xfffff5fc
     add x0, sp, #32
     bl 0xfffffea8
     uxtb w0, w0
@@ -841,19 +836,19 @@ validate:
     cmp w0, w1
     b.eq 0x88
     add x0, sp, #32
-    bl 0xfffff5ec
+    bl 0xfffff5fc
     ldr x0, [x20]
     ldr x1, [x19]
     cmp x0, x1
     b.ne 0x80
     movz x0, #1
     b 0x8c
-74:
+73:
     movz x0, #0
     b 0x8c
-75:
+74:
     movz x0, #0
-76:
+75:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -869,35 +864,35 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     stp x29, x30, [xzr, #56]
-    adr x0, 0x335
+    adr x0, 0x345
     movz x1, #4
     bl 0xffffff60
     mov x19, x0
-    adr x0, 0x339
+    adr x0, 0x349
     movz x1, #5
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x33e
+    adr x0, 0x34e
     movz x1, #4
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x342
+    adr x0, 0x352
     movz x1, #3
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x345
+    adr x0, 0x355
     movz x1, #7
     bl 0xffffff60
     mov x23, x0
-    adr x0, 0x34c
+    adr x0, 0x35c
     movz x1, #7
     bl 0xffffff60
     mov x24, x0
-    adr x0, 0x353
+    adr x0, 0x363
     movz x1, #9
     bl 0xffffff60
     mov x25, x0
-    adr x0, 0x35c
+    adr x0, 0x36c
     movz x1, #27
     bl 0xffffff60
     movz x1, #8
@@ -931,22 +926,22 @@ main:
     cmp w0, #0
     b.ne 0x11c
     b 0x124
-78:
+77:
     movz x0, #128
     add x19, x0, x19
-79:
-    adr x0, 0x377
+78:
+    adr x0, 0x387
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x37f
+    adr x0, 0x38f
     movz x1, #2
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x381
+    adr x0, 0x391
     movz x1, #0
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x381
+    adr x0, 0x391
     movz x1, #1
     bl 0xffffff60
     movz x1, #256
@@ -968,23 +963,23 @@ main:
     cmp w0, w19
     b.eq 0x1a8
     b 0x1b0
-80:
+79:
     movz x0, #2048
     add x20, x0, x20
-81:
-    adr x0, 0x382
+80:
+    adr x0, 0x392
     movz x1, #4
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x386
+    adr x0, 0x396
     movz x1, #5
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x38b
+    adr x0, 0x39b
     movz x1, #2
     bl 0xffffff60
     mov x23, x0
-    adr x0, 0x38d
+    adr x0, 0x39d
     movz x1, #6
     bl 0xffffff60
     movz x1, #4096
@@ -1006,15 +1001,15 @@ main:
     cmp w0, w19
     b.eq 0x238
     b 0x240
-82:
+81:
     movz x0, #32768
     add x20, x0, x20
-83:
-    adr x0, 0x393
+82:
+    adr x0, 0x3a3
     movz x1, #7
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x39a
+    adr x0, 0x3aa
     movz x1, #3
     bl 0xffffff60
     movz x1, #0
@@ -1177,22 +1172,18 @@ skip_ws:
     cmp w19, w2
     cset w0, eq
     uxtb w0, w0
-    orr w0, w1, w0
-    uxtb w0, w0
-    uxtb w1, w0
+    orr w1, w1, w0
     cmp w24, w2
     cset w0, eq
     uxtb w0, w0
-    orr w0, w1, w0
-    uxtb w0, w0
-    uxtb w1, w0
+    orr w1, w1, w0
     cmp w21, w2
     cset w0, eq
     uxtb w0, w0
     orr w0, w1, w0
     uxtb w0, w0
     cmp w0, #0
-    b.ne 0xe4
+    b.ne 0xd4
     movz x0, #1
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -1233,7 +1224,7 @@ parse_lit:
     cmp x23, x0
     b.ge 0x94
     mov x0, x24
-    bl 0xfffffd84
+    bl 0xfffffd94
     uxtb w1, w0
     ldr x0, [x22]
     add x0, x0, x23
@@ -1276,7 +1267,7 @@ parse_string:
     stp x29, x30, [xzr, #80]
     str x0, [xzr, #112]
     ldr x0, [xzr, #112]
-    bl 0xfffffd04
+    bl 0xfffffd14
     movz x1, #34
     uxtb w1, w1
     str x1, [xzr, #104]
@@ -1308,7 +1299,7 @@ parse_string:
     uxtb w27, w0
 16:
     ldr x0, [xzr, #112]
-    bl 0xfffffd04
+    bl 0xfffffd14
     uxtb w1, w0
     ldr x0, [xzr, #104]
     cmp w0, w1
@@ -1326,7 +1317,7 @@ parse_string:
     b 0x1c8
 18:
     ldr x0, [xzr, #112]
-    bl 0xfffffd04
+    bl 0xfffffd14
     uxtb w1, w0
     ldr x0, [xzr, #104]
     cmp w0, w1
@@ -1357,8 +1348,8 @@ parse_string:
     cmp x21, x0
     b.ge 0x1b0
     ldr x0, [xzr, #112]
-    bl 0xfffffd04
-    bl 0xfffffd8c
+    bl 0xfffffd14
+    bl 0xfffffd9c
     uxtb w1, w0
     ldr x0, [xzr, #96]
     cmp w1, w0
@@ -1409,7 +1400,7 @@ parse_number:
     stp x29, x30, [xzr, #40]
     mov x23, x0
     mov x0, x23
-    bl 0xfffffacc
+    bl 0xfffffadc
     movz x2, #16
     add x21, x2, x23
     movz x20, #1
@@ -1425,7 +1416,7 @@ parse_number:
     str x0, [x21]
 28:
     mov x0, x23
-    bl 0xfffffacc
+    bl 0xfffffadc
     movz x1, #0
     uxtb w19, w1
     uxtb w2, w0
@@ -1455,8 +1446,8 @@ parse_number:
     str x0, [x21]
 30:
     mov x0, x23
-    bl 0xfffffacc
-    bl 0xfffffb48
+    bl 0xfffffadc
+    bl 0xfffffb58
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x100
@@ -1471,7 +1462,7 @@ parse_number:
     str x0, [x21]
 32:
     mov x0, x23
-    bl 0xfffffacc
+    bl 0xfffffadc
     uxtb w1, w0
     movz x0, #46
     uxtb w0, w0
@@ -1483,15 +1474,15 @@ parse_number:
     add x0, x0, x20
     str x0, [x21]
     mov x0, x23
-    bl 0xfffffacc
-    bl 0xfffffb48
+    bl 0xfffffadc
+    bl 0xfffffb58
     uxtb w0, w0
     cmp w0, w19
-    b.eq 0x25c
+    b.eq 9
 34:
     mov x0, x23
-    bl 0xfffffacc
-    bl 0xfffffb48
+    bl 0xfffffadc
+    bl 0xfffffb58
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x16c
@@ -1501,7 +1492,7 @@ parse_number:
     b 0x144
 35:
     mov x0, x23
-    bl 0xfffffacc
+    bl 0xfffffadc
     uxtb w2, w0
     movz x0, #101
     uxtb w0, w0
@@ -1523,7 +1514,7 @@ parse_number:
     add x0, x0, x20
     str x0, [x21]
     mov x0, x23
-    bl 0xfffffacc
+    bl 0xfffffadc
     uxtb w2, w0
     movz x0, #43
     uxtb w0, w0
@@ -1544,15 +1535,15 @@ parse_number:
     str x0, [x21]
 38:
     mov x0, x23
-    bl 0xfffffacc
-    bl 0xfffffb48
+    bl 0xfffffadc
+    bl 0xfffffb58
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x254
 39:
     mov x0, x23
-    bl 0xfffffacc
-    bl 0xfffffb48
+    bl 0xfffffadc
+    bl 0xfffffb58
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x24c
@@ -1566,9 +1557,8 @@ parse_number:
 41:
     movz x0, #0
     b 0x260
-42:
     movz x0, #0
-43:
+42:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -1586,16 +1576,16 @@ parse_array:
     stp x29, x30, [xzr, #32]
     mov x22, x0
     mov x0, x22
-    bl 0xfffff888
+    bl 0xfffff898
     uxtb w1, w0
     movz x0, #91
     uxtb w0, w0
     cmp w1, w0
     b.ne 0xe0
     mov x0, x22
-    bl 0xfffff9d4
+    bl 0xfffff9e4
     mov x0, x22
-    bl 0xfffff84c
+    bl 0xfffff85c
     movz x1, #93
     uxtb w21, w1
     uxtb w0, w0
@@ -1605,32 +1595,32 @@ parse_array:
     uxtb w20, w0
     movz x0, #44
     uxtb w19, w0
-45:
+44:
     mov x0, x22
     bl 0x284
     uxtb w0, w0
     cmp w0, w20
     b.eq 0xb8
     mov x0, x22
-    bl 0xfffff9d4
+    bl 0xfffff9e4
     mov x0, x22
-    bl 0xfffff888
+    bl 0xfffff898
     uxtb w0, w0
     cmp w0, w21
     b.eq 0xb0
     cmp w19, w0
     b.ne 0xa8
     b 0x6c
-46:
+45:
     movz x0, #0
     b 0xe4
-47:
+46:
     movz x0, #1
     b 0xe4
-48:
+47:
     movz x0, #0
     b 0xe4
-49:
+48:
     movz x1, #16
     add x2, x1, x22
     ldr x1, [x2]
@@ -1639,9 +1629,9 @@ parse_array:
     str x0, [x2]
     movz x0, #1
     b 0xe4
-50:
+49:
     movz x0, #0
-51:
+50:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -1660,16 +1650,16 @@ parse_object:
     stp x29, x30, [xzr, #48]
     mov x24, x0
     mov x0, x24
-    bl 0xfffff788
+    bl 0xfffff798
     uxtb w1, w0
     movz x0, #123
     uxtb w0, w0
     cmp w1, w0
     b.ne 0x15c
     mov x0, x24
-    bl 0xfffff8d4
+    bl 0xfffff8e4
     mov x0, x24
-    bl 0xfffff74c
+    bl 0xfffff75c
     movz x1, #125
     uxtb w21, w1
     uxtb w0, w0
@@ -1683,11 +1673,11 @@ parse_object:
     uxtb w22, w0
     movz x0, #44
     uxtb w23, w0
-53:
+52:
     mov x0, x24
-    bl 0xfffff8d4
+    bl 0xfffff8e4
     mov x0, x24
-    bl 0xfffff74c
+    bl 0xfffff75c
     uxtb w0, w0
     cmp w0, w19
     b.ne 0x134
@@ -1697,9 +1687,9 @@ parse_object:
     cmp w0, w20
     b.eq 0x12c
     mov x0, x24
-    bl 0xfffff8d4
+    bl 0xfffff8e4
     mov x0, x24
-    bl 0xfffff788
+    bl 0xfffff798
     uxtb w0, w0
     cmp w0, w22
     b.ne 0x124
@@ -1709,20 +1699,23 @@ parse_object:
     cmp w0, w20
     b.eq 0x11c
     mov x0, x24
-    bl 0xfffff8d4
+    bl 0xfffff8e4
     mov x0, x24
-    bl 0xfffff788
+    bl 0xfffff798
     uxtb w0, w0
     cmp w0, w21
     b.eq 0x114
     cmp w23, w0
     b.ne 0x10c
     b 0x84
-54:
+53:
     movz x0, #0
     b 0x160
-55:
+54:
     movz x0, #1
+    b 0x160
+55:
+    movz x0, #0
     b 0x160
 56:
     movz x0, #0
@@ -1734,9 +1727,6 @@ parse_object:
     movz x0, #0
     b 0x160
 59:
-    movz x0, #0
-    b 0x160
-60:
     movz x1, #16
     add x2, x1, x24
     ldr x1, [x2]
@@ -1745,9 +1735,9 @@ parse_object:
     str x0, [x2]
     movz x0, #1
     b 0x160
-61:
+60:
     movz x0, #0
-62:
+61:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -1764,9 +1754,9 @@ parse_value:
     stp x29, x30, [xzr, #16]
     mov x20, x0
     mov x0, x20
-    bl 0xfffff750
+    bl 0xfffff760
     mov x0, x20
-    bl 0xfffff5c8
+    bl 0xfffff5d8
     uxtb w19, w0
     movz x1, #123
     uxtb w1, w1
@@ -1793,7 +1783,7 @@ parse_value:
     uxtb w1, w1
     cmp w1, w19
     b.eq 0xcc
-    bl 0xfffff644
+    bl 0xfffff654
     movz x1, #45
     uxtb w1, w1
     cmp w1, w19
@@ -1806,38 +1796,38 @@ parse_value:
     b.ne 0xc0
     movz x0, #0
     b 0x120
-64:
+63:
     mov x0, x20
     bl 0xfffffafc
     b 0x120
-65:
-    adr x1, 0x551
+64:
+    adr x1, 0x561
     mov x0, x20
     bl 0xfffff844
     b 0x120
-66:
-    adr x1, 0x54c
+65:
+    adr x1, 0x55c
     movz x2, #5
     mov x0, x20
     bl 0xfffff844
     b 0x120
-67:
-    adr x1, 0x548
+66:
+    adr x1, 0x558
     mov x0, x20
     bl 0xfffff844
     b 0x120
-68:
+67:
     mov x0, x20
     bl 0xfffff900
     b 0x120
-69:
+68:
     mov x0, x20
     bl 0xfffffd7c
     b 0x120
-70:
+69:
     mov x0, x20
     bl 0xfffffe7c
-71:
+70:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -1860,7 +1850,7 @@ validate:
     movz x0, #0
     str x0, [x19]
     add x0, sp, #32
-    bl 0xfffff61c
+    bl 0xfffff62c
     add x0, sp, #32
     bl 0xfffffecc
     uxtb w1, w0
@@ -1869,19 +1859,19 @@ validate:
     cmp w1, w0
     b.eq 0x88
     add x0, sp, #32
-    bl 0xfffff61c
+    bl 0xfffff62c
     ldr x1, [x19]
     ldr x0, [x20]
     cmp x1, x0
     b.ne 0x80
     movz x0, #1
     b 0x8c
-73:
+72:
     movz x0, #0
     b 0x8c
-74:
+73:
     movz x0, #0
-75:
+74:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -1897,35 +1887,35 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     stp x29, x30, [xzr, #56]
-    adr x0, 0x381
+    adr x0, 0x391
     movz x1, #4
     bl 0xffffff60
     mov x25, x0
-    adr x0, 0x385
+    adr x0, 0x395
     movz x1, #5
     bl 0xffffff60
     mov x24, x0
-    adr x0, 0x38a
+    adr x0, 0x39a
     movz x1, #4
     bl 0xffffff60
     mov x23, x0
-    adr x0, 0x38e
+    adr x0, 0x39e
     movz x1, #3
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x391
+    adr x0, 0x3a1
     movz x1, #7
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x398
+    adr x0, 0x3a8
     movz x1, #7
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x39f
+    adr x0, 0x3af
     movz x1, #9
     bl 0xffffff60
     mov x19, x0
-    adr x0, 0x3a8
+    adr x0, 0x3b8
     movz x1, #27
     bl 0xffffff60
     mov x3, x0
@@ -1960,22 +1950,22 @@ main:
     cmp w3, #0
     b.ne 0x120
     b 0x128
-77:
+76:
     movz x0, #128
     add x22, x0, x22
-78:
-    adr x0, 0x3c3
+77:
+    adr x0, 0x3d3
     bl 0xffffff60
     mov x19, x0
-    adr x0, 0x3cb
+    adr x0, 0x3db
     movz x1, #2
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x3cd
+    adr x0, 0x3dd
     movz x1, #0
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3cd
+    adr x0, 0x3dd
     movz x1, #1
     bl 0xffffff60
     movz x1, #256
@@ -1997,23 +1987,23 @@ main:
     cmp w0, w19
     b.eq 0x1ac
     b 0x1b4
-79:
+78:
     movz x0, #2048
     add x23, x0, x23
-80:
-    adr x0, 0x3ce
+79:
+    adr x0, 0x3de
     movz x1, #4
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3d2
+    adr x0, 0x3e2
     movz x1, #5
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x3d7
+    adr x0, 0x3e7
     movz x1, #2
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x3d9
+    adr x0, 0x3e9
     movz x1, #6
     bl 0xffffff60
     movz x1, #4096
@@ -2035,15 +2025,15 @@ main:
     cmp w0, w19
     b.eq 0x23c
     b 0x244
-81:
+80:
     movz x0, #32768
     add x21, x0, x21
-82:
-    adr x0, 0x3df
+81:
+    adr x0, 0x3ef
     movz x1, #7
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3e6
+    adr x0, 0x3f6
     movz x1, #3
     bl 0xffffff60
     movz x1, #0
@@ -2207,21 +2197,17 @@ skip_ws:
     cset w2, eq
     uxtb w2, w2
     orr w1, w1, w2
-    uxtb w1, w1
-    uxtb w1, w1
     cmp w25, w0
     cset w2, eq
     uxtb w2, w2
     orr w1, w1, w2
-    uxtb w1, w1
-    uxtb w1, w1
     cmp w22, w0
     cset w0, eq
     uxtb w0, w0
     orr w0, w1, w0
     uxtb w0, w0
     cmp w0, #0
-    b.ne 0xe4
+    b.ne 0xd4
     movz x0, #1
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -2262,7 +2248,7 @@ parse_lit:
     cmp x23, x0
     b.ge 0x94
     mov x0, x19
-    bl 0xfffffd84
+    bl 0xfffffd94
     uxtb w0, w0
     ldr x1, [x20]
     add x1, x1, x23
@@ -2305,7 +2291,7 @@ parse_string:
     stp x29, x30, [xzr, #80]
     str x0, [xzr, #96]
     ldr x0, [xzr, #96]
-    bl 0xfffffd04
+    bl 0xfffffd14
     movz x1, #34
     uxtb w1, w1
     str x1, [xzr, #104]
@@ -2337,7 +2323,7 @@ parse_string:
     uxtb w28, w0
 16:
     ldr x0, [xzr, #96]
-    bl 0xfffffd04
+    bl 0xfffffd14
     uxtb w0, w0
     ldr x1, [xzr, #104]
     cmp w1, w0
@@ -2355,7 +2341,7 @@ parse_string:
     b 0x1cc
 18:
     ldr x0, [xzr, #96]
-    bl 0xfffffd04
+    bl 0xfffffd14
     uxtb w0, w0
     ldr x2, [xzr, #104]
     cmp w2, w0
@@ -2386,8 +2372,8 @@ parse_string:
     cmp x29, x0
     b.ge 0x1b4
     ldr x0, [xzr, #96]
-    bl 0xfffffd04
-    bl 0xfffffd8c
+    bl 0xfffffd14
+    bl 0xfffffd9c
     uxtb w0, w0
     ldr x3, [xzr, #112]
     cmp w0, w3
@@ -2441,7 +2427,7 @@ parse_number:
     stp x29, x30, [xzr, #40]
     mov x19, x0
     mov x0, x19
-    bl 0xfffffac4
+    bl 0xfffffad4
     movz x1, #16
     add x20, x1, x19
     movz x21, #1
@@ -2457,7 +2443,7 @@ parse_number:
     str x0, [x20]
 29:
     mov x0, x19
-    bl 0xfffffac4
+    bl 0xfffffad4
     movz x1, #0
     uxtb w23, w1
     uxtb w0, w0
@@ -2487,8 +2473,8 @@ parse_number:
     str x0, [x20]
 31:
     mov x0, x19
-    bl 0xfffffac4
-    bl 0xfffffb40
+    bl 0xfffffad4
+    bl 0xfffffb50
     uxtb w0, w0
     cmp w0, w23
     b.eq 0x100
@@ -2503,7 +2489,7 @@ parse_number:
     str x0, [x20]
 33:
     mov x0, x19
-    bl 0xfffffac4
+    bl 0xfffffad4
     uxtb w0, w0
     movz x2, #46
     uxtb w2, w2
@@ -2515,15 +2501,15 @@ parse_number:
     add x0, x0, x21
     str x0, [x20]
     mov x0, x19
-    bl 0xfffffac4
-    bl 0xfffffb40
+    bl 0xfffffad4
+    bl 0xfffffb50
     uxtb w0, w0
     cmp w0, w23
-    b.eq 0x25c
+    b.eq 9
 35:
     mov x0, x19
-    bl 0xfffffac4
-    bl 0xfffffb40
+    bl 0xfffffad4
+    bl 0xfffffb50
     uxtb w0, w0
     cmp w0, w23
     b.eq 0x16c
@@ -2533,7 +2519,7 @@ parse_number:
     b 0x144
 36:
     mov x0, x19
-    bl 0xfffffac4
+    bl 0xfffffad4
     uxtb w0, w0
     movz x2, #101
     uxtb w2, w2
@@ -2555,7 +2541,7 @@ parse_number:
     add x0, x0, x21
     str x0, [x20]
     mov x0, x19
-    bl 0xfffffac4
+    bl 0xfffffad4
     uxtb w0, w0
     movz x2, #43
     uxtb w2, w2
@@ -2576,15 +2562,15 @@ parse_number:
     str x0, [x20]
 39:
     mov x0, x19
-    bl 0xfffffac4
-    bl 0xfffffb40
+    bl 0xfffffad4
+    bl 0xfffffb50
     uxtb w0, w0
     cmp w0, w23
     b.eq 0x254
 40:
     mov x0, x19
-    bl 0xfffffac4
-    bl 0xfffffb40
+    bl 0xfffffad4
+    bl 0xfffffb50
     uxtb w0, w0
     cmp w0, w23
     b.eq 0x24c
@@ -2598,9 +2584,8 @@ parse_number:
 42:
     movz x1, #0
     b 0x260
-43:
     movz x1, #0
-44:
+43:
     mov x0, x1
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -2619,16 +2604,16 @@ parse_array:
     stp x29, x30, [xzr, #32]
     mov x19, x0
     mov x0, x19
-    bl 0xfffff87c
+    bl 0xfffff88c
     uxtb w0, w0
     movz x1, #91
     uxtb w1, w1
     cmp w0, w1
     b.ne 0xe0
     mov x0, x19
-    bl 0xfffff9c8
+    bl 0xfffff9d8
     mov x0, x19
-    bl 0xfffff840
+    bl 0xfffff850
     movz x1, #93
     uxtb w20, w1
     uxtb w0, w0
@@ -2638,32 +2623,32 @@ parse_array:
     uxtb w21, w0
     movz x0, #44
     uxtb w22, w0
-46:
+45:
     mov x0, x19
     bl 0x284
     uxtb w0, w0
     cmp w0, w21
     b.eq 0xb8
     mov x0, x19
-    bl 0xfffff9c8
+    bl 0xfffff9d8
     mov x0, x19
-    bl 0xfffff87c
+    bl 0xfffff88c
     uxtb w0, w0
     cmp w0, w20
     b.eq 0xb0
     cmp w22, w0
     b.ne 0xa8
     b 0x6c
-47:
+46:
     movz x0, #0
     b 0xe4
-48:
+47:
     movz x0, #1
     b 0xe4
-49:
+48:
     movz x0, #0
     b 0xe4
-50:
+49:
     movz x1, #16
     add x1, x1, x19
     ldr x2, [x1]
@@ -2672,9 +2657,9 @@ parse_array:
     str x2, [x1]
     movz x0, #1
     b 0xe4
-51:
+50:
     movz x0, #0
-52:
+51:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -2693,16 +2678,16 @@ parse_object:
     stp x29, x30, [xzr, #48]
     mov x19, x0
     mov x0, x19
-    bl 0xfffff77c
+    bl 0xfffff78c
     uxtb w0, w0
     movz x1, #123
     uxtb w1, w1
     cmp w0, w1
     b.ne 0x15c
     mov x0, x19
-    bl 0xfffff8c8
+    bl 0xfffff8d8
     mov x0, x19
-    bl 0xfffff740
+    bl 0xfffff750
     movz x1, #125
     uxtb w20, w1
     uxtb w0, w0
@@ -2716,11 +2701,11 @@ parse_object:
     uxtb w23, w0
     movz x0, #44
     uxtb w24, w0
-54:
+53:
     mov x0, x19
-    bl 0xfffff8c8
+    bl 0xfffff8d8
     mov x0, x19
-    bl 0xfffff740
+    bl 0xfffff750
     uxtb w0, w0
     cmp w0, w22
     b.ne 0x134
@@ -2730,9 +2715,9 @@ parse_object:
     cmp w0, w21
     b.eq 0x12c
     mov x0, x19
-    bl 0xfffff8c8
+    bl 0xfffff8d8
     mov x0, x19
-    bl 0xfffff77c
+    bl 0xfffff78c
     uxtb w0, w0
     cmp w0, w23
     b.ne 0x124
@@ -2742,20 +2727,23 @@ parse_object:
     cmp w0, w21
     b.eq 0x11c
     mov x0, x19
-    bl 0xfffff8c8
+    bl 0xfffff8d8
     mov x0, x19
-    bl 0xfffff77c
+    bl 0xfffff78c
     uxtb w0, w0
     cmp w0, w20
     b.eq 0x114
     cmp w24, w0
     b.ne 0x10c
     b 0x84
-55:
+54:
     movz x0, #0
     b 0x160
-56:
+55:
     movz x0, #1
+    b 0x160
+56:
+    movz x0, #0
     b 0x160
 57:
     movz x0, #0
@@ -2767,9 +2755,6 @@ parse_object:
     movz x0, #0
     b 0x160
 60:
-    movz x0, #0
-    b 0x160
-61:
     movz x1, #16
     add x1, x1, x19
     ldr x2, [x1]
@@ -2778,9 +2763,9 @@ parse_object:
     str x2, [x1]
     movz x0, #1
     b 0x160
-62:
+61:
     movz x0, #0
-63:
+62:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -2797,9 +2782,9 @@ parse_value:
     stp x29, x30, [xzr, #16]
     mov x19, x0
     mov x0, x19
-    bl 0xfffff744
+    bl 0xfffff754
     mov x0, x19
-    bl 0xfffff5bc
+    bl 0xfffff5cc
     uxtb w20, w0
     movz x1, #123
     uxtb w1, w1
@@ -2825,7 +2810,7 @@ parse_value:
     uxtb w1, w1
     cmp w1, w20
     b.eq 0xcc
-    bl 0xfffff638
+    bl 0xfffff648
     movz x1, #45
     uxtb w1, w1
     cmp w1, w20
@@ -2838,47 +2823,47 @@ parse_value:
     b.ne 0xbc
     movz x3, #0
     b 0x140
-65:
+64:
     mov x0, x19
     bl 0xfffffaf8
     mov x3, x0
     b 0x140
-66:
-    adr x1, 0x529
+65:
+    adr x1, 0x539
     mov x0, x19
     movz x2, #4
     bl 0xfffff838
     mov x3, x0
     b 0x140
-67:
-    adr x1, 0x524
+66:
+    adr x1, 0x534
     movz x2, #5
     mov x0, x19
     bl 0xfffff838
     mov x3, x0
     b 0x140
-68:
-    adr x1, 0x520
+67:
+    adr x1, 0x530
     mov x0, x19
     movz x2, #4
     bl 0xfffff838
     mov x3, x0
     b 0x140
-69:
+68:
     mov x0, x19
     bl 0xfffff8f4
     mov x3, x0
     b 0x140
-70:
+69:
     mov x0, x19
     bl 0xfffffd7c
     mov x3, x0
     b 0x140
-71:
+70:
     mov x0, x19
     bl 0xfffffe7c
     mov x3, x0
-72:
+71:
     mov x0, x3
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -2902,7 +2887,7 @@ validate:
     movz x0, #0
     str x0, [x20]
     add x0, sp, #32
-    bl 0xfffff5ec
+    bl 0xfffff5fc
     add x0, sp, #32
     bl 0xfffffea8
     uxtb w0, w0
@@ -2911,19 +2896,19 @@ validate:
     cmp w0, w1
     b.eq 0x88
     add x0, sp, #32
-    bl 0xfffff5ec
+    bl 0xfffff5fc
     ldr x0, [x20]
     ldr x1, [x19]
     cmp x0, x1
     b.ne 0x80
     movz x0, #1
     b 0x8c
-74:
+73:
     movz x0, #0
     b 0x8c
-75:
+74:
     movz x0, #0
-76:
+75:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -2939,35 +2924,35 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     stp x29, x30, [xzr, #56]
-    adr x0, 0x335
+    adr x0, 0x345
     movz x1, #4
     bl 0xffffff60
     mov x19, x0
-    adr x0, 0x339
+    adr x0, 0x349
     movz x1, #5
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x33e
+    adr x0, 0x34e
     movz x1, #4
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x342
+    adr x0, 0x352
     movz x1, #3
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x345
+    adr x0, 0x355
     movz x1, #7
     bl 0xffffff60
     mov x23, x0
-    adr x0, 0x34c
+    adr x0, 0x35c
     movz x1, #7
     bl 0xffffff60
     mov x24, x0
-    adr x0, 0x353
+    adr x0, 0x363
     movz x1, #9
     bl 0xffffff60
     mov x25, x0
-    adr x0, 0x35c
+    adr x0, 0x36c
     movz x1, #27
     bl 0xffffff60
     movz x1, #8
@@ -3001,22 +2986,22 @@ main:
     cmp w0, #0
     b.ne 0x11c
     b 0x124
-78:
+77:
     movz x0, #128
     add x19, x0, x19
-79:
-    adr x0, 0x377
+78:
+    adr x0, 0x387
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x37f
+    adr x0, 0x38f
     movz x1, #2
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x381
+    adr x0, 0x391
     movz x1, #0
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x381
+    adr x0, 0x391
     movz x1, #1
     bl 0xffffff60
     movz x1, #256
@@ -3038,23 +3023,23 @@ main:
     cmp w0, w19
     b.eq 0x1a8
     b 0x1b0
-80:
+79:
     movz x0, #2048
     add x20, x0, x20
-81:
-    adr x0, 0x382
+80:
+    adr x0, 0x392
     movz x1, #4
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x386
+    adr x0, 0x396
     movz x1, #5
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x38b
+    adr x0, 0x39b
     movz x1, #2
     bl 0xffffff60
     mov x23, x0
-    adr x0, 0x38d
+    adr x0, 0x39d
     movz x1, #6
     bl 0xffffff60
     movz x1, #4096
@@ -3076,15 +3061,15 @@ main:
     cmp w0, w19
     b.eq 0x238
     b 0x240
-82:
+81:
     movz x0, #32768
     add x20, x0, x20
-83:
-    adr x0, 0x393
+82:
+    adr x0, 0x3a3
     movz x1, #7
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x39a
+    adr x0, 0x3aa
     movz x1, #3
     bl 0xffffff60
     movz x1, #0
@@ -3247,22 +3232,18 @@ skip_ws:
     cmp w19, w2
     cset w0, eq
     uxtb w0, w0
-    orr w0, w1, w0
-    uxtb w0, w0
-    uxtb w1, w0
+    orr w1, w1, w0
     cmp w24, w2
     cset w0, eq
     uxtb w0, w0
-    orr w0, w1, w0
-    uxtb w0, w0
-    uxtb w1, w0
+    orr w1, w1, w0
     cmp w21, w2
     cset w0, eq
     uxtb w0, w0
     orr w0, w1, w0
     uxtb w0, w0
     cmp w0, #0
-    b.ne 0xe4
+    b.ne 0xd4
     movz x0, #1
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -3303,7 +3284,7 @@ parse_lit:
     cmp x23, x0
     b.ge 0x94
     mov x0, x24
-    bl 0xfffffd84
+    bl 0xfffffd94
     uxtb w1, w0
     ldr x0, [x22]
     add x0, x0, x23
@@ -3346,7 +3327,7 @@ parse_string:
     stp x29, x30, [xzr, #80]
     str x0, [xzr, #112]
     ldr x0, [xzr, #112]
-    bl 0xfffffd04
+    bl 0xfffffd14
     movz x1, #34
     uxtb w1, w1
     str x1, [xzr, #104]
@@ -3378,7 +3359,7 @@ parse_string:
     uxtb w27, w0
 16:
     ldr x0, [xzr, #112]
-    bl 0xfffffd04
+    bl 0xfffffd14
     uxtb w1, w0
     ldr x0, [xzr, #104]
     cmp w0, w1
@@ -3396,7 +3377,7 @@ parse_string:
     b 0x1c8
 18:
     ldr x0, [xzr, #112]
-    bl 0xfffffd04
+    bl 0xfffffd14
     uxtb w1, w0
     ldr x0, [xzr, #104]
     cmp w0, w1
@@ -3427,8 +3408,8 @@ parse_string:
     cmp x21, x0
     b.ge 0x1b0
     ldr x0, [xzr, #112]
-    bl 0xfffffd04
-    bl 0xfffffd8c
+    bl 0xfffffd14
+    bl 0xfffffd9c
     uxtb w1, w0
     ldr x0, [xzr, #96]
     cmp w1, w0
@@ -3479,7 +3460,7 @@ parse_number:
     stp x29, x30, [xzr, #40]
     mov x23, x0
     mov x0, x23
-    bl 0xfffffacc
+    bl 0xfffffadc
     movz x2, #16
     add x21, x2, x23
     movz x20, #1
@@ -3495,7 +3476,7 @@ parse_number:
     str x0, [x21]
 28:
     mov x0, x23
-    bl 0xfffffacc
+    bl 0xfffffadc
     movz x1, #0
     uxtb w19, w1
     uxtb w2, w0
@@ -3525,8 +3506,8 @@ parse_number:
     str x0, [x21]
 30:
     mov x0, x23
-    bl 0xfffffacc
-    bl 0xfffffb48
+    bl 0xfffffadc
+    bl 0xfffffb58
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x100
@@ -3541,7 +3522,7 @@ parse_number:
     str x0, [x21]
 32:
     mov x0, x23
-    bl 0xfffffacc
+    bl 0xfffffadc
     uxtb w1, w0
     movz x0, #46
     uxtb w0, w0
@@ -3553,15 +3534,15 @@ parse_number:
     add x0, x0, x20
     str x0, [x21]
     mov x0, x23
-    bl 0xfffffacc
-    bl 0xfffffb48
+    bl 0xfffffadc
+    bl 0xfffffb58
     uxtb w0, w0
     cmp w0, w19
-    b.eq 0x25c
+    b.eq 9
 34:
     mov x0, x23
-    bl 0xfffffacc
-    bl 0xfffffb48
+    bl 0xfffffadc
+    bl 0xfffffb58
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x16c
@@ -3571,7 +3552,7 @@ parse_number:
     b 0x144
 35:
     mov x0, x23
-    bl 0xfffffacc
+    bl 0xfffffadc
     uxtb w2, w0
     movz x0, #101
     uxtb w0, w0
@@ -3593,7 +3574,7 @@ parse_number:
     add x0, x0, x20
     str x0, [x21]
     mov x0, x23
-    bl 0xfffffacc
+    bl 0xfffffadc
     uxtb w2, w0
     movz x0, #43
     uxtb w0, w0
@@ -3614,15 +3595,15 @@ parse_number:
     str x0, [x21]
 38:
     mov x0, x23
-    bl 0xfffffacc
-    bl 0xfffffb48
+    bl 0xfffffadc
+    bl 0xfffffb58
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x254
 39:
     mov x0, x23
-    bl 0xfffffacc
-    bl 0xfffffb48
+    bl 0xfffffadc
+    bl 0xfffffb58
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x24c
@@ -3636,9 +3617,8 @@ parse_number:
 41:
     movz x0, #0
     b 0x260
-42:
     movz x0, #0
-43:
+42:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -3656,16 +3636,16 @@ parse_array:
     stp x29, x30, [xzr, #32]
     mov x22, x0
     mov x0, x22
-    bl 0xfffff888
+    bl 0xfffff898
     uxtb w1, w0
     movz x0, #91
     uxtb w0, w0
     cmp w1, w0
     b.ne 0xe0
     mov x0, x22
-    bl 0xfffff9d4
+    bl 0xfffff9e4
     mov x0, x22
-    bl 0xfffff84c
+    bl 0xfffff85c
     movz x1, #93
     uxtb w21, w1
     uxtb w0, w0
@@ -3675,32 +3655,32 @@ parse_array:
     uxtb w20, w0
     movz x0, #44
     uxtb w19, w0
-45:
+44:
     mov x0, x22
     bl 0x284
     uxtb w0, w0
     cmp w0, w20
     b.eq 0xb8
     mov x0, x22
-    bl 0xfffff9d4
+    bl 0xfffff9e4
     mov x0, x22
-    bl 0xfffff888
+    bl 0xfffff898
     uxtb w0, w0
     cmp w0, w21
     b.eq 0xb0
     cmp w19, w0
     b.ne 0xa8
     b 0x6c
-46:
+45:
     movz x0, #0
     b 0xe4
-47:
+46:
     movz x0, #1
     b 0xe4
-48:
+47:
     movz x0, #0
     b 0xe4
-49:
+48:
     movz x1, #16
     add x2, x1, x22
     ldr x1, [x2]
@@ -3709,9 +3689,9 @@ parse_array:
     str x0, [x2]
     movz x0, #1
     b 0xe4
-50:
+49:
     movz x0, #0
-51:
+50:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -3730,16 +3710,16 @@ parse_object:
     stp x29, x30, [xzr, #48]
     mov x24, x0
     mov x0, x24
-    bl 0xfffff788
+    bl 0xfffff798
     uxtb w1, w0
     movz x0, #123
     uxtb w0, w0
     cmp w1, w0
     b.ne 0x15c
     mov x0, x24
-    bl 0xfffff8d4
+    bl 0xfffff8e4
     mov x0, x24
-    bl 0xfffff74c
+    bl 0xfffff75c
     movz x1, #125
     uxtb w21, w1
     uxtb w0, w0
@@ -3753,11 +3733,11 @@ parse_object:
     uxtb w22, w0
     movz x0, #44
     uxtb w23, w0
-53:
+52:
     mov x0, x24
-    bl 0xfffff8d4
+    bl 0xfffff8e4
     mov x0, x24
-    bl 0xfffff74c
+    bl 0xfffff75c
     uxtb w0, w0
     cmp w0, w19
     b.ne 0x134
@@ -3767,9 +3747,9 @@ parse_object:
     cmp w0, w20
     b.eq 0x12c
     mov x0, x24
-    bl 0xfffff8d4
+    bl 0xfffff8e4
     mov x0, x24
-    bl 0xfffff788
+    bl 0xfffff798
     uxtb w0, w0
     cmp w0, w22
     b.ne 0x124
@@ -3779,20 +3759,23 @@ parse_object:
     cmp w0, w20
     b.eq 0x11c
     mov x0, x24
-    bl 0xfffff8d4
+    bl 0xfffff8e4
     mov x0, x24
-    bl 0xfffff788
+    bl 0xfffff798
     uxtb w0, w0
     cmp w0, w21
     b.eq 0x114
     cmp w23, w0
     b.ne 0x10c
     b 0x84
-54:
+53:
     movz x0, #0
     b 0x160
-55:
+54:
     movz x0, #1
+    b 0x160
+55:
+    movz x0, #0
     b 0x160
 56:
     movz x0, #0
@@ -3804,9 +3787,6 @@ parse_object:
     movz x0, #0
     b 0x160
 59:
-    movz x0, #0
-    b 0x160
-60:
     movz x1, #16
     add x2, x1, x24
     ldr x1, [x2]
@@ -3815,9 +3795,9 @@ parse_object:
     str x0, [x2]
     movz x0, #1
     b 0x160
-61:
+60:
     movz x0, #0
-62:
+61:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -3834,9 +3814,9 @@ parse_value:
     stp x29, x30, [xzr, #16]
     mov x20, x0
     mov x0, x20
-    bl 0xfffff750
+    bl 0xfffff760
     mov x0, x20
-    bl 0xfffff5c8
+    bl 0xfffff5d8
     uxtb w19, w0
     movz x1, #123
     uxtb w1, w1
@@ -3863,7 +3843,7 @@ parse_value:
     uxtb w1, w1
     cmp w1, w19
     b.eq 0xcc
-    bl 0xfffff644
+    bl 0xfffff654
     movz x1, #45
     uxtb w1, w1
     cmp w1, w19
@@ -3876,38 +3856,38 @@ parse_value:
     b.ne 0xc0
     movz x0, #0
     b 0x120
-64:
+63:
     mov x0, x20
     bl 0xfffffafc
     b 0x120
-65:
-    adr x1, 0x551
+64:
+    adr x1, 0x561
     mov x0, x20
     bl 0xfffff844
     b 0x120
-66:
-    adr x1, 0x54c
+65:
+    adr x1, 0x55c
     movz x2, #5
     mov x0, x20
     bl 0xfffff844
     b 0x120
-67:
-    adr x1, 0x548
+66:
+    adr x1, 0x558
     mov x0, x20
     bl 0xfffff844
     b 0x120
-68:
+67:
     mov x0, x20
     bl 0xfffff900
     b 0x120
-69:
+68:
     mov x0, x20
     bl 0xfffffd7c
     b 0x120
-70:
+69:
     mov x0, x20
     bl 0xfffffe7c
-71:
+70:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -3930,7 +3910,7 @@ validate:
     movz x0, #0
     str x0, [x19]
     add x0, sp, #32
-    bl 0xfffff61c
+    bl 0xfffff62c
     add x0, sp, #32
     bl 0xfffffecc
     uxtb w1, w0
@@ -3939,19 +3919,19 @@ validate:
     cmp w1, w0
     b.eq 0x88
     add x0, sp, #32
-    bl 0xfffff61c
+    bl 0xfffff62c
     ldr x1, [x19]
     ldr x0, [x20]
     cmp x1, x0
     b.ne 0x80
     movz x0, #1
     b 0x8c
-73:
+72:
     movz x0, #0
     b 0x8c
-74:
+73:
     movz x0, #0
-75:
+74:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -3967,35 +3947,35 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     stp x29, x30, [xzr, #56]
-    adr x0, 0x381
+    adr x0, 0x391
     movz x1, #4
     bl 0xffffff60
     mov x25, x0
-    adr x0, 0x385
+    adr x0, 0x395
     movz x1, #5
     bl 0xffffff60
     mov x24, x0
-    adr x0, 0x38a
+    adr x0, 0x39a
     movz x1, #4
     bl 0xffffff60
     mov x23, x0
-    adr x0, 0x38e
+    adr x0, 0x39e
     movz x1, #3
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x391
+    adr x0, 0x3a1
     movz x1, #7
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x398
+    adr x0, 0x3a8
     movz x1, #7
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x39f
+    adr x0, 0x3af
     movz x1, #9
     bl 0xffffff60
     mov x19, x0
-    adr x0, 0x3a8
+    adr x0, 0x3b8
     movz x1, #27
     bl 0xffffff60
     mov x3, x0
@@ -4030,22 +4010,22 @@ main:
     cmp w3, #0
     b.ne 0x120
     b 0x128
-77:
+76:
     movz x0, #128
     add x22, x0, x22
-78:
-    adr x0, 0x3c3
+77:
+    adr x0, 0x3d3
     bl 0xffffff60
     mov x19, x0
-    adr x0, 0x3cb
+    adr x0, 0x3db
     movz x1, #2
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x3cd
+    adr x0, 0x3dd
     movz x1, #0
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3cd
+    adr x0, 0x3dd
     movz x1, #1
     bl 0xffffff60
     movz x1, #256
@@ -4067,23 +4047,23 @@ main:
     cmp w0, w19
     b.eq 0x1ac
     b 0x1b4
-79:
+78:
     movz x0, #2048
     add x23, x0, x23
-80:
-    adr x0, 0x3ce
+79:
+    adr x0, 0x3de
     movz x1, #4
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3d2
+    adr x0, 0x3e2
     movz x1, #5
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x3d7
+    adr x0, 0x3e7
     movz x1, #2
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x3d9
+    adr x0, 0x3e9
     movz x1, #6
     bl 0xffffff60
     movz x1, #4096
@@ -4105,15 +4085,15 @@ main:
     cmp w0, w19
     b.eq 0x23c
     b 0x244
-81:
+80:
     movz x0, #32768
     add x21, x0, x21
-82:
-    adr x0, 0x3df
+81:
+    adr x0, 0x3ef
     movz x1, #7
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3e6
+    adr x0, 0x3f6
     movz x1, #3
     bl 0xffffff60
     movz x1, #0
@@ -4276,22 +4256,18 @@ skip_ws:
     cmp w19, w2
     cset w0, eq
     uxtb w0, w0
-    orr w0, w1, w0
-    uxtb w0, w0
-    uxtb w1, w0
+    orr w1, w1, w0
     cmp w24, w2
     cset w0, eq
     uxtb w0, w0
-    orr w0, w1, w0
-    uxtb w0, w0
-    uxtb w1, w0
+    orr w1, w1, w0
     cmp w21, w2
     cset w0, eq
     uxtb w0, w0
     orr w0, w1, w0
     uxtb w0, w0
     cmp w0, #0
-    b.ne 0xe4
+    b.ne 0xd4
     movz x0, #1
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -4328,7 +4304,7 @@ parse_lit:
     movz x19, #1
 11:
     mov x0, x24
-    bl 0xfffffd84
+    bl 0xfffffd94
     uxtb w1, w0
     add x0, x23, x21
     ldrb w0, [x0]
@@ -4372,7 +4348,7 @@ parse_string:
     stp x29, x30, [xzr, #80]
     str x0, [xzr, #112]
     ldr x0, [xzr, #112]
-    bl 0xfffffd10
+    bl 0xfffffd20
     movz x1, #34
     uxtb w1, w1
     str x1, [xzr, #104]
@@ -4404,7 +4380,7 @@ parse_string:
     uxtb w27, w0
 16:
     ldr x0, [xzr, #112]
-    bl 0xfffffd10
+    bl 0xfffffd20
     uxtb w1, w0
     ldr x0, [xzr, #104]
     cmp w0, w1
@@ -4422,7 +4398,7 @@ parse_string:
     b 0x1c4
 18:
     ldr x0, [xzr, #112]
-    bl 0xfffffd10
+    bl 0xfffffd20
     uxtb w1, w0
     ldr x0, [xzr, #104]
     cmp w0, w1
@@ -4453,8 +4429,8 @@ parse_string:
     cmp x21, x0
     b.ge 0x1ac
     ldr x0, [xzr, #112]
-    bl 0xfffffd10
-    bl 0xfffffd98
+    bl 0xfffffd20
+    bl 0xfffffda8
     uxtb w2, w0
     add x1, x29, x21
     ldr x0, [xzr, #96]
@@ -4504,7 +4480,7 @@ parse_number:
     stp x29, x30, [xzr, #40]
     mov x23, x0
     mov x0, x23
-    bl 0xfffffadc
+    bl 0xfffffaec
     movz x2, #16
     add x21, x2, x23
     movz x20, #1
@@ -4520,7 +4496,7 @@ parse_number:
     str x0, [x21]
 28:
     mov x0, x23
-    bl 0xfffffadc
+    bl 0xfffffaec
     movz x1, #0
     uxtb w19, w1
     uxtb w2, w0
@@ -4550,8 +4526,8 @@ parse_number:
     str x0, [x21]
 30:
     mov x0, x23
-    bl 0xfffffadc
-    bl 0xfffffb58
+    bl 0xfffffaec
+    bl 0xfffffb68
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x100
@@ -4566,7 +4542,7 @@ parse_number:
     str x0, [x21]
 32:
     mov x0, x23
-    bl 0xfffffadc
+    bl 0xfffffaec
     uxtb w1, w0
     movz x0, #46
     uxtb w0, w0
@@ -4578,15 +4554,15 @@ parse_number:
     add x0, x0, x20
     str x0, [x21]
     mov x0, x23
-    bl 0xfffffadc
-    bl 0xfffffb58
+    bl 0xfffffaec
+    bl 0xfffffb68
     uxtb w0, w0
     cmp w0, w19
-    b.eq 0x25c
+    b.eq 9
 34:
     mov x0, x23
-    bl 0xfffffadc
-    bl 0xfffffb58
+    bl 0xfffffaec
+    bl 0xfffffb68
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x16c
@@ -4596,7 +4572,7 @@ parse_number:
     b 0x144
 35:
     mov x0, x23
-    bl 0xfffffadc
+    bl 0xfffffaec
     uxtb w2, w0
     movz x0, #101
     uxtb w0, w0
@@ -4618,7 +4594,7 @@ parse_number:
     add x0, x0, x20
     str x0, [x21]
     mov x0, x23
-    bl 0xfffffadc
+    bl 0xfffffaec
     uxtb w2, w0
     movz x0, #43
     uxtb w0, w0
@@ -4639,15 +4615,15 @@ parse_number:
     str x0, [x21]
 38:
     mov x0, x23
-    bl 0xfffffadc
-    bl 0xfffffb58
+    bl 0xfffffaec
+    bl 0xfffffb68
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x254
 39:
     mov x0, x23
-    bl 0xfffffadc
-    bl 0xfffffb58
+    bl 0xfffffaec
+    bl 0xfffffb68
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x24c
@@ -4661,9 +4637,8 @@ parse_number:
 41:
     movz x0, #0
     b 0x260
-42:
     movz x0, #0
-43:
+42:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -4681,16 +4656,16 @@ parse_array:
     stp x29, x30, [xzr, #32]
     mov x22, x0
     mov x0, x22
-    bl 0xfffff898
+    bl 0xfffff8a8
     uxtb w1, w0
     movz x0, #91
     uxtb w0, w0
     cmp w1, w0
     b.ne 0xdc
     mov x0, x22
-    bl 0xfffff9e4
+    bl 0xfffff9f4
     mov x0, x22
-    bl 0xfffff85c
+    bl 0xfffff86c
     movz x1, #93
     uxtb w21, w1
     uxtb w0, w0
@@ -4700,16 +4675,16 @@ parse_array:
     uxtb w20, w0
     movz x0, #44
     uxtb w19, w0
-45:
+44:
     mov x0, x22
-    bl parse_lit
+    bl 0x27c
     uxtb w0, w0
     cmp w0, w20
     b.eq 0xb4
     mov x0, x22
-    bl 0xfffff9e4
+    bl 0xfffff9f4
     mov x0, x22
-    bl 0xfffff898
+    bl 0xfffff8a8
     uxtb w0, w0
     cmp w0, w21
     b.eq 0xac
@@ -4717,13 +4692,13 @@ parse_array:
     b.eq 0x6c
     movz x0, #0
     b 0xe0
-46:
+45:
     movz x0, #1
     b 0xe0
-47:
+46:
     movz x0, #0
     b 0xe0
-48:
+47:
     movz x1, #16
     add x2, x1, x22
     ldr x1, [x2]
@@ -4732,9 +4707,9 @@ parse_array:
     str x0, [x2]
     movz x0, #1
     b 0xe0
-49:
+48:
     movz x0, #0
-50:
+49:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -4753,16 +4728,16 @@ parse_object:
     stp x29, x30, [xzr, #48]
     mov x24, x0
     mov x0, x24
-    bl 0xfffff79c
+    bl 0xfffff7ac
     uxtb w1, w0
     movz x0, #123
     uxtb w0, w0
     cmp w1, w0
     b.ne 0x158
     mov x0, x24
-    bl 0xfffff8e8
+    bl 0xfffff8f8
     mov x0, x24
-    bl 0xfffff760
+    bl 0xfffff770
     movz x1, #125
     uxtb w21, w1
     uxtb w0, w0
@@ -4776,11 +4751,11 @@ parse_object:
     uxtb w22, w0
     movz x0, #58
     uxtb w23, w0
-52:
+51:
     mov x0, x24
-    bl 0xfffff8e8
+    bl 0xfffff8f8
     mov x0, x24
-    bl 0xfffff760
+    bl 0xfffff770
     uxtb w0, w0
     cmp w0, w22
     b.ne 0x130
@@ -4790,9 +4765,9 @@ parse_object:
     cmp w0, w20
     b.eq 0x128
     mov x0, x24
-    bl 0xfffff8e8
+    bl 0xfffff8f8
     mov x0, x24
-    bl 0xfffff79c
+    bl 0xfffff7ac
     uxtb w0, w0
     cmp w0, w23
     b.ne 0x120
@@ -4802,9 +4777,9 @@ parse_object:
     cmp w0, w20
     b.eq 0x118
     mov x0, x24
-    bl 0xfffff8e8
+    bl 0xfffff8f8
     mov x0, x24
-    bl 0xfffff79c
+    bl 0xfffff7ac
     uxtb w0, w0
     cmp w0, w21
     b.eq 0x110
@@ -4812,8 +4787,11 @@ parse_object:
     b.eq 0x84
     movz x0, #0
     b 0x15c
-53:
+52:
     movz x0, #1
+    b 0x15c
+53:
+    movz x0, #0
     b 0x15c
 54:
     movz x0, #0
@@ -4825,9 +4803,6 @@ parse_object:
     movz x0, #0
     b 0x15c
 57:
-    movz x0, #0
-    b 0x15c
-58:
     movz x1, #16
     add x2, x1, x24
     ldr x1, [x2]
@@ -4836,9 +4811,9 @@ parse_object:
     str x0, [x2]
     movz x0, #1
     b 0x15c
-59:
+58:
     movz x0, #0
-60:
+59:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -4855,9 +4830,9 @@ parse_value:
     stp x29, x30, [xzr, #16]
     mov x20, x0
     mov x0, x20
-    bl 0xfffff768
+    bl 0xfffff778
     mov x0, x20
-    bl 0xfffff5e0
+    bl 0xfffff5f0
     uxtb w19, w0
     movz x1, #123
     uxtb w1, w1
@@ -4884,7 +4859,7 @@ parse_value:
     uxtb w1, w1
     cmp w1, w19
     b.eq 0xcc
-    bl 0xfffff65c
+    bl 0xfffff66c
     movz x1, #45
     uxtb w1, w1
     cmp w1, w19
@@ -4897,38 +4872,38 @@ parse_value:
     b.ne 0xc0
     movz x0, #0
     b 0x120
-62:
+61:
     mov x0, x20
     bl 0xfffffb04
     b 0x120
-63:
-    adr x1, 0x569
+62:
+    adr x1, 0x579
     mov x0, x20
     bl 0xfffff85c
     b 0x120
-64:
-    adr x1, 0x564
+63:
+    adr x1, 0x574
     movz x2, #5
     mov x0, x20
     bl 0xfffff85c
     b 0x120
-65:
-    adr x1, 0x560
+64:
+    adr x1, 0x570
     mov x0, x20
     bl 0xfffff85c
     b 0x120
-66:
+65:
     mov x0, x20
     bl 0xfffff90c
     b 0x120
-67:
+66:
     mov x0, x20
     bl 0xfffffd84
     b 0x120
-68:
+67:
     mov x0, x20
     bl 0xfffffe80
-69:
+68:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -4951,7 +4926,7 @@ validate:
     movz x0, #0
     str x0, [x19]
     add x0, sp, #32
-    bl 0xfffff634
+    bl 0xfffff644
     add x0, sp, #32
     bl 0xfffffecc
     uxtb w1, w0
@@ -4960,19 +4935,19 @@ validate:
     cmp w1, w0
     b.eq 0x88
     add x0, sp, #32
-    bl 0xfffff634
+    bl 0xfffff644
     ldr x1, [x19]
     ldr x0, [x20]
     cmp x1, x0
     b.ne 0x80
     movz x0, #1
     b 0x8c
-71:
+70:
     movz x0, #0
     b 0x8c
-72:
+71:
     movz x0, #0
-73:
+72:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -4988,35 +4963,35 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     stp x29, x30, [xzr, #56]
-    adr x0, 0x399
+    adr x0, 0x3a9
     movz x1, #4
     bl 0xffffff60
     mov x25, x0
-    adr x0, 0x39d
+    adr x0, 0x3ad
     movz x1, #5
     bl 0xffffff60
     mov x24, x0
-    adr x0, 0x3a2
+    adr x0, 0x3b2
     movz x1, #4
     bl 0xffffff60
     mov x23, x0
-    adr x0, 0x3a6
+    adr x0, 0x3b6
     movz x1, #3
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x3a9
+    adr x0, 0x3b9
     movz x1, #7
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x3b0
+    adr x0, 0x3c0
     movz x1, #7
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3b7
+    adr x0, 0x3c7
     movz x1, #9
     bl 0xffffff60
     mov x19, x0
-    adr x0, 0x3c0
+    adr x0, 0x3d0
     movz x1, #27
     bl 0xffffff60
     mov x3, x0
@@ -5051,22 +5026,22 @@ main:
     cmp w3, #0
     b.ne 0x120
     b 0x128
-75:
+74:
     movz x0, #128
     add x22, x0, x22
-76:
-    adr x0, 0x3db
+75:
+    adr x0, 0x3eb
     bl 0xffffff60
     mov x19, x0
-    adr x0, 0x3e3
+    adr x0, 0x3f3
     movz x1, #2
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x3e5
+    adr x0, 0x3f5
     movz x1, #0
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3e5
+    adr x0, 0x3f5
     movz x1, #1
     bl 0xffffff60
     movz x1, #256
@@ -5088,23 +5063,23 @@ main:
     cmp w0, w19
     b.eq 0x1ac
     b 0x1b4
-77:
+76:
     movz x0, #2048
     add x23, x0, x23
-78:
-    adr x0, 0x3e6
+77:
+    adr x0, 0x3f6
     movz x1, #4
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3ea
+    adr x0, 0x3fa
     movz x1, #5
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x3ef
+    adr x0, 0x3ff
     movz x1, #2
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x3f1
+    adr x0, 0x401
     movz x1, #6
     bl 0xffffff60
     movz x1, #4096
@@ -5126,15 +5101,15 @@ main:
     cmp w0, w19
     b.eq 0x23c
     b 0x244
-79:
+78:
     movz x0, #32768
     add x21, x0, x21
-80:
-    adr x0, 0x3f7
+79:
+    adr x0, 0x407
     movz x1, #7
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3fe
+    adr x0, 0x40e
     movz x1, #3
     bl 0xffffff60
     movz x1, #0
@@ -5246,22 +5221,18 @@ skip_ws:
     cmp w19, w2
     cset w0, eq
     uxtb w0, w0
-    orr w0, w1, w0
-    uxtb w0, w0
-    uxtb w1, w0
+    orr w1, w1, w0
     cmp w24, w2
     cset w0, eq
     uxtb w0, w0
-    orr w0, w1, w0
-    uxtb w0, w0
-    uxtb w1, w0
+    orr w1, w1, w0
     cmp w21, w2
     cset w0, eq
     uxtb w0, w0
     orr w0, w1, w0
     uxtb w0, w0
     cmp w0, #0
-    b.ne 0xe4
+    b.ne 0xd4
     movz x0, #1
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -5298,7 +5269,7 @@ parse_lit:
     movz x19, #1
 9:
     mov x0, x24
-    bl 0xfffffe48
+    bl 0xfffffe58
     uxtb w1, w0
     add x0, x23, x21
     ldrb w0, [x0]
@@ -5342,7 +5313,7 @@ parse_string:
     stp x29, x30, [xzr, #80]
     str x0, [xzr, #144]
     ldr x0, [xzr, #144]
-    bl 0xfffffdd4
+    bl 0xfffffde4
     movz x1, #34
     uxtb w1, w1
     str x1, [xzr, #136]
@@ -5387,7 +5358,7 @@ parse_string:
     uxtb w27, w0
 14:
     ldr x0, [xzr, #144]
-    bl 0xfffffdd4
+    bl 0xfffffde4
     uxtb w1, w0
     ldr x0, [xzr, #136]
     cmp w0, w1
@@ -5407,7 +5378,7 @@ parse_string:
     b 0x2a4
 16:
     ldr x0, [xzr, #144]
-    bl 0xfffffdd4
+    bl 0xfffffde4
     uxtb w1, w0
     ldr x0, [xzr, #136]
     cmp w0, w1
@@ -5430,18 +5401,17 @@ parse_string:
     b.eq 0x28c
     ldr x0, [xzr, #104]
     cmp w0, w1
-    b.eq 0x198
+    b.eq 7
     movz x0, #0
     b 0x2a4
-17:
     movz x1, #0
-18:
+17:
     mov x22, x1
     movz x0, #4
     cmp x22, x0
     b.ge 0x28c
     ldr x0, [xzr, #144]
-    bl 0xfffffdd4
+    bl 0xfffffde4
     uxtb w0, w0
     cmp w0, w28
     cset w1, cs
@@ -5462,7 +5432,7 @@ parse_string:
     and w1, w2, w1
     uxtb w1, w1
     cmp w1, #0
-    b.ne 11
+    b.ne 0x240
     cmp w0, w27
     cset w1, cs
     uxtb w1, w1
@@ -5472,16 +5442,18 @@ parse_string:
     and w0, w1, w0
     uxtb w0, w0
     cmp w0, #0
-    b.ne 10
+    b.ne 0x238
     movz x0, #0
     b 0x24c
-    movz x0, #1
-    b 0x24c
+18:
     movz x0, #1
     b 0x24c
 19:
     movz x0, #1
+    b 0x24c
 20:
+    movz x0, #1
+21:
     uxtb w2, w0
     movz x0, #1
     add x1, x0, x22
@@ -5498,17 +5470,17 @@ parse_string:
     b 0x28c
     b 0x28c
     b 0x28c
-21:
-    b 0xe4
 22:
-    movz x0, #0
-    b 0x2a4
+    b 0xe4
 23:
-    movz x0, #1
+    movz x0, #0
     b 0x2a4
 24:
-    movz x0, #0
+    movz x0, #1
+    b 0x2a4
 25:
+    movz x0, #0
+26:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -5531,16 +5503,16 @@ parse_array:
     stp x29, x30, [xzr, #32]
     mov x22, x0
     mov x0, x22
-    bl 0xfffffafc
+    bl 0xfffffb0c
     uxtb w1, w0
     movz x0, #91
     uxtb w0, w0
     cmp w1, w0
     b.ne 0xdc
     mov x0, x22
-    bl 0xfffffb84
+    bl 0xfffffb94
     mov x0, x22
-    bl 0xfffffac0
+    bl 0xfffffad0
     movz x1, #93
     uxtb w21, w1
     uxtb w0, w0
@@ -5550,16 +5522,16 @@ parse_array:
     uxtb w20, w0
     movz x0, #44
     uxtb w19, w0
-27:
+28:
     mov x0, x22
     bl 0x27c
     uxtb w0, w0
     cmp w0, w20
     b.eq 0xb4
     mov x0, x22
-    bl 0xfffffb84
+    bl 0xfffffb94
     mov x0, x22
-    bl 0xfffffafc
+    bl 0xfffffb0c
     uxtb w0, w0
     cmp w0, w21
     b.eq 0xac
@@ -5567,13 +5539,13 @@ parse_array:
     b.eq 0x6c
     movz x0, #0
     b 0xe0
-28:
+29:
     movz x0, #1
     b 0xe0
-29:
+30:
     movz x0, #0
     b 0xe0
-30:
+31:
     movz x1, #16
     add x2, x1, x22
     ldr x1, [x2]
@@ -5582,9 +5554,9 @@ parse_array:
     str x0, [x2]
     movz x0, #1
     b 0xe0
-31:
-    movz x0, #0
 32:
+    movz x0, #0
+33:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -5603,16 +5575,16 @@ parse_object:
     stp x29, x30, [xzr, #48]
     mov x24, x0
     mov x0, x24
-    bl 0xfffffa00
+    bl 0xfffffa10
     uxtb w1, w0
     movz x0, #123
     uxtb w0, w0
     cmp w1, w0
     b.ne 0x158
     mov x0, x24
-    bl 0xfffffa88
+    bl 0xfffffa98
     mov x0, x24
-    bl 0xfffff9c4
+    bl 0xfffff9d4
     movz x1, #125
     uxtb w21, w1
     uxtb w0, w0
@@ -5626,11 +5598,11 @@ parse_object:
     uxtb w22, w0
     movz x0, #58
     uxtb w23, w0
-34:
+35:
     mov x0, x24
-    bl 0xfffffa88
+    bl 0xfffffa98
     mov x0, x24
-    bl 0xfffff9c4
+    bl 0xfffff9d4
     uxtb w0, w0
     cmp w0, w22
     b.ne 0x130
@@ -5640,9 +5612,9 @@ parse_object:
     cmp w0, w20
     b.eq 0x128
     mov x0, x24
-    bl 0xfffffa88
+    bl 0xfffffa98
     mov x0, x24
-    bl 0xfffffa00
+    bl 0xfffffa10
     uxtb w0, w0
     cmp w0, w23
     b.ne 0x120
@@ -5652,9 +5624,9 @@ parse_object:
     cmp w0, w20
     b.eq 6
     mov x0, x24
-    bl 0xfffffa88
+    bl 0xfffffa98
     mov x0, x24
-    bl 0xfffffa00
+    bl 0xfffffa10
     uxtb w0, w0
     cmp w0, w21
     b.eq 0x110
@@ -5662,12 +5634,9 @@ parse_object:
     b.eq 0x84
     movz x0, #0
     b 0x15c
-35:
+36:
     movz x0, #1
     b 0x15c
-    movz x0, #0
-    b 0x15c
-36:
     movz x0, #0
     b 0x15c
 37:
@@ -5677,6 +5646,9 @@ parse_object:
     movz x0, #0
     b 0x15c
 39:
+    movz x0, #0
+    b 0x15c
+40:
     movz x1, #16
     add x2, x1, x24
     ldr x1, [x2]
@@ -5685,9 +5657,9 @@ parse_object:
     str x0, [x2]
     movz x0, #1
     b 0x15c
-40:
-    movz x0, #0
 41:
+    movz x0, #0
+42:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -5707,9 +5679,9 @@ parse_value:
     stp x29, x30, [xzr, #40]
     mov x23, x0
     mov x0, x23
-    bl 0xfffff908
+    bl 0xfffff918
     mov x0, x23
-    bl 0xfffff844
+    bl 0xfffff854
     uxtb w19, w0
     movz x1, #123
     uxtb w1, w1
@@ -5722,7 +5694,7 @@ parse_value:
     movz x1, #34
     uxtb w1, w1
     cmp w1, w19
-    b.eq 0x33c
+    b.eq 14
     movz x2, #4
     movz x1, #116
     uxtb w1, w1
@@ -5736,7 +5708,7 @@ parse_value:
     uxtb w1, w1
     cmp w1, w19
     b.eq 0x308
-    bl 0xfffff8c0
+    bl 0xfffff8d0
     movz x1, #45
     uxtb w22, w1
     cmp w19, w22
@@ -5749,9 +5721,9 @@ parse_value:
     b.ne 0xcc
     movz x0, #0
     b 0x35c
-43:
+44:
     mov x0, x23
-    bl 0xfffff844
+    bl 0xfffff854
     movz x2, #16
     add x21, x2, x23
     movz x20, #1
@@ -5759,20 +5731,20 @@ parse_value:
     cmp w0, w22
     b.eq 0xf0
     b 0xfc
-44:
+45:
     ldr x0, [x21]
     add x0, x0, x20
     str x0, [x21]
-45:
+46:
     mov x0, x23
-    bl 0xfffff844
+    bl 0xfffff854
     movz x1, #0
     uxtb w19, w1
     uxtb w2, w0
     movz x0, #48
     uxtb w0, w0
     cmp w0, w2
-    b.eq 0x198
+    b.eq 7
     movz x0, #49
     uxtb w0, w0
     cmp w2, w0
@@ -5789,14 +5761,14 @@ parse_value:
     b.ne 0x160
     movz x0, #0
     b 0x35c
-46:
+47:
     ldr x0, [x21]
     add x0, x0, x20
     str x0, [x21]
-47:
+48:
     mov x0, x23
-    bl 0xfffff844
-    bl 0xfffff8c0
+    bl 0xfffff854
+    bl 0xfffff8d0
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x1a4
@@ -5805,13 +5777,12 @@ parse_value:
     str x0, [x21]
     b 0x16c
     b 0x1a4
-48:
     ldr x0, [x21]
     add x0, x0, x20
     str x0, [x21]
 49:
     mov x0, x23
-    bl 0xfffff844
+    bl 0xfffff854
     uxtb w1, w0
     movz x0, #46
     uxtb w0, w0
@@ -5823,15 +5794,15 @@ parse_value:
     add x0, x0, x20
     str x0, [x21]
     mov x0, x23
-    bl 0xfffff844
-    bl 0xfffff8c0
+    bl 0xfffff854
+    bl 0xfffff8d0
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x300
 51:
     mov x0, x23
-    bl 0xfffff844
-    bl 0xfffff8c0
+    bl 0xfffff854
+    bl 0xfffff8d0
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x210
@@ -5841,7 +5812,7 @@ parse_value:
     b 0x1e8
 52:
     mov x0, x23
-    bl 0xfffff844
+    bl 0xfffff854
     uxtb w2, w0
     movz x0, #101
     uxtb w0, w0
@@ -5856,14 +5827,13 @@ parse_value:
     orr w0, w1, w0
     uxtb w0, w0
     cmp w0, #0
-    b.ne 0x258
+    b.ne parse_string
     b 0x2f0
-53:
     ldr x0, [x21]
     add x0, x0, x20
     str x0, [x21]
     mov x0, x23
-    bl 0xfffff844
+    bl 0xfffff854
     uxtb w2, w0
     movz x0, #43
     uxtb w0, w0
@@ -5878,21 +5848,21 @@ parse_value:
     cmp w0, #0
     b.ne 0x2a4
     b 0x2b0
-54:
+53:
     ldr x0, [x21]
     add x0, x0, x20
     str x0, [x21]
-55:
+54:
     mov x0, x23
-    bl 0xfffff844
-    bl 0xfffff8c0
+    bl 0xfffff854
+    bl 0xfffff8d0
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x2f8
-56:
+55:
     mov x0, x23
-    bl 0xfffff844
-    bl 0xfffff8c0
+    bl 0xfffff854
+    bl 0xfffff8d0
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x2f0
@@ -5900,43 +5870,42 @@ parse_value:
     add x0, x0, x20
     str x0, [x21]
     b 0x2c8
-57:
+56:
     movz x0, #1
+    b 0x35c
+57:
+    movz x0, #0
     b 0x35c
 58:
     movz x0, #0
     b 0x35c
 59:
-    movz x0, #0
-    b 0x35c
-60:
-    adr x1, 0x7cd
+    adr x1, 0x7dd
     mov x0, x23
     bl 0xfffff9fc
     b 0x35c
-61:
-    adr x1, 0x7c8
+60:
+    adr x1, 0x7d8
     movz x2, #5
     mov x0, x23
     bl 0xfffff9fc
     b 0x35c
-62:
-    adr x1, 0x7c4
+61:
+    adr x1, 0x7d4
     mov x0, x23
     bl 0xfffff9fc
     b 0x35c
-63:
     mov x0, x23
     bl 0xfffffaac
     b 0x35c
-64:
+62:
     mov x0, x23
     bl 0xfffffd84
     b 0x35c
-65:
+63:
     mov x0, x23
     bl 0xfffffe80
-66:
+64:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -5962,7 +5931,7 @@ validate:
     movz x0, #0
     str x0, [x19]
     add x0, sp, #32
-    bl 0xfffff58c
+    bl 0xfffff59c
     add x0, sp, #32
     bl 0xfffffc84
     uxtb w1, w0
@@ -5971,19 +5940,19 @@ validate:
     cmp w1, w0
     b.eq 0x88
     add x0, sp, #32
-    bl 0xfffff58c
+    bl 0xfffff59c
     ldr x1, [x19]
     ldr x0, [x20]
     cmp x1, x0
     b.ne 0x80
     movz x0, #1
     b 0x8c
-68:
+66:
     movz x0, #0
     b 0x8c
-69:
+67:
     movz x0, #0
-70:
+68:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -5999,35 +5968,35 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     stp x29, x30, [xzr, #56]
-    adr x0, 0x3b5
+    adr x0, 0x3c5
     movz x1, #4
     bl 0xffffff60
     mov x25, x0
-    adr x0, 0x3b9
+    adr x0, 0x3c9
     movz x1, #5
     bl 0xffffff60
     mov x24, x0
-    adr x0, 0x3be
+    adr x0, 0x3ce
     movz x1, #4
     bl 0xffffff60
     mov x23, x0
-    adr x0, 0x3c2
+    adr x0, 0x3d2
     movz x1, #3
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x3c5
+    adr x0, 0x3d5
     movz x1, #7
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x3cc
+    adr x0, 0x3dc
     movz x1, #7
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x3d3
+    adr x0, 0x3e3
     movz x1, #9
     bl 0xffffff60
     mov x19, x0
-    adr x0, 0x3dc
+    adr x0, 0x3ec
     movz x1, #27
     bl 0xffffff60
     mov x3, x0
@@ -6062,22 +6031,22 @@ main:
     cmp w3, #0
     b.ne 0x120
     b 0x128
-72:
+70:
     movz x0, #128
     add x22, x0, x22
-73:
-    adr x0, 0x3f7
+71:
+    adr x0, 0x407
     bl 0xffffff60
     mov x19, x0
-    adr x0, 0x3ff
+    adr x0, 0x40f
     movz x1, #2
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x401
+    adr x0, 0x411
     movz x1, #0
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x401
+    adr x0, 0x411
     movz x1, #1
     bl 0xffffff60
     movz x1, #256
@@ -6099,23 +6068,23 @@ main:
     cmp w0, w19
     b.eq 0x1ac
     b 0x1b4
-74:
+72:
     movz x0, #2048
     add x23, x0, x23
-75:
-    adr x0, 0x402
+73:
+    adr x0, 0x412
     movz x1, #4
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x406
+    adr x0, 0x416
     movz x1, #5
     bl 0xffffff60
     mov x22, x0
-    adr x0, 0x40b
+    adr x0, 0x41b
     movz x1, #2
     bl 0xffffff60
     mov x21, x0
-    adr x0, 0x40d
+    adr x0, 0x41d
     movz x1, #6
     bl 0xffffff60
     movz x1, #4096
@@ -6136,15 +6105,16 @@ main:
     uxtb w0, w0
     cmp w0, w19
     b.eq 0x23c
-    b 12
-76:
+    b 0x244
+74:
     movz x0, #32768
     add x21, x0, x21
-    adr x0, 0x413
+75:
+    adr x0, 0x423
     movz x1, #7
     bl 0xffffff60
     mov x20, x0
-    adr x0, 0x41a
+    adr x0, 0x42a
     movz x1, #3
     bl 0xffffff60
     movz x1, #0

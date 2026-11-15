@@ -46,48 +46,47 @@ check:
     cmp w1, #0
     csel w0, w7, w0, ne
     uxtb w0, w0
-    movz x1, #16
-    add x1, x1, x6
-    movz x7, #3
-    movz x8, #127
-    and w8, w8, w4
-    uxtb w8, w8
-    uxtb w8, w8
-    cmp w8, w2
-    csel x1, x1, x6, cc
-    movz x6, #32
-    add x6, x6, x1
-    movz x8, #255
-    eor w8, w8, w4
-    uxtb w8, w8
-    uxtb w8, w8
-    cmp w8, w2
-    csel x1, x6, x1, cc
-    movz x6, #64
-    add x6, x6, x1
-    bic w8, w4, w2
-    uxtb w8, w8
-    uxtb w8, w8
-    cmp w8, w2
-    csel x1, x6, x1, cc
-    movz x6, #128
-    add x6, x6, x1
+    movz x1, #3
+    movz x7, #127
+    and w7, w7, w4
+    uxtb w7, w7
+    uxtb w7, w7
+    cmp w7, w2
+    cset w7, cc
+    movz x8, #16
+    add x8, x8, x6
+    cmp w7, #0
+    csel x6, x8, x6, ne
+    movz x8, #32
+    add x8, x8, x6
+    movz x9, #255
+    eor w9, w9, w4
+    uxtb w9, w9
+    uxtb w9, w9
+    cmp w9, w2
+    csel x6, x8, x6, cc
+    movz x8, #64
+    add x8, x8, x6
+    cmp w7, #0
+    csel x6, x8, x6, ne
+    movz x7, #128
+    add x7, x7, x6
     cmp w4, w3
-    csel x1, x6, x1, hi
-    movz x3, #256
-    add x3, x3, x1
+    csel x3, x7, x6, hi
+    movz x4, #256
+    add x4, x4, x3
     cmp w0, w2
-    csel x1, x3, x1, cc
-    movz x2, #2
-    udiv w2, w0, w2
-    uxtb w2, w2
-    uxtb w2, w2
-    add x1, x1, x2
-    udiv w2, w0, w7
-    msub w2, w2, w7, w0
-    uxtb w2, w2
-    uxtb w2, w2
-    add x1, x1, x2
+    csel x2, x4, x3, cc
+    movz x3, #2
+    udiv w3, w0, w3
+    uxtb w3, w3
+    uxtb w3, w3
+    add x2, x2, x3
+    udiv w3, w0, w1
+    msub w1, w3, w1, w0
+    uxtb w1, w1
+    uxtb w1, w1
+    add x1, x2, x1
     lsr w0, w0, w5
     uxtb w0, w0
     uxtb w0, w0
@@ -99,22 +98,22 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #24]
-    adr x0, 0xdf8
+    adr x0, 0xdfc
     ldrb w0, [x0]
     movz x1, #1
-    bl 0xfffffe94
+    bl 0xfffffe98
     mov x19, x0
     movz x1, #0
     movz x0, #0
-    bl 0xfffffe94
+    bl 0xfffffe98
     mov x20, x0
     movz x0, #127
     movz x1, #0
-    bl 0xfffffe94
+    bl 0xfffffe98
     mov x21, x0
     movz x0, #128
     movz x1, #1
-    bl 0xfffffe94
+    bl 0xfffffe98
     movz x1, #251
     add x2, x19, x20
     add x2, x2, x21
@@ -158,7 +157,7 @@ check:
     add x6, x2, x7
     movz x2, #4
     cmp w8, w2
-    csel x8, x6, x7, cc
+    csel x7, x6, x7, cc
     lsr w2, w5, w0
     uxtb w2, w2
     uxtb w2, w2
@@ -167,7 +166,7 @@ check:
     b 2
 1:
     movz x2, #8
-    add x8, x2, x8
+    add x7, x2, x7
 2:
     movz x6, #255
     movz x2, #7
@@ -176,15 +175,17 @@ check:
     cmp w10, #0
     csel w1, w6, w1, ne
     uxtb w1, w1
-    movz x2, #16
-    add x7, x2, x8
     movz x2, #3
     movz x6, #127
     and w6, w6, w5
     uxtb w6, w6
     uxtb w6, w6
     cmp w6, w3
-    csel x8, x7, x8, cc
+    cset w9, cc
+    movz x6, #16
+    add x6, x6, x7
+    cmp w9, #0
+    csel x8, x6, x7, ne
     movz x6, #32
     add x7, x6, x8
     movz x6, #255
@@ -192,14 +193,11 @@ check:
     uxtb w6, w6
     uxtb w6, w6
     cmp w6, w3
-    csel x8, x7, x8, cc
-    movz x6, #64
-    add x7, x6, x8
-    bic w6, w5, w3
-    uxtb w6, w6
-    uxtb w6, w6
-    cmp w6, w3
     csel x7, x7, x8, cc
+    movz x6, #64
+    add x6, x6, x7
+    cmp w9, #0
+    csel x7, x6, x7, ne
     movz x6, #128
     add x6, x6, x7
     cmp w5, w4
@@ -229,22 +227,22 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #24]
-    adr x0, 0xe10
+    adr x0, 0xe14
     ldrb w0, [x0]
     movz x1, #1
-    bl 0xfffffe90
+    bl 0xfffffe94
     mov x21, x0
     movz x1, #0
     movz x0, #0
-    bl 0xfffffe90
+    bl 0xfffffe94
     mov x20, x0
     movz x0, #127
     movz x1, #0
-    bl 0xfffffe90
+    bl 0xfffffe94
     mov x19, x0
     movz x0, #128
     movz x1, #1
-    bl 0xfffffe90
+    bl 0xfffffe94
     movz x2, #251
     add x1, x21, x20
     add x1, x1, x19
@@ -305,48 +303,47 @@ check:
     cmp w1, #0
     csel w0, w7, w0, ne
     uxtb w0, w0
-    movz x1, #16
-    add x1, x1, x6
-    movz x7, #3
-    movz x8, #127
-    and w8, w8, w4
-    uxtb w8, w8
-    uxtb w8, w8
-    cmp w8, w2
-    csel x1, x1, x6, cc
-    movz x6, #32
-    add x6, x6, x1
-    movz x8, #255
-    eor w8, w8, w4
-    uxtb w8, w8
-    uxtb w8, w8
-    cmp w8, w2
-    csel x1, x6, x1, cc
-    movz x6, #64
-    add x6, x6, x1
-    bic w8, w4, w2
-    uxtb w8, w8
-    uxtb w8, w8
-    cmp w8, w2
-    csel x1, x6, x1, cc
-    movz x6, #128
-    add x6, x6, x1
+    movz x1, #3
+    movz x7, #127
+    and w7, w7, w4
+    uxtb w7, w7
+    uxtb w7, w7
+    cmp w7, w2
+    cset w7, cc
+    movz x8, #16
+    add x8, x8, x6
+    cmp w7, #0
+    csel x6, x8, x6, ne
+    movz x8, #32
+    add x8, x8, x6
+    movz x9, #255
+    eor w9, w9, w4
+    uxtb w9, w9
+    uxtb w9, w9
+    cmp w9, w2
+    csel x6, x8, x6, cc
+    movz x8, #64
+    add x8, x8, x6
+    cmp w7, #0
+    csel x6, x8, x6, ne
+    movz x7, #128
+    add x7, x7, x6
     cmp w4, w3
-    csel x1, x6, x1, hi
-    movz x3, #256
-    add x3, x3, x1
+    csel x3, x7, x6, hi
+    movz x4, #256
+    add x4, x4, x3
     cmp w0, w2
-    csel x1, x3, x1, cc
-    movz x2, #2
-    udiv w2, w0, w2
-    uxtb w2, w2
-    uxtb w2, w2
-    add x1, x1, x2
-    udiv w2, w0, w7
-    msub w2, w2, w7, w0
-    uxtb w2, w2
-    uxtb w2, w2
-    add x1, x1, x2
+    csel x2, x4, x3, cc
+    movz x3, #2
+    udiv w3, w0, w3
+    uxtb w3, w3
+    uxtb w3, w3
+    add x2, x2, x3
+    udiv w3, w0, w1
+    msub w1, w3, w1, w0
+    uxtb w1, w1
+    uxtb w1, w1
+    add x1, x2, x1
     lsr w0, w0, w5
     uxtb w0, w0
     uxtb w0, w0
@@ -358,22 +355,22 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #24]
-    adr x0, 0xdf8
+    adr x0, 0xdfc
     ldrb w0, [x0]
     movz x1, #1
-    bl 0xfffffe94
+    bl 0xfffffe98
     mov x19, x0
     movz x1, #0
     movz x0, #0
-    bl 0xfffffe94
+    bl 0xfffffe98
     mov x20, x0
     movz x0, #127
     movz x1, #0
-    bl 0xfffffe94
+    bl 0xfffffe98
     mov x21, x0
     movz x0, #128
     movz x1, #1
-    bl 0xfffffe94
+    bl 0xfffffe98
     movz x1, #251
     add x2, x19, x20
     add x2, x2, x21
@@ -417,7 +414,7 @@ check:
     add x6, x2, x7
     movz x2, #4
     cmp w8, w2
-    csel x8, x6, x7, cc
+    csel x7, x6, x7, cc
     lsr w2, w5, w0
     uxtb w2, w2
     uxtb w2, w2
@@ -426,7 +423,7 @@ check:
     b 2
 1:
     movz x2, #8
-    add x8, x2, x8
+    add x7, x2, x7
 2:
     movz x6, #255
     movz x2, #7
@@ -435,15 +432,17 @@ check:
     cmp w10, #0
     csel w1, w6, w1, ne
     uxtb w1, w1
-    movz x2, #16
-    add x7, x2, x8
     movz x2, #3
     movz x6, #127
     and w6, w6, w5
     uxtb w6, w6
     uxtb w6, w6
     cmp w6, w3
-    csel x8, x7, x8, cc
+    cset w9, cc
+    movz x6, #16
+    add x6, x6, x7
+    cmp w9, #0
+    csel x8, x6, x7, ne
     movz x6, #32
     add x7, x6, x8
     movz x6, #255
@@ -451,14 +450,11 @@ check:
     uxtb w6, w6
     uxtb w6, w6
     cmp w6, w3
-    csel x8, x7, x8, cc
-    movz x6, #64
-    add x7, x6, x8
-    bic w6, w5, w3
-    uxtb w6, w6
-    uxtb w6, w6
-    cmp w6, w3
     csel x7, x7, x8, cc
+    movz x6, #64
+    add x6, x6, x7
+    cmp w9, #0
+    csel x7, x6, x7, ne
     movz x6, #128
     add x6, x6, x7
     cmp w5, w4
@@ -488,22 +484,22 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #24]
-    adr x0, 0xe10
+    adr x0, 0xe14
     ldrb w0, [x0]
     movz x1, #1
-    bl 0xfffffe90
+    bl 0xfffffe94
     mov x21, x0
     movz x1, #0
     movz x0, #0
-    bl 0xfffffe90
+    bl 0xfffffe94
     mov x20, x0
     movz x0, #127
     movz x1, #0
-    bl 0xfffffe90
+    bl 0xfffffe94
     mov x19, x0
     movz x0, #128
     movz x1, #1
-    bl 0xfffffe90
+    bl 0xfffffe94
     movz x2, #251
     add x1, x21, x20
     add x1, x1, x19
@@ -547,7 +543,7 @@ check:
     add x6, x2, x7
     movz x2, #4
     cmp w8, w2
-    csel x8, x6, x7, cc
+    csel x7, x6, x7, cc
     lsr w2, w5, w0
     uxtb w2, w2
     uxtb w2, w2
@@ -556,7 +552,7 @@ check:
     b 2
 1:
     movz x2, #8
-    add x8, x2, x8
+    add x7, x2, x7
 2:
     movz x6, #255
     movz x2, #7
@@ -565,15 +561,17 @@ check:
     cmp w10, #0
     csel w1, w6, w1, ne
     uxtb w1, w1
-    movz x2, #16
-    add x7, x2, x8
     movz x2, #3
     movz x6, #127
     and w6, w6, w5
     uxtb w6, w6
     uxtb w6, w6
     cmp w6, w3
-    csel x8, x7, x8, cc
+    cset w9, cc
+    movz x6, #16
+    add x6, x6, x7
+    cmp w9, #0
+    csel x8, x6, x7, ne
     movz x6, #32
     add x7, x6, x8
     movz x6, #255
@@ -581,14 +579,11 @@ check:
     uxtb w6, w6
     uxtb w6, w6
     cmp w6, w3
-    csel x8, x7, x8, cc
-    movz x6, #64
-    add x7, x6, x8
-    bic w6, w5, w3
-    uxtb w6, w6
-    uxtb w6, w6
-    cmp w6, w3
     csel x7, x7, x8, cc
+    movz x6, #64
+    add x6, x6, x7
+    cmp w9, #0
+    csel x7, x6, x7, ne
     movz x6, #128
     add x6, x6, x7
     cmp w5, w4
@@ -618,22 +613,22 @@ main:
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     stp x29, x30, [xzr, #24]
-    adr x0, 0xe10
+    adr x0, 0xe14
     ldrb w0, [x0]
     movz x1, #1
-    bl 0xfffffe90
+    bl 0xfffffe94
     mov x21, x0
     movz x1, #0
     movz x0, #0
-    bl 0xfffffe90
+    bl 0xfffffe94
     mov x20, x0
     movz x0, #127
     movz x1, #0
-    bl 0xfffffe90
+    bl 0xfffffe94
     mov x19, x0
     movz x0, #128
     movz x1, #1
-    bl 0xfffffe90
+    bl 0xfffffe94
     movz x2, #251
     add x1, x21, x20
     add x1, x1, x19

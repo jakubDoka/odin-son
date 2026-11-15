@@ -175,7 +175,6 @@ when SPEC_NOT_PRESENT {
 		Rem,
 		U_Rem,
 		U_Mul_Hi,
-		And_Not,
 		// Split
 		Split,
 		// memory ops
@@ -747,7 +746,7 @@ compute_weight :: proc(prc: ^Proc, all: []Node_ID) {
 		.CInt   = 1,
 		.Select = 1,
 		.Neg ..= .U_Conv        = 1,
-		.Add ..= .And_Not        = 1,
+		.Add ..= .U_Mul_Hi        = 1,
 	}
 
 	prc.weight = 1

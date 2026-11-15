@@ -192,10 +192,6 @@ peep :: proc(
 			bac.add_c_int(ctx, "shzero", node.dt, 0),
 			in_range,
 		)
-	case .Ctz:
-		return bac.normalize_ctz(ctx, node, .I32)
-	case .Popcnt:
-		return bac.normalize_popcnt(ctx, node, .I32)
 	case .U_Mul_Hi:
 		if res := bac.normalize_u_mul_hi(ctx, node); res != nil do return res
 
@@ -223,8 +219,6 @@ peep :: proc(
 			return res
 		}
 	case .Conv, .U_Conv:
-		if res := bac.fold_bit_count_conv(ctx, node); res != nil do return res
-
 		if inp.dt not_in bac.INT_DTS ||
 		   node.dt not_in bac.INT_DTS ||
 		   inp.dt >= node.dt {
@@ -278,22 +272,6 @@ peep :: proc(
 				extra = &Mem_Op{source = node.dt, offset = i64(off)},
 			)
 		}
-	case .And_Not:
-		return bac.add_bin_op(
-			ctx,
-			"ana",
-			.And,
-			node.dt,
-			node.inps[0],
-			bac.add_bin_op(
-				ctx,
-				"ann",
-				.Xor,
-				node.dt,
-				node.inps[1],
-				bac.add_c_int(ctx, "acn", node.dt, -1),
-			),
-		)
 	case .Neg:
 		if node.dt <= .I64 {
 			return bac.add_bin_op(
@@ -429,7 +407,6 @@ meta_of :: #force_inline proc(
 	     .Drop,
 	     .Set,
 	     .Copy,
-	     .And_Not,
 	     .Conv,
 	     .U_Conv,
 	     .Stub,
@@ -645,7 +622,7 @@ pre_regalloc_hook :: proc(
 				input_start = 1,
 				input_count = u8(len(node.inps) - 1),
 			}
-		case .Add ..= .And_Not, .WASM_Shl ..= .WASM_U_Shr:
+		case .Add ..= .U_Mul_Hi, .WASM_Shl ..= .WASM_U_Shr:
 			return {def = true, input_count = 2}
 		case .Select:
 			return {def = true, input_count = 3}
@@ -1038,7 +1015,6 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, block_idx: int) {
 	     .Dbg_Scope,
 	     .Simd_Reduce_Add_Bisect,
 	     .Simd_Extract_Lsbs,
-	     .And_Not,
 	     .Neg,
 	     .U_Mul_Hi:
 		fmt.panicf("Should not reach this: %v", node)

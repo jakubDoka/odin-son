@@ -4793,7 +4793,7 @@ valid_binop :: proc(
 	tok: tokenizer.Token_Kind,
 ) -> ^Check_Meta {
 	if tok == .Eq do return nil
-	_, _, _, ok := tok_to_binop(ty, tok)
+	_, _, _, _, ok := tok_to_binop(ty, tok)
 	if ok do return nil
 	return error(ctx, node, "operator %v not supported for %v", tok, ty)
 }
@@ -4805,6 +4805,7 @@ tok_to_binop :: proc(
 	kind: bac.Bin_Op,
 	name: string,
 	lane: bac.Lane_Type,
+	not_rhs: bool,
 	ok: bool,
 ) {
 	ty := ty
@@ -4854,8 +4855,8 @@ tok_to_binop :: proc(
 		.Or_Eq      = {.Or, "ore"},
 		.Xor        = {.Xor, "xor"},
 		.Xor_Eq     = {.Xor, "xore"},
-		.And_Not    = {.And_Not, "andn"},
-		.And_Not_Eq = {.And_Not, "andne"},
+		.And_Not    = {.And, "andn"},
+		.And_Not_Eq = {.And, "andne"},
 		.Shl        = {.Shl, "shl"},
 		.Shl_Eq     = {.Shl, "shle"},
 		.Shr        = {.Shr, "shr"},
@@ -4906,26 +4907,31 @@ tok_to_binop :: proc(
 		.Add_Eq     = {.Or, "ore"},
 		.Or         = {.Or, "or"},
 		.Or_Eq      = {.Or, "ore"},
-		.Sub        = {.And_Not, "andn"},
-		.Sub_Eq     = {.And_Not, "andne"},
-		.And_Not    = {.And_Not, "andn"},
-		.And_Not_Eq = {.And_Not, "andne"},
+		.Sub        = {.And, "andn"},
+		.Sub_Eq     = {.And, "andne"},
+		.And_Not    = {.And, "andn"},
+		.And_Not_Eq = {.And, "andne"},
 		.And        = {.And, "and"},
 		.And_Eq     = {.And, "ande"},
 		.Xor        = {.Xor, "xor"},
 		.Xor_Eq     = {.Xor, "xore"},
 		.Cmp_Eq     = {.Eq, "eq"},
 		.Not_Eq     = {.Ne, "ne"},
-		.Lt         = {.And_Not, "subs"},
-		.Lt_Eq      = {.And_Not, "subs"},
-		.Gt         = {.And_Not, "sups"},
-		.Gt_Eq      = {.And_Not, "sups"},
+		.Lt         = {.And, "subs"},
+		.Lt_Eq      = {.And, "subs"},
+		.Gt         = {.And, "sups"},
+		.Gt_Eq      = {.And, "sups"},
 	}
 
+	NOT_RHS :: bit_set[tokenizer.Token_Kind]{.And_Not, .And_Not_Eq}
+	BIT_SET_NOT_RHS :: NOT_RHS + {.Sub, .Sub_Eq, .Lt, .Lt_Eq, .Gt, .Gt_Eq}
+
 	info: Op_Info
+	not_rhs = tok in NOT_RHS
 
 	if is_of(ty, ^Bit_Set) {
 		info = BIT_SET_TABLE[tok]
+		not_rhs = tok in BIT_SET_NOT_RHS
 	} else if ty in FLOAT_TYPES {
 		info = FLOAT_TABLE[tok]
 	} else {
@@ -4937,9 +4943,9 @@ tok_to_binop :: proc(
 	}
 
 	valid := int(info.kind) != 0
-	valid &= !has_lane || info.kind in ALLOWED_SIMD[lane]
+	valid &= !has_lane || (info.kind in ALLOWED_SIMD[lane] && !not_rhs)
 
-	return info.kind, info.name, lane, valid
+	return info.kind, info.name, lane, not_rhs, valid
 }
 
 division_libcall :: proc(

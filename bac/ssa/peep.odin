@@ -141,8 +141,6 @@ fold_bin_op :: proc(
 		value = lhs | rhs
 	case .Xor:
 		value = lhs ~ rhs
-	case .And_Not:
-		value = lhs &~ rhs
 	case .Shl:
 		if u64(rhs) >= u64(bac.DT_SIZE[op_ty] * 8) do return 0
 		value = sext(lhs << u64(rhs), op_ty)
@@ -251,8 +249,9 @@ peep :: proc(
 	kind := node.itype
 
 	#partial switch kind {
-	case .Add ..= .U_Rem, .And_Not, .Neg, .Not:
-		if bac.operation_datatype(ctx, node) >= ctx.opt_hints.smallest_type ||
+	case .Add ..= .U_Rem, .Neg, .Not:
+		min_width := ctx.smallest_type
+		if bac.operation_datatype(ctx, node) >= min_width ||
 		   node.dt in bac.VECTOR_DTS {
 			break
 		}
@@ -264,22 +263,78 @@ peep :: proc(
 		for inp, i in node.inps {
 			inps[i] = inp
 			inp_dt := get_node(ctx, inp).dt
-			if .Mem < inp_dt && inp_dt < ctx.opt_hints.smallest_type {
+			if .Mem < inp_dt && inp_dt < min_width {
 				inp_ext := ext
 				if .Shl <= kind && kind <= .U_Shr && i == 1 do inp_ext = .U_Conv
-				inps[i] = bac.add_un_op(ctx, "iext", inp_ext, .I32, inp)
+				inps[i] = bac.add_un_op(ctx, "iext", inp_ext, min_width, inp)
 				bac.worklist_add(ctx, ctx.worklist, inps[i])
 			}
 		}
 
 		comparison := .Eq <= kind && kind <= .U_Ge
-		dt := comparison ? node.dt : bac.Node_Datatype.I32
+		dt := comparison ? node.dt : min_width
 		wide := bac.add_raw(ctx, "iwide", node.rtype, dt, inps[:len(node.inps)])
 		bac.worklist_add(ctx, ctx.worklist, wide)
 		if comparison do return wide
 
 		// Consumers must still observe overflow at the original width, including stores.
 		return bac.add_un_op(ctx, "inar", .U_Conv, node.dt, wide)
+	case .Ctz:
+		min_width := ctx.min_ctz_type
+		if min_width == .Void do min_width = ctx.smallest_type
+
+		if node.dt < min_width {
+			bctzg := bac.add_c_int(
+				ctx,
+				"bctzg",
+				min_width,
+				1 << uint(bac.DT_SIZE[node.dt] * 8),
+			)
+			ext := bac.add_bin_op(ctx, "bctzo", .Or, min_width, node.inps[0], bctzg)
+			bac.worklist_add(ctx, ctx.worklist, ext)
+			res := bac.add_un_op(ctx, "bctz", .Ctz, min_width, ext)
+			bac.worklist_add(ctx, ctx.worklist, res)
+			return bac.add_un_op(ctx, "bctzn", .U_Conv, node.dt, res)
+		}
+	case .Popcnt:
+		min_width := ctx.min_popcnt_type
+		if min_width == .Void do min_width = ctx.smallest_type
+
+		if get_node(ctx, node.inps[0]).dt < min_width {
+			ext := bac.add_un_op(ctx, "bpcx", .U_Conv, min_width, node.inps[0])
+			bac.worklist_add(ctx, ctx.worklist, ext)
+			// users get to widen the popcnt before the target lowers it
+			for out in node.outs do bac.worklist_add(ctx, ctx.worklist, out.id)
+			res := bac.add_un_op(ctx, "bpc", .Popcnt, node.dt, ext)
+			bac.worklist_add(ctx, ctx.worklist, res)
+			return res
+		}
+	case .Conv, .U_Conv:
+		if node.dt not_in bac.INT_DTS do break
+		inp := expand_node(ctx, node.inps[0])
+
+		if inp.itype == .Popcnt {
+			zext := expand_node(ctx, inp.inps[0])
+			if node.dt <= inp.dt || zext.itype != .U_Conv do break
+			if get_node(ctx, zext.inps[0]).dt >= node.dt do break
+
+			wide := bac.add_un_op(ctx, "bcfx", .U_Conv, node.dt, zext.inps[0])
+			bac.worklist_add(ctx, ctx.worklist, wide)
+			res := bac.add_un_op(ctx, "bcfp", .Popcnt, node.dt, wide)
+			bac.worklist_add(ctx, ctx.worklist, res)
+			return res
+		}
+
+		if (inp.itype != .Conv && inp.itype != .U_Conv) ||
+		   inp.dt not_in bac.INT_DTS {
+			break
+		}
+
+		cnt := expand_node(ctx, inp.inps[0])
+		if cnt.itype != .Ctz do break
+
+		if cnt.dt == node.dt do return inp.inps[0]
+		return bac.add_un_op(ctx, "bcfc", .U_Conv, node.dt, inp.inps[0])
 	}
 
 	#partial match: switch node.itype {
@@ -787,7 +842,7 @@ peep :: proc(
 			value := fold_un_op(op, coper.value, node.dt, oper.dt)
 			return bac.add_c_int(ctx.prc, "fld", node.dt, value)
 		}
-	case .Add ..= .And_Not:
+	case .Add ..= .U_Mul_Hi:
 		lhs := expand_node(ctx.prc, node.inps[0])
 		rhs := expand_node(ctx.prc, node.inps[1])
 
@@ -825,7 +880,6 @@ peep :: proc(
 				.U_Shr,
 				.Shl,
 				.Xor,
-				.And_Not,
 			}
 			if op in ZERO_IS_NEUTRAL && crhs.value == 0 {
 				return node.inps[0]
@@ -845,7 +899,6 @@ peep :: proc(
 			SYMETRI_IS_ZERO := bit_set[Bin_Op] {
 				.Sub,
 				.Xor,
-				.And_Not,
 				.Ne,
 				.Lt,
 				.Gt,

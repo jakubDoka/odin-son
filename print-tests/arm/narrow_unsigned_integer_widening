@@ -81,38 +81,38 @@ check u8:
     cmp w5, w11
     csel x5, x9, x7, eq
     sub w7, w2, w1
-    add w7, w7, w3
+    add w3, w7, w3
+    uxtb w3, w3
+    uxtb w3, w3
+    udiv w3, w3, w8
+    uxtb w3, w3
+    uxtb w3, w3
+    cmp w10, w3
+    b.eq 0xd8
+    b 0xe0
+4:
+    movz x3, #8
+    add x5, x3, x5
+5:
+    movz x3, #16
+    add x3, x3, x5
+    mvn w7, w0
     uxtb w7, w7
     uxtb w7, w7
     udiv w7, w7, w8
     uxtb w7, w7
     uxtb w7, w7
-    cmp w10, w7
-    b.eq 0xd8
-    b 0xe0
-4:
-    movz x7, #8
-    add x5, x7, x5
-5:
-    movz x7, #16
-    add x7, x7, x5
-    mvn w9, w0
+    cmp w7, w8
+    csel x3, x3, x5, eq
+    movz x5, #7
+    movz x7, #32
+    add x7, x7, x3
+    madd x9, x0, x1, xzr
     uxtb w9, w9
     uxtb w9, w9
-    udiv w9, w9, w8
+    udiv w9, w9, w5
     uxtb w9, w9
     uxtb w9, w9
-    cmp w9, w8
-    csel x5, x7, x5, eq
-    movz x7, #7
-    movz x9, #32
-    add x9, x9, x5
-    madd x10, x0, x1, xzr
-    uxtb w10, w10
-    uxtb w10, w10
-    udiv w10, w10, w7
-    uxtb w10, w10
-    uxtb w10, w10
     lsl w0, w0, w6
     uxtb w0, w0
     uxtb w0, w0
@@ -123,25 +123,26 @@ check u8:
     sub w6, w2, w6
     uxtb w6, w6
     uxtb w6, w6
-    udiv w6, w6, w7
-    uxtb w6, w6
-    uxtb w6, w6
-    cmp w10, w6
-    csel x5, x9, x5, eq
-    movz x6, #64
-    add x6, x6, x5
-    movz x7, #11
-    sub w2, w2, w7
+    udiv w5, w6, w5
+    uxtb w5, w5
+    uxtb w5, w5
+    cmp w9, w5
+    csel x3, x7, x3, eq
+    movz x5, #64
+    add x5, x5, x3
+    movz x6, #11
+    sub w2, w2, w6
     uxtb w2, w2
     uxtb w2, w2
     udiv w2, w2, w8
     uxtb w2, w2
     uxtb w2, w2
     cmp w0, w2
-    csel x0, x6, x5, eq
+    csel x0, x5, x3, eq
     movz x2, #128
     add x2, x2, x0
-    bic w3, w4, w3
+    movz x3, #254
+    and w3, w3, w4
     uxtb w3, w3
     uxtb w3, w3
     udiv w3, w3, w8
@@ -207,38 +208,38 @@ check u16:
     cmp w5, w11
     csel x5, x9, x7, eq
     sub w7, w2, w1
-    add w7, w7, w3
+    add w3, w7, w3
+    uxth w3, w3
+    uxth w3, w3
+    udiv w3, w3, w8
+    uxth w3, w3
+    uxth w3, w3
+    cmp w10, w3
+    b.eq 0xd8
+    b 0xe0
+9:
+    movz x3, #8
+    add x5, x3, x5
+10:
+    movz x3, #16
+    add x3, x3, x5
+    mvn w7, w0
     uxth w7, w7
     uxth w7, w7
     udiv w7, w7, w8
     uxth w7, w7
     uxth w7, w7
-    cmp w10, w7
-    b.eq 0xd8
-    b 0xe0
-9:
-    movz x7, #8
-    add x5, x7, x5
-10:
-    movz x7, #16
-    add x7, x7, x5
-    mvn w9, w0
+    cmp w7, w8
+    csel x3, x3, x5, eq
+    movz x5, #7
+    movz x7, #32
+    add x7, x7, x3
+    madd x9, x0, x1, xzr
     uxth w9, w9
     uxth w9, w9
-    udiv w9, w9, w8
+    udiv w9, w9, w5
     uxth w9, w9
     uxth w9, w9
-    cmp w9, w8
-    csel x5, x7, x5, eq
-    movz x7, #7
-    movz x9, #32
-    add x9, x9, x5
-    madd x10, x0, x1, xzr
-    uxth w10, w10
-    uxth w10, w10
-    udiv w10, w10, w7
-    uxth w10, w10
-    uxth w10, w10
     lsl w0, w0, w6
     uxth w0, w0
     uxth w0, w0
@@ -249,25 +250,26 @@ check u16:
     sub w6, w2, w6
     uxth w6, w6
     uxth w6, w6
-    udiv w6, w6, w7
-    uxth w6, w6
-    uxth w6, w6
-    cmp w10, w6
-    csel x5, x9, x5, eq
-    movz x6, #64
-    add x6, x6, x5
-    movz x7, #11
-    sub w2, w2, w7
+    udiv w5, w6, w5
+    uxth w5, w5
+    uxth w5, w5
+    cmp w9, w5
+    csel x3, x7, x3, eq
+    movz x5, #64
+    add x5, x5, x3
+    movz x6, #11
+    sub w2, w2, w6
     uxth w2, w2
     uxth w2, w2
     udiv w2, w2, w8
     uxth w2, w2
     uxth w2, w2
     cmp w0, w2
-    csel x0, x6, x5, eq
+    csel x0, x5, x3, eq
     movz x2, #128
     add x2, x2, x0
-    bic w3, w4, w3
+    movz x3, #65534
+    and w3, w3, w4
     uxth w3, w3
     uxth w3, w3
     udiv w3, w3, w8
@@ -321,26 +323,26 @@ main:
     add sp, sp, #48
     ret
 check u8:
-    uxtb w5, w0
+    uxtb w4, w0
     uxtb w1, w1
-    movz x4, #1
-    add w0, w5, w1
+    movz x6, #1
+    add w0, w4, w1
     uxtb w0, w0
     uxtb w0, w0
     movz x9, #3
-    movz x6, #1
+    movz x5, #1
     movz x8, #0
     movz x3, #2
     udiv w7, w0, w3
     uxtb w7, w7
     uxtb w7, w7
     cmp w7, w3
-    csel x7, x6, x8, eq
+    csel x7, x5, x8, eq
     udiv w8, w0, w9
     msub w8, w8, w9, w0
     uxtb w8, w8
     uxtb w8, w8
-    cmp w8, w4
+    cmp w8, w6
     b.eq 0x58
     b 0x60
 2:
@@ -358,7 +360,7 @@ check u8:
     udiv w8, w8, w3
     uxtb w8, w8
     uxtb w10, w8
-    add w8, w0, w4
+    add w8, w0, w6
     uxtb w8, w8
     uxtb w8, w8
     udiv w8, w9, w8
@@ -366,76 +368,77 @@ check u8:
     uxtb w9, w8
     movz x8, #40
     cmp w9, w8
-    csel x9, x11, x7, eq
+    csel x8, x11, x7, eq
     sub w7, w2, w1
-    add w7, w7, w4
-    uxtb w7, w7
-    uxtb w7, w7
-    udiv w7, w7, w3
-    uxtb w7, w7
-    uxtb w7, w7
-    cmp w10, w7
+    add w6, w7, w6
+    uxtb w6, w6
+    uxtb w6, w6
+    udiv w6, w6, w3
+    uxtb w6, w6
+    uxtb w6, w6
+    cmp w10, w6
     b.eq 0xd8
     b 0xe0
 4:
-    movz x7, #8
-    add x9, x7, x9
+    movz x6, #8
+    add x8, x6, x8
 5:
-    movz x7, #16
-    add x8, x7, x9
-    mvn w7, w5
-    uxtb w7, w7
-    uxtb w7, w7
-    udiv w7, w7, w3
-    uxtb w7, w7
-    uxtb w7, w7
-    cmp w7, w3
-    csel x11, x8, x9, eq
-    movz x10, #7
-    movz x7, #32
-    add x9, x7, x11
-    madd x7, x5, x1, xzr
-    uxtb w7, w7
-    uxtb w7, w7
-    udiv w7, w7, w10
-    uxtb w7, w7
-    uxtb w7, w7
-    lsl w5, w5, w6
-    uxtb w5, w5
-    uxtb w5, w5
-    udiv w5, w5, w3
-    uxtb w5, w5
-    uxtb w8, w5
-    movz x5, #59
-    sub w5, w2, w5
-    uxtb w5, w5
-    uxtb w5, w5
-    udiv w5, w5, w10
-    uxtb w5, w5
-    uxtb w5, w5
-    cmp w7, w5
-    csel x7, x9, x11, eq
-    movz x5, #64
-    add x6, x5, x7
-    movz x5, #11
-    sub w2, w2, w5
+    movz x6, #16
+    add x7, x6, x8
+    mvn w6, w4
+    uxtb w6, w6
+    uxtb w6, w6
+    udiv w6, w6, w3
+    uxtb w6, w6
+    uxtb w6, w6
+    cmp w6, w3
+    csel x10, x7, x8, eq
+    movz x9, #7
+    movz x6, #32
+    add x8, x6, x10
+    madd x6, x4, x1, xzr
+    uxtb w6, w6
+    uxtb w6, w6
+    udiv w6, w6, w9
+    uxtb w6, w6
+    uxtb w6, w6
+    lsl w4, w4, w5
+    uxtb w4, w4
+    uxtb w4, w4
+    udiv w4, w4, w3
+    uxtb w4, w4
+    uxtb w7, w4
+    movz x4, #59
+    sub w4, w2, w4
+    uxtb w4, w4
+    uxtb w4, w4
+    udiv w4, w4, w9
+    uxtb w4, w4
+    uxtb w4, w4
+    cmp w6, w4
+    csel x6, x8, x10, eq
+    movz x4, #64
+    add x5, x4, x6
+    movz x4, #11
+    sub w2, w2, w4
     uxtb w2, w2
     uxtb w2, w2
     udiv w2, w2, w3
     uxtb w2, w2
     uxtb w2, w2
-    cmp w8, w2
-    csel x6, x6, x7, eq
+    cmp w7, w2
+    csel x5, x5, x6, eq
     movz x2, #128
-    add x5, x2, x6
-    bic w2, w0, w4
+    add x4, x2, x5
+    movz x2, #254
+    and w2, w2, w0
     uxtb w2, w2
     uxtb w2, w2
     udiv w2, w2, w3
     uxtb w2, w2
     uxtb w2, w2
     cmp w2, w3
-    csel x4, x5, x6, eq
+    csel x4, x4, x5, eq
     movz x2, #256
     add x3, x2, x4
     movz x2, #4
@@ -447,26 +450,26 @@ check u8:
     csel x0, x2, x3, cc
     ret
 check u16:
-    uxth w5, w0
+    uxth w4, w0
     uxth w1, w1
-    movz x4, #1
-    add w0, w5, w1
+    movz x6, #1
+    add w0, w4, w1
     uxth w0, w0
     uxth w0, w0
     movz x9, #3
-    movz x6, #1
+    movz x5, #1
     movz x8, #0
     movz x3, #2
     udiv w7, w0, w3
     uxth w7, w7
     uxth w7, w7
     cmp w7, w3
-    csel x7, x6, x8, eq
+    csel x7, x5, x8, eq
     udiv w8, w0, w9
     msub w8, w8, w9, w0
     uxth w8, w8
     uxth w8, w8
-    cmp w8, w4
+    cmp w8, w6
     b.eq 0x58
     b 0x60
 7:
@@ -484,7 +487,7 @@ check u16:
     udiv w8, w8, w3
     uxth w8, w8
     uxth w10, w8
-    add w8, w0, w4
+    add w8, w0, w6
     uxth w8, w8
     uxth w8, w8
     udiv w8, w9, w8
@@ -492,76 +495,77 @@ check u16:
     uxth w9, w8
     movz x8, #40
     cmp w9, w8
-    csel x9, x11, x7, eq
+    csel x8, x11, x7, eq
     sub w7, w2, w1
-    add w7, w7, w4
-    uxth w7, w7
-    uxth w7, w7
-    udiv w7, w7, w3
-    uxth w7, w7
-    uxth w7, w7
-    cmp w10, w7
+    add w6, w7, w6
+    uxth w6, w6
+    uxth w6, w6
+    udiv w6, w6, w3
+    uxth w6, w6
+    uxth w6, w6
+    cmp w10, w6
     b.eq 0xd8
     b 0xe0
 9:
-    movz x7, #8
-    add x9, x7, x9
+    movz x6, #8
+    add x8, x6, x8
 10:
-    movz x7, #16
-    add x8, x7, x9
-    mvn w7, w5
-    uxth w7, w7
-    uxth w7, w7
-    udiv w7, w7, w3
-    uxth w7, w7
-    uxth w7, w7
-    cmp w7, w3
-    csel x11, x8, x9, eq
-    movz x10, #7
-    movz x7, #32
-    add x9, x7, x11
-    madd x7, x5, x1, xzr
-    uxth w7, w7
-    uxth w7, w7
-    udiv w7, w7, w10
-    uxth w7, w7
-    uxth w7, w7
-    lsl w5, w5, w6
-    uxth w5, w5
-    uxth w5, w5
-    udiv w5, w5, w3
-    uxth w5, w5
-    uxth w8, w5
-    movz x5, #59
-    sub w5, w2, w5
-    uxth w5, w5
-    uxth w5, w5
-    udiv w5, w5, w10
-    uxth w5, w5
-    uxth w5, w5
-    cmp w7, w5
-    csel x7, x9, x11, eq
-    movz x5, #64
-    add x6, x5, x7
-    movz x5, #11
-    sub w2, w2, w5
+    movz x6, #16
+    add x7, x6, x8
+    mvn w6, w4
+    uxth w6, w6
+    uxth w6, w6
+    udiv w6, w6, w3
+    uxth w6, w6
+    uxth w6, w6
+    cmp w6, w3
+    csel x10, x7, x8, eq
+    movz x9, #7
+    movz x6, #32
+    add x8, x6, x10
+    madd x6, x4, x1, xzr
+    uxth w6, w6
+    uxth w6, w6
+    udiv w6, w6, w9
+    uxth w6, w6
+    uxth w6, w6
+    lsl w4, w4, w5
+    uxth w4, w4
+    uxth w4, w4
+    udiv w4, w4, w3
+    uxth w4, w4
+    uxth w7, w4
+    movz x4, #59
+    sub w4, w2, w4
+    uxth w4, w4
+    uxth w4, w4
+    udiv w4, w4, w9
+    uxth w4, w4
+    uxth w4, w4
+    cmp w6, w4
+    csel x6, x8, x10, eq
+    movz x4, #64
+    add x5, x4, x6
+    movz x4, #11
+    sub w2, w2, w4
     uxth w2, w2
     uxth w2, w2
     udiv w2, w2, w3
     uxth w2, w2
     uxth w2, w2
-    cmp w8, w2
-    csel x6, x6, x7, eq
+    cmp w7, w2
+    csel x5, x5, x6, eq
     movz x2, #128
-    add x5, x2, x6
-    bic w2, w0, w4
+    add x4, x2, x5
+    movz x2, #65534
+    and w2, w2, w0
     uxth w2, w2
     uxth w2, w2
     udiv w2, w2, w3
     uxth w2, w2
     uxth w2, w2
     cmp w2, w3
-    csel x4, x5, x6, eq
+    csel x4, x4, x5, eq
     movz x2, #256
     add x3, x2, x4
     movz x2, #4
@@ -655,38 +659,38 @@ check u8:
     cmp w5, w11
     csel x5, x9, x7, eq
     sub w7, w2, w1
-    add w7, w7, w3
+    add w3, w7, w3
+    uxtb w3, w3
+    uxtb w3, w3
+    udiv w3, w3, w8
+    uxtb w3, w3
+    uxtb w3, w3
+    cmp w10, w3
+    b.eq 0xd8
+    b 0xe0
+4:
+    movz x3, #8
+    add x5, x3, x5
+5:
+    movz x3, #16
+    add x3, x3, x5
+    mvn w7, w0
     uxtb w7, w7
     uxtb w7, w7
     udiv w7, w7, w8
     uxtb w7, w7
     uxtb w7, w7
-    cmp w10, w7
-    b.eq 0xd8
-    b 0xe0
-4:
-    movz x7, #8
-    add x5, x7, x5
-5:
-    movz x7, #16
-    add x7, x7, x5
-    mvn w9, w0
+    cmp w7, w8
+    csel x3, x3, x5, eq
+    movz x5, #7
+    movz x7, #32
+    add x7, x7, x3
+    madd x9, x0, x1, xzr
     uxtb w9, w9
     uxtb w9, w9
-    udiv w9, w9, w8
+    udiv w9, w9, w5
     uxtb w9, w9
     uxtb w9, w9
-    cmp w9, w8
-    csel x5, x7, x5, eq
-    movz x7, #7
-    movz x9, #32
-    add x9, x9, x5
-    madd x10, x0, x1, xzr
-    uxtb w10, w10
-    uxtb w10, w10
-    udiv w10, w10, w7
-    uxtb w10, w10
-    uxtb w10, w10
     lsl w0, w0, w6
     uxtb w0, w0
     uxtb w0, w0
@@ -697,25 +701,26 @@ check u8:
     sub w6, w2, w6
     uxtb w6, w6
     uxtb w6, w6
-    udiv w6, w6, w7
-    uxtb w6, w6
-    uxtb w6, w6
-    cmp w10, w6
-    csel x5, x9, x5, eq
-    movz x6, #64
-    add x6, x6, x5
-    movz x7, #11
-    sub w2, w2, w7
+    udiv w5, w6, w5
+    uxtb w5, w5
+    uxtb w5, w5
+    cmp w9, w5
+    csel x3, x7, x3, eq
+    movz x5, #64
+    add x5, x5, x3
+    movz x6, #11
+    sub w2, w2, w6
     uxtb w2, w2
     uxtb w2, w2
     udiv w2, w2, w8
     uxtb w2, w2
     uxtb w2, w2
     cmp w0, w2
-    csel x0, x6, x5, eq
+    csel x0, x5, x3, eq
     movz x2, #128
     add x2, x2, x0
-    bic w3, w4, w3
+    movz x3, #254
+    and w3, w3, w4
     uxtb w3, w3
     uxtb w3, w3
     udiv w3, w3, w8
@@ -781,38 +786,38 @@ check u16:
     cmp w5, w11
     csel x5, x9, x7, eq
     sub w7, w2, w1
-    add w7, w7, w3
+    add w3, w7, w3
+    uxth w3, w3
+    uxth w3, w3
+    udiv w3, w3, w8
+    uxth w3, w3
+    uxth w3, w3
+    cmp w10, w3
+    b.eq 0xd8
+    b 0xe0
+9:
+    movz x3, #8
+    add x5, x3, x5
+10:
+    movz x3, #16
+    add x3, x3, x5
+    mvn w7, w0
     uxth w7, w7
     uxth w7, w7
     udiv w7, w7, w8
     uxth w7, w7
     uxth w7, w7
-    cmp w10, w7
-    b.eq 0xd8
-    b 0xe0
-9:
-    movz x7, #8
-    add x5, x7, x5
-10:
-    movz x7, #16
-    add x7, x7, x5
-    mvn w9, w0
+    cmp w7, w8
+    csel x3, x3, x5, eq
+    movz x5, #7
+    movz x7, #32
+    add x7, x7, x3
+    madd x9, x0, x1, xzr
     uxth w9, w9
     uxth w9, w9
-    udiv w9, w9, w8
+    udiv w9, w9, w5
     uxth w9, w9
     uxth w9, w9
-    cmp w9, w8
-    csel x5, x7, x5, eq
-    movz x7, #7
-    movz x9, #32
-    add x9, x9, x5
-    madd x10, x0, x1, xzr
-    uxth w10, w10
-    uxth w10, w10
-    udiv w10, w10, w7
-    uxth w10, w10
-    uxth w10, w10
     lsl w0, w0, w6
     uxth w0, w0
     uxth w0, w0
@@ -823,25 +828,26 @@ check u16:
     sub w6, w2, w6
     uxth w6, w6
     uxth w6, w6
-    udiv w6, w6, w7
-    uxth w6, w6
-    uxth w6, w6
-    cmp w10, w6
-    csel x5, x9, x5, eq
-    movz x6, #64
-    add x6, x6, x5
-    movz x7, #11
-    sub w2, w2, w7
+    udiv w5, w6, w5
+    uxth w5, w5
+    uxth w5, w5
+    cmp w9, w5
+    csel x3, x7, x3, eq
+    movz x5, #64
+    add x5, x5, x3
+    movz x6, #11
+    sub w2, w2, w6
     uxth w2, w2
     uxth w2, w2
     udiv w2, w2, w8
     uxth w2, w2
     uxth w2, w2
     cmp w0, w2
-    csel x0, x6, x5, eq
+    csel x0, x5, x3, eq
     movz x2, #128
     add x2, x2, x0
-    bic w3, w4, w3
+    movz x3, #65534
+    and w3, w3, w4
     uxth w3, w3
     uxth w3, w3
     udiv w3, w3, w8
@@ -895,26 +901,26 @@ main:
     add sp, sp, #48
     ret
 check u8:
-    uxtb w5, w0
+    uxtb w4, w0
     uxtb w1, w1
-    movz x4, #1
-    add w0, w5, w1
+    movz x6, #1
+    add w0, w4, w1
     uxtb w0, w0
     uxtb w0, w0
     movz x9, #3
-    movz x6, #1
+    movz x5, #1
     movz x8, #0
     movz x3, #2
     udiv w7, w0, w3
     uxtb w7, w7
     uxtb w7, w7
     cmp w7, w3
-    csel x7, x6, x8, eq
+    csel x7, x5, x8, eq
     udiv w8, w0, w9
     msub w8, w8, w9, w0
     uxtb w8, w8
     uxtb w8, w8
-    cmp w8, w4
+    cmp w8, w6
     b.eq 0x58
     b 0x60
 2:
@@ -932,7 +938,7 @@ check u8:
     udiv w8, w8, w3
     uxtb w8, w8
     uxtb w10, w8
-    add w8, w0, w4
+    add w8, w0, w6
     uxtb w8, w8
     uxtb w8, w8
     udiv w8, w9, w8
@@ -940,76 +946,77 @@ check u8:
     uxtb w9, w8
     movz x8, #40
     cmp w9, w8
-    csel x9, x11, x7, eq
+    csel x8, x11, x7, eq
     sub w7, w2, w1
-    add w7, w7, w4
-    uxtb w7, w7
-    uxtb w7, w7
-    udiv w7, w7, w3
-    uxtb w7, w7
-    uxtb w7, w7
-    cmp w10, w7
+    add w6, w7, w6
+    uxtb w6, w6
+    uxtb w6, w6
+    udiv w6, w6, w3
+    uxtb w6, w6
+    uxtb w6, w6
+    cmp w10, w6
     b.eq 0xd8
     b 0xe0
 4:
-    movz x7, #8
-    add x9, x7, x9
+    movz x6, #8
+    add x8, x6, x8
 5:
-    movz x7, #16
-    add x8, x7, x9
-    mvn w7, w5
-    uxtb w7, w7
-    uxtb w7, w7
-    udiv w7, w7, w3
-    uxtb w7, w7
-    uxtb w7, w7
-    cmp w7, w3
-    csel x11, x8, x9, eq
-    movz x10, #7
-    movz x7, #32
-    add x9, x7, x11
-    madd x7, x5, x1, xzr
-    uxtb w7, w7
-    uxtb w7, w7
-    udiv w7, w7, w10
-    uxtb w7, w7
-    uxtb w7, w7
-    lsl w5, w5, w6
-    uxtb w5, w5
-    uxtb w5, w5
-    udiv w5, w5, w3
-    uxtb w5, w5
-    uxtb w8, w5
-    movz x5, #59
-    sub w5, w2, w5
-    uxtb w5, w5
-    uxtb w5, w5
-    udiv w5, w5, w10
-    uxtb w5, w5
-    uxtb w5, w5
-    cmp w7, w5
-    csel x7, x9, x11, eq
-    movz x5, #64
-    add x6, x5, x7
-    movz x5, #11
-    sub w2, w2, w5
+    movz x6, #16
+    add x7, x6, x8
+    mvn w6, w4
+    uxtb w6, w6
+    uxtb w6, w6
+    udiv w6, w6, w3
+    uxtb w6, w6
+    uxtb w6, w6
+    cmp w6, w3
+    csel x10, x7, x8, eq
+    movz x9, #7
+    movz x6, #32
+    add x8, x6, x10
+    madd x6, x4, x1, xzr
+    uxtb w6, w6
+    uxtb w6, w6
+    udiv w6, w6, w9
+    uxtb w6, w6
+    uxtb w6, w6
+    lsl w4, w4, w5
+    uxtb w4, w4
+    uxtb w4, w4
+    udiv w4, w4, w3
+    uxtb w4, w4
+    uxtb w7, w4
+    movz x4, #59
+    sub w4, w2, w4
+    uxtb w4, w4
+    uxtb w4, w4
+    udiv w4, w4, w9
+    uxtb w4, w4
+    uxtb w4, w4
+    cmp w6, w4
+    csel x6, x8, x10, eq
+    movz x4, #64
+    add x5, x4, x6
+    movz x4, #11
+    sub w2, w2, w4
     uxtb w2, w2
     uxtb w2, w2
     udiv w2, w2, w3
     uxtb w2, w2
     uxtb w2, w2
-    cmp w8, w2
-    csel x6, x6, x7, eq
+    cmp w7, w2
+    csel x5, x5, x6, eq
     movz x2, #128
-    add x5, x2, x6
-    bic w2, w0, w4
+    add x4, x2, x5
+    movz x2, #254
+    and w2, w2, w0
     uxtb w2, w2
     uxtb w2, w2
     udiv w2, w2, w3
     uxtb w2, w2
     uxtb w2, w2
     cmp w2, w3
-    csel x4, x5, x6, eq
+    csel x4, x4, x5, eq
     movz x2, #256
     add x3, x2, x4
     movz x2, #4
@@ -1021,26 +1028,26 @@ check u8:
     csel x0, x2, x3, cc
     ret
 check u16:
-    uxth w5, w0
+    uxth w4, w0
     uxth w1, w1
-    movz x4, #1
-    add w0, w5, w1
+    movz x6, #1
+    add w0, w4, w1
     uxth w0, w0
     uxth w0, w0
     movz x9, #3
-    movz x6, #1
+    movz x5, #1
     movz x8, #0
     movz x3, #2
     udiv w7, w0, w3
     uxth w7, w7
     uxth w7, w7
     cmp w7, w3
-    csel x7, x6, x8, eq
+    csel x7, x5, x8, eq
     udiv w8, w0, w9
     msub w8, w8, w9, w0
     uxth w8, w8
     uxth w8, w8
-    cmp w8, w4
+    cmp w8, w6
     b.eq 0x58
     b 0x60
 7:
@@ -1058,7 +1065,7 @@ check u16:
     udiv w8, w8, w3
     uxth w8, w8
     uxth w10, w8
-    add w8, w0, w4
+    add w8, w0, w6
     uxth w8, w8
     uxth w8, w8
     udiv w8, w9, w8
@@ -1066,76 +1073,77 @@ check u16:
     uxth w9, w8
     movz x8, #40
     cmp w9, w8
-    csel x9, x11, x7, eq
+    csel x8, x11, x7, eq
     sub w7, w2, w1
-    add w7, w7, w4
-    uxth w7, w7
-    uxth w7, w7
-    udiv w7, w7, w3
-    uxth w7, w7
-    uxth w7, w7
-    cmp w10, w7
+    add w6, w7, w6
+    uxth w6, w6
+    uxth w6, w6
+    udiv w6, w6, w3
+    uxth w6, w6
+    uxth w6, w6
+    cmp w10, w6
     b.eq 0xd8
     b 0xe0
 9:
-    movz x7, #8
-    add x9, x7, x9
+    movz x6, #8
+    add x8, x6, x8
 10:
-    movz x7, #16
-    add x8, x7, x9
-    mvn w7, w5
-    uxth w7, w7
-    uxth w7, w7
-    udiv w7, w7, w3
-    uxth w7, w7
-    uxth w7, w7
-    cmp w7, w3
-    csel x11, x8, x9, eq
-    movz x10, #7
-    movz x7, #32
-    add x9, x7, x11
-    madd x7, x5, x1, xzr
-    uxth w7, w7
-    uxth w7, w7
-    udiv w7, w7, w10
-    uxth w7, w7
-    uxth w7, w7
-    lsl w5, w5, w6
-    uxth w5, w5
-    uxth w5, w5
-    udiv w5, w5, w3
-    uxth w5, w5
-    uxth w8, w5
-    movz x5, #59
-    sub w5, w2, w5
-    uxth w5, w5
-    uxth w5, w5
-    udiv w5, w5, w10
-    uxth w5, w5
-    uxth w5, w5
-    cmp w7, w5
-    csel x7, x9, x11, eq
-    movz x5, #64
-    add x6, x5, x7
-    movz x5, #11
-    sub w2, w2, w5
+    movz x6, #16
+    add x7, x6, x8
+    mvn w6, w4
+    uxth w6, w6
+    uxth w6, w6
+    udiv w6, w6, w3
+    uxth w6, w6
+    uxth w6, w6
+    cmp w6, w3
+    csel x10, x7, x8, eq
+    movz x9, #7
+    movz x6, #32
+    add x8, x6, x10
+    madd x6, x4, x1, xzr
+    uxth w6, w6
+    uxth w6, w6
+    udiv w6, w6, w9
+    uxth w6, w6
+    uxth w6, w6
+    lsl w4, w4, w5
+    uxth w4, w4
+    uxth w4, w4
+    udiv w4, w4, w3
+    uxth w4, w4
+    uxth w7, w4
+    movz x4, #59
+    sub w4, w2, w4
+    uxth w4, w4
+    uxth w4, w4
+    udiv w4, w4, w9
+    uxth w4, w4
+    uxth w4, w4
+    cmp w6, w4
+    csel x6, x8, x10, eq
+    movz x4, #64
+    add x5, x4, x6
+    movz x4, #11
+    sub w2, w2, w4
     uxth w2, w2
     uxth w2, w2
     udiv w2, w2, w3
     uxth w2, w2
     uxth w2, w2
-    cmp w8, w2
-    csel x6, x6, x7, eq
+    cmp w7, w2
+    csel x5, x5, x6, eq
     movz x2, #128
-    add x5, x2, x6
-    bic w2, w0, w4
+    add x4, x2, x5
+    movz x2, #65534
+    and w2, w2, w0
     uxth w2, w2
     uxth w2, w2
     udiv w2, w2, w3
     uxth w2, w2
     uxth w2, w2
     cmp w2, w3
-    csel x4, x5, x6, eq
+    csel x4, x4, x5, eq
     movz x2, #256
     add x3, x2, x4
     movz x2, #4
@@ -1182,26 +1190,26 @@ main:
     add sp, sp, #48
     ret
 check u8:
-    uxtb w5, w0
+    uxtb w4, w0
     uxtb w1, w1
-    movz x4, #1
-    add w0, w5, w1
+    movz x6, #1
+    add w0, w4, w1
     uxtb w0, w0
     uxtb w0, w0
     movz x9, #3
-    movz x6, #1
+    movz x5, #1
     movz x8, #0
     movz x3, #2
     udiv w7, w0, w3
     uxtb w7, w7
     uxtb w7, w7
     cmp w7, w3
-    csel x7, x6, x8, eq
+    csel x7, x5, x8, eq
     udiv w8, w0, w9
     msub w8, w8, w9, w0
     uxtb w8, w8
     uxtb w8, w8
-    cmp w8, w4
+    cmp w8, w6
     b.eq 0x58
     b 0x60
 2:
@@ -1219,7 +1227,7 @@ check u8:
     udiv w8, w8, w3
     uxtb w8, w8
     uxtb w10, w8
-    add w8, w0, w4
+    add w8, w0, w6
     uxtb w8, w8
     uxtb w8, w8
     udiv w8, w9, w8
@@ -1227,76 +1235,77 @@ check u8:
     uxtb w9, w8
     movz x8, #40
     cmp w9, w8
-    csel x9, x11, x7, eq
+    csel x8, x11, x7, eq
     sub w7, w2, w1
-    add w7, w7, w4
-    uxtb w7, w7
-    uxtb w7, w7
-    udiv w7, w7, w3
-    uxtb w7, w7
-    uxtb w7, w7
-    cmp w10, w7
+    add w6, w7, w6
+    uxtb w6, w6
+    uxtb w6, w6
+    udiv w6, w6, w3
+    uxtb w6, w6
+    uxtb w6, w6
+    cmp w10, w6
     b.eq 0xd8
     b 0xe0
 4:
-    movz x7, #8
-    add x9, x7, x9
+    movz x6, #8
+    add x8, x6, x8
 5:
-    movz x7, #16
-    add x8, x7, x9
-    mvn w7, w5
-    uxtb w7, w7
-    uxtb w7, w7
-    udiv w7, w7, w3
-    uxtb w7, w7
-    uxtb w7, w7
-    cmp w7, w3
-    csel x11, x8, x9, eq
-    movz x10, #7
-    movz x7, #32
-    add x9, x7, x11
-    madd x7, x5, x1, xzr
-    uxtb w7, w7
-    uxtb w7, w7
-    udiv w7, w7, w10
-    uxtb w7, w7
-    uxtb w7, w7
-    lsl w5, w5, w6
-    uxtb w5, w5
-    uxtb w5, w5
-    udiv w5, w5, w3
-    uxtb w5, w5
-    uxtb w8, w5
-    movz x5, #59
-    sub w5, w2, w5
-    uxtb w5, w5
-    uxtb w5, w5
-    udiv w5, w5, w10
-    uxtb w5, w5
-    uxtb w5, w5
-    cmp w7, w5
-    csel x7, x9, x11, eq
-    movz x5, #64
-    add x6, x5, x7
-    movz x5, #11
-    sub w2, w2, w5
+    movz x6, #16
+    add x7, x6, x8
+    mvn w6, w4
+    uxtb w6, w6
+    uxtb w6, w6
+    udiv w6, w6, w3
+    uxtb w6, w6
+    uxtb w6, w6
+    cmp w6, w3
+    csel x10, x7, x8, eq
+    movz x9, #7
+    movz x6, #32
+    add x8, x6, x10
+    madd x6, x4, x1, xzr
+    uxtb w6, w6
+    uxtb w6, w6
+    udiv w6, w6, w9
+    uxtb w6, w6
+    uxtb w6, w6
+    lsl w4, w4, w5
+    uxtb w4, w4
+    uxtb w4, w4
+    udiv w4, w4, w3
+    uxtb w4, w4
+    uxtb w7, w4
+    movz x4, #59
+    sub w4, w2, w4
+    uxtb w4, w4
+    uxtb w4, w4
+    udiv w4, w4, w9
+    uxtb w4, w4
+    uxtb w4, w4
+    cmp w6, w4
+    csel x6, x8, x10, eq
+    movz x4, #64
+    add x5, x4, x6
+    movz x4, #11
+    sub w2, w2, w4
     uxtb w2, w2
     uxtb w2, w2
     udiv w2, w2, w3
     uxtb w2, w2
     uxtb w2, w2
-    cmp w8, w2
-    csel x6, x6, x7, eq
+    cmp w7, w2
+    csel x5, x5, x6, eq
     movz x2, #128
-    add x5, x2, x6
-    bic w2, w0, w4
+    add x4, x2, x5
+    movz x2, #254
+    and w2, w2, w0
     uxtb w2, w2
     uxtb w2, w2
     udiv w2, w2, w3
     uxtb w2, w2
     uxtb w2, w2
     cmp w2, w3
-    csel x4, x5, x6, eq
+    csel x4, x4, x5, eq
     movz x2, #256
     add x3, x2, x4
     movz x2, #4
@@ -1308,26 +1317,26 @@ check u8:
     csel x0, x2, x3, cc
     ret
 check u16:
-    uxth w5, w0
+    uxth w4, w0
     uxth w1, w1
-    movz x4, #1
-    add w0, w5, w1
+    movz x6, #1
+    add w0, w4, w1
     uxth w0, w0
     uxth w0, w0
     movz x9, #3
-    movz x6, #1
+    movz x5, #1
     movz x8, #0
     movz x3, #2
     udiv w7, w0, w3
     uxth w7, w7
     uxth w7, w7
     cmp w7, w3
-    csel x7, x6, x8, eq
+    csel x7, x5, x8, eq
     udiv w8, w0, w9
     msub w8, w8, w9, w0
     uxth w8, w8
     uxth w8, w8
-    cmp w8, w4
+    cmp w8, w6
     b.eq 0x58
     b 0x60
 7:
@@ -1345,7 +1354,7 @@ check u16:
     udiv w8, w8, w3
     uxth w8, w8
     uxth w10, w8
-    add w8, w0, w4
+    add w8, w0, w6
     uxth w8, w8
     uxth w8, w8
     udiv w8, w9, w8
@@ -1353,76 +1362,77 @@ check u16:
     uxth w9, w8
     movz x8, #40
     cmp w9, w8
-    csel x9, x11, x7, eq
+    csel x8, x11, x7, eq
     sub w7, w2, w1
-    add w7, w7, w4
-    uxth w7, w7
-    uxth w7, w7
-    udiv w7, w7, w3
-    uxth w7, w7
-    uxth w7, w7
-    cmp w10, w7
+    add w6, w7, w6
+    uxth w6, w6
+    uxth w6, w6
+    udiv w6, w6, w3
+    uxth w6, w6
+    uxth w6, w6
+    cmp w10, w6
     b.eq 0xd8
     b 0xe0
 9:
-    movz x7, #8
-    add x9, x7, x9
+    movz x6, #8
+    add x8, x6, x8
 10:
-    movz x7, #16
-    add x8, x7, x9
-    mvn w7, w5
-    uxth w7, w7
-    uxth w7, w7
-    udiv w7, w7, w3
-    uxth w7, w7
-    uxth w7, w7
-    cmp w7, w3
-    csel x11, x8, x9, eq
-    movz x10, #7
-    movz x7, #32
-    add x9, x7, x11
-    madd x7, x5, x1, xzr
-    uxth w7, w7
-    uxth w7, w7
-    udiv w7, w7, w10
-    uxth w7, w7
-    uxth w7, w7
-    lsl w5, w5, w6
-    uxth w5, w5
-    uxth w5, w5
-    udiv w5, w5, w3
-    uxth w5, w5
-    uxth w8, w5
-    movz x5, #59
-    sub w5, w2, w5
-    uxth w5, w5
-    uxth w5, w5
-    udiv w5, w5, w10
-    uxth w5, w5
-    uxth w5, w5
-    cmp w7, w5
-    csel x7, x9, x11, eq
-    movz x5, #64
-    add x6, x5, x7
-    movz x5, #11
-    sub w2, w2, w5
+    movz x6, #16
+    add x7, x6, x8
+    mvn w6, w4
+    uxth w6, w6
+    uxth w6, w6
+    udiv w6, w6, w3
+    uxth w6, w6
+    uxth w6, w6
+    cmp w6, w3
+    csel x10, x7, x8, eq
+    movz x9, #7
+    movz x6, #32
+    add x8, x6, x10
+    madd x6, x4, x1, xzr
+    uxth w6, w6
+    uxth w6, w6
+    udiv w6, w6, w9
+    uxth w6, w6
+    uxth w6, w6
+    lsl w4, w4, w5
+    uxth w4, w4
+    uxth w4, w4
+    udiv w4, w4, w3
+    uxth w4, w4
+    uxth w7, w4
+    movz x4, #59
+    sub w4, w2, w4
+    uxth w4, w4
+    uxth w4, w4
+    udiv w4, w4, w9
+    uxth w4, w4
+    uxth w4, w4
+    cmp w6, w4
+    csel x6, x8, x10, eq
+    movz x4, #64
+    add x5, x4, x6
+    movz x4, #11
+    sub w2, w2, w4
     uxth w2, w2
     uxth w2, w2
     udiv w2, w2, w3
     uxth w2, w2
     uxth w2, w2
-    cmp w8, w2
-    csel x6, x6, x7, eq
+    cmp w7, w2
+    csel x5, x5, x6, eq
     movz x2, #128
-    add x5, x2, x6
-    bic w2, w0, w4
+    add x4, x2, x5
+    movz x2, #65534
+    and w2, w2, w0
     uxth w2, w2
     uxth w2, w2
     udiv w2, w2, w3
     uxth w2, w2
     uxth w2, w2
     cmp w2, w3
-    csel x4, x5, x6, eq
+    csel x4, x4, x5, eq
     movz x2, #256
     add x3, x2, x4
     movz x2, #4
@@ -1441,129 +1451,128 @@ main:
     str x21, [xzr, #16]
     str x22, [xzr, #24]
     str x23, [xzr, #32]
-    str x24, [xzr, #40]
     adr x0, 0xf80
-    ldr x6, [x0]
-    movz x14, #1
+    ldr x7, [x0]
+    movz x2, #1
     movz x0, #250
-    add x0, x0, x6
+    add x0, x0, x7
     uxtb w0, w0
-    uxtb w17, w0
+    uxtb w16, w0
     movz x0, #10
-    add x8, x0, x6
+    add x8, x0, x7
     uxtb w0, w8
     uxtb w13, w0
-    add w0, w17, w13
+    add w0, w16, w13
     uxtb w0, w0
     uxtb w12, w0
-    movz x15, #3
-    movz x16, #1
+    movz x19, #3
+    movz x15, #1
     movz x11, #2
-    movz x7, #2
-    movz x4, #0
+    movz x14, #2
+    movz x5, #0
     udiv w0, w12, w11
     uxtb w0, w0
     uxtb w0, w0
     cmp w0, w11
-    csel x19, x16, x4, eq
-    udiv w0, w12, w15
-    msub w0, w0, w15, w12
+    csel x18, x15, x5, eq
+    udiv w0, w12, w19
+    msub w0, w0, w19, w12
     uxtb w0, w0
     uxtb w0, w0
-    cmp w0, w14
+    cmp w0, w2
     b.eq 1
     b 2
 1:
-    add x19, x19, x7
+    add x18, x18, x14
 2:
     movz x0, #255
-    add x0, x0, x6
+    add x0, x0, x7
     uxtb w0, w0
     uxtb w10, w0
-    movz x2, #0
-    movz x5, #4
-    add x18, x19, x5
+    movz x3, #0
+    movz x6, #4
+    add x17, x18, x6
     movz x1, #8
-    movz x3, #200
+    movz x4, #200
     movz x0, #40
-    sub w9, w2, w13
+    sub w9, w3, w13
     uxtb w9, w9
     uxtb w9, w9
     udiv w9, w9, w11
     uxtb w9, w9
     uxtb w9, w9
-    add w20, w12, w14
+    add w20, w12, w2
     uxtb w20, w20
     uxtb w20, w20
-    udiv w20, w3, w20
+    udiv w20, w4, w20
     uxtb w20, w20
     uxtb w20, w20
     cmp w20, w0
-    csel x19, x18, x19, eq
-    sub w18, w10, w13
-    add w18, w18, w14
-    uxtb w18, w18
-    uxtb w18, w18
-    udiv w18, w18, w11
-    uxtb w18, w18
-    uxtb w18, w18
-    cmp w9, w18
+    csel x18, x17, x18, eq
+    sub w17, w10, w13
+    add w17, w17, w2
+    uxtb w17, w17
+    uxtb w17, w17
+    udiv w17, w17, w11
+    uxtb w17, w17
+    uxtb w17, w17
+    cmp w9, w17
     b.eq 3
     b 4
 3:
-    add x19, x19, x1
+    add x18, x18, x1
 4:
     movz x9, #65530
-    add x9, x9, x6
+    add x9, x9, x7
     uxth w9, w9
-    uxth w18, w9
+    uxth w17, w9
     uxth w8, w8
     uxth w9, w8
-    add w8, w18, w9
+    add w8, w17, w9
     uxth w8, w8
     uxth w8, w8
     udiv w20, w8, w11
     uxth w20, w20
     uxth w20, w20
     cmp w20, w11
-    csel x4, x16, x4, eq
-    udiv w20, w8, w15
-    msub w15, w20, w15, w8
-    uxth w15, w15
-    uxth w15, w15
-    cmp w15, w14
+    csel x5, x15, x5, eq
+    udiv w20, w8, w19
+    msub w19, w20, w19, w8
+    uxth w19, w19
+    uxth w19, w19
+    cmp w19, w2
     b.eq 5
     b 6
 5:
-    add x4, x4, x7
+    add x5, x5, x14
 6:
-    movz x7, #65535
-    add x6, x7, x6
+    movz x14, #65535
+    add x7, x14, x7
+    uxth w7, w7
+    uxth w14, w7
+    add x7, x5, x6
+    add w6, w8, w2
     uxth w6, w6
-    uxth w15, w6
-    add x6, x4, x5
-    add w5, w8, w14
-    uxth w5, w5
-    uxth w5, w5
-    udiv w3, w3, w5
+    uxth w6, w6
+    udiv w4, w4, w6
+    uxth w4, w4
+    uxth w4, w4
+    cmp w4, w0
+    csel x0, x7, x5, eq
+    sub w3, w3, w9
     uxth w3, w3
     uxth w3, w3
-    cmp w3, w0
-    csel x0, x6, x4, eq
-    sub w2, w2, w9
-    uxth w2, w2
-    uxth w2, w2
-    udiv w2, w2, w11
-    uxth w2, w2
-    uxth w3, w2
-    sub w2, w15, w9
-    add w2, w2, w14
+    udiv w3, w3, w11
+    uxth w3, w3
+    uxth w4, w3
+    sub w3, w14, w9
+    add w2, w3, w2
     uxth w2, w2
     uxth w2, w2
     udiv w2, w2, w11
     uxth w2, w2
     uxth w2, w2
-    cmp w3, w2
+    cmp w4, w2
     b.eq 7
     b 8
 7:
@@ -1571,114 +1580,116 @@ main:
 8:
     movz x1, #16
     add x2, x0, x1
-    add x21, x19, x1
-    movz x20, #32
+    add x20, x18, x1
+    movz x19, #32
     movz x6, #512
     movz x5, #256
     movz x4, #4
-    mvn w1, w18
+    mvn w1, w17
     uxth w1, w1
     uxth w1, w1
     udiv w1, w1, w11
     uxth w1, w1
     uxth w1, w1
     cmp w1, w11
-    csel x23, x2, x0, eq
-    movz x7, #59
-    movz x3, #11
-    add x22, x23, x20
-    movz x2, #64
-    movz x1, #7
-    movz x0, #128
-    mvn w24, w17
-    uxtb w24, w24
-    uxtb w24, w24
-    udiv w24, w24, w11
-    uxtb w24, w24
-    uxtb w24, w24
-    cmp w24, w11
-    csel x19, x21, x19, eq
-    madd x21, x18, x9, xzr
-    uxth w21, w21
-    uxth w21, w21
-    udiv w21, w21, w1
-    uxth w21, w21
-    uxth w24, w21
-    add x20, x19, x20
-    lsl w18, w18, w16
-    uxth w18, w18
-    uxth w18, w18
-    udiv w18, w18, w11
-    uxth w18, w18
-    uxth w21, w18
-    madd x18, x17, x13, xzr
-    uxtb w18, w18
-    uxtb w18, w18
-    udiv w18, w18, w1
-    uxtb w18, w18
-    uxtb w18, w18
-    lsl w16, w17, w16
-    uxtb w16, w16
-    uxtb w16, w16
-    udiv w16, w16, w11
-    uxtb w16, w16
-    uxtb w16, w16
-    sub w17, w15, w7
+    csel x22, x2, x0, eq
+    movz x3, #59
+    movz x2, #11
+    add x21, x22, x19
+    movz x1, #64
+    movz x0, #7
+    movz x7, #128
+    mvn w23, w16
+    uxtb w23, w23
+    uxtb w23, w23
+    udiv w23, w23, w11
+    uxtb w23, w23
+    uxtb w23, w23
+    cmp w23, w11
+    csel x18, x20, x18, eq
+    madd x20, x17, x9, xzr
+    uxth w20, w20
+    uxth w20, w20
+    udiv w20, w20, w0
+    uxth w20, w20
+    uxth w23, w20
+    add x19, x18, x19
+    lsl w17, w17, w15
     uxth w17, w17
     uxth w17, w17
-    udiv w17, w17, w1
+    udiv w17, w17, w11
     uxth w17, w17
-    uxth w17, w17
-    cmp w24, w17
-    csel x22, x22, x23, eq
-    add x17, x22, x2
-    sub w15, w15, w3
-    uxth w15, w15
-    uxth w15, w15
+    uxth w20, w17
+    madd x17, x16, x13, xzr
+    uxtb w17, w17
+    uxtb w17, w17
+    udiv w17, w17, w0
+    uxtb w17, w17
+    uxtb w17, w17
+    lsl w15, w16, w15
+    uxtb w15, w15
+    uxtb w15, w15
     udiv w15, w15, w11
-    uxth w15, w15
-    uxth w15, w15
-    cmp w21, w15
-    csel x21, x17, x22, eq
-    add x17, x21, x0
-    bic w15, w8, w14
-    uxth w15, w15
-    uxth w15, w15
-    udiv w15, w15, w11
-    uxth w15, w15
-    uxth w15, w15
-    cmp w15, w11
-    csel x17, x17, x21, eq
-    add x15, x17, x5
-    sub w7, w10, w7
-    uxtb w7, w7
-    uxtb w7, w7
-    udiv w1, w7, w1
-    uxtb w1, w1
-    uxtb w1, w1
-    cmp w18, w1
-    csel x7, x20, x19, eq
-    add x2, x7, x2
-    sub w1, w10, w3
-    uxtb w1, w1
-    uxtb w1, w1
-    udiv w1, w1, w11
-    uxtb w1, w1
-    uxtb w1, w1
-    cmp w16, w1
-    csel x7, x2, x7, eq
+    uxtb w15, w15
+    uxtb w15, w15
+    sub w16, w14, w3
+    uxth w16, w16
+    uxth w16, w16
+    udiv w16, w16, w0
+    uxth w16, w16
+    uxth w16, w16
+    cmp w23, w16
+    csel x21, x21, x22, eq
+    add x16, x21, x1
+    sub w14, w14, w2
+    uxth w14, w14
+    uxth w14, w14
+    udiv w14, w14, w11
+    uxth w14, w14
+    uxth w14, w14
+    cmp w20, w14
+    csel x20, x16, x21, eq
+    add x16, x20, x7
+    movz x14, #65534
+    and w14, w14, w8
+    uxth w14, w14
+    uxth w14, w14
+    udiv w14, w14, w11
+    uxth w14, w14
+    uxth w14, w14
+    cmp w14, w11
+    csel x16, x16, x20, eq
+    add x14, x16, x5
+    sub w3, w10, w3
+    uxtb w3, w3
+    uxtb w3, w3
+    udiv w0, w3, w0
+    uxtb w0, w0
+    uxtb w0, w0
+    cmp w17, w0
+    csel x3, x19, x18, eq
+    add x1, x3, x1
+    sub w0, w10, w2
+    uxtb w0, w0
+    uxtb w0, w0
+    udiv w0, w0, w11
+    uxtb w0, w0
+    uxtb w0, w0
+    cmp w15, w0
+    csel x10, x1, x3, eq
     cmp w8, w4
-    csel x3, x15, x17, eq
+    csel x3, x14, x16, eq
     add x2, x3, x6
-    add x1, x7, x0
-    bic w0, w12, w14
+    add x1, x10, x7
+    movz x0, #254
+    and w0, w0, w12
     uxtb w0, w0
     uxtb w0, w0
     udiv w0, w0, w11
     uxtb w0, w0
     uxtb w0, w0
     cmp w0, w11
-    csel x1, x1, x7, eq
+    csel x1, x1, x10, eq
     add x0, x1, x5
     cmp w12, w4
     csel x1, x0, x1, eq
@@ -1693,6 +1704,5 @@ main:
     ldr x21, [xzr, #16]
     ldr x22, [xzr, #24]
     ldr x23, [xzr, #32]
-    ldr x24, [xzr, #40]
     add sp, sp, #48
     ret

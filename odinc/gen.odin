@@ -1239,21 +1239,15 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				if d.op.kind == .Eq {
 					value = emit_rvalue(ctx, {}, rhs)
 				} else {
-					op, name, lane :=
-						typecheck.tok_to_binop(
-							get_node_type(rhs),
-							d.op.kind,
-						) or_else panic("")
 					old := emit_rvalue(ctx, {}, lhs)
 					bac.pin(ctx, old)
-					value = bac.add_bin_op(
+					value = emit_tok_bin_op(
 						ctx,
-						name,
-						op,
+						get_node_type(rhs),
+						d.op.kind,
 						type_to_dt(get_node_type(lhs)),
 						old,
 						emit_rvalue(ctx, {}, rhs),
-						lane,
 					)
 					bac.unpin(ctx, old)
 				}
@@ -1266,19 +1260,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			case int:
 				value := emit_rvalue(ctx, {}, rhs)
 				if d.op.kind != .Eq {
-					op, name, lane :=
-						typecheck.tok_to_binop(
-							get_node_type(rhs),
-							d.op.kind,
-						) or_else panic("")
-					value = bac.add_bin_op(
+					value = emit_tok_bin_op(
 						ctx,
-						name,
-						op,
+						get_node_type(rhs),
+						d.op.kind,
 						type_to_dt(get_node_type(lhs)),
 						ssa.get_scope_value(ctx, ctx.node_scope, sym),
 						value,
-						lane,
 					)
 				}
 
@@ -1327,21 +1315,15 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 					emit_wide_binary(ctx, sym.id, d.op.kind, lhs_ty, sym, rhsv, rhs)
 					bac.unpin(ctx, sym.id)
 				} else {
-					op, name, lane :=
-						typecheck.tok_to_binop(
-							get_node_type(rhs),
-							d.op.kind,
-						) or_else panic("")
 					vl := to_rvalue(ctx, sym, rhs)
 					bac.pin(ctx, vl)
-					value := bac.add_bin_op(
+					value := emit_tok_bin_op(
 						ctx,
-						name,
-						op,
+						get_node_type(rhs),
+						d.op.kind,
 						type_to_dt(get_node_type(lhs)),
 						vl,
 						emit_rvalue(ctx, {}, rhs),
-						lane,
 					)
 					bac.unpin(ctx, vl)
 					store_value(ctx, "asss", sym.id, Value(value), lhs)
@@ -1442,15 +1424,13 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 		}
 		rhsv := emit_nodes(ctx, {}, d.right)
 		lhs, rhs := to_rvalue(ctx, lhsv, d.left), to_rvalue(ctx, rhsv, d.right)
-		kind, name, lane :=
-			typecheck.tok_to_binop(lhs_ty, d.op.kind) or_else panic("")
 		if typecheck.is_of(lhs_ty, ^typecheck.Bit_Set) &&
 		   .Lt <= d.op.kind &&
 		   d.op.kind < .B_Comparison_End {
 			set_dt := type_to_dt(lhs_ty)
 			sub, super := lhs, rhs
 			if d.op.kind == .Gt || d.op.kind == .Gt_Eq do sub, super = rhs, lhs
-			diff := bac.add_bin_op(ctx, name, kind, set_dt, sub, super)
+			diff := emit_tok_bin_op(ctx, lhs_ty, d.op.kind, set_dt, sub, super)
 			zero := bac.add_c_int(ctx, "bs0", set_dt, 0)
 			res = bac.add_bin_op(ctx, "subeq", .Eq, dt, diff, zero)
 			if d.op.kind == .Lt || d.op.kind == .Gt {
@@ -1458,7 +1438,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 				res = bac.add_bin_op(ctx, "subst", .And, dt, res, differ)
 			}
 		} else {
-			res = bac.add_bin_op(ctx, name, kind, dt, lhs, rhs, lane)
+			res = emit_tok_bin_op(ctx, lhs_ty, d.op.kind, dt, lhs, rhs)
 		}
 		bac.unpin(ctx, lhsv.id)
 	case ^ast.Unary_Expr:
@@ -2231,7 +2211,7 @@ emit_nodes :: proc(ctx: ^Gen_Ctx, prop: Prop, node: ^ast.Node) -> Value {
 			value := ssa.get_scope_value(ctx, ctx.node_scope, value_slot)
 			tok: tokenizer.Token_Kind =
 				interval.op.kind == .Range_Half ? .Gt_Eq : .Gt
-			op, name, _ := typecheck.tok_to_binop(elem_ty, tok) or_else panic("")
+			op, name, _, _ := typecheck.tok_to_binop(elem_ty, tok) or_else panic("")
 			stop := bac.add_bin_op(ctx, name, op, .I8, value, limit)
 			break_if(ctx, &loop_state, stop)
 
@@ -2760,8 +2740,8 @@ emit_bit_field_store :: proc(ctx: ^Gen_Ctx, lhs: ^ast.Expr, value: Node_ID) {
 	bits = bac.add_bin_op(ctx, "bfbits", .And, bdt, bits, maskc)
 	bac.pin(ctx, bits)
 
-	maskc = bac.add_c_int(ctx, "bfmask", bdt, mask)
-	kept := bac.add_bin_op(ctx, "bfkeep", .And_Not, bdt, old, maskc)
+	keepc := bac.add_c_int(ctx, "bfkeepc", bdt, ~mask)
+	kept := bac.add_bin_op(ctx, "bfkeep", .And, bdt, old, keepc)
 	bac.unpin(ctx, old)
 	new := bac.add_bin_op(ctx, "bfnew", .Or, bdt, kept, bits)
 	bac.unpin(ctx, bits)
@@ -3145,6 +3125,19 @@ emit_libcall :: proc(
 	for &r, i in results do r = ssa.add_call_ret(ctx, call_end, rets[i])
 }
 
+emit_tok_bin_op :: proc(
+	ctx: ^Gen_Ctx,
+	ty: Type,
+	tok: tokenizer.Token_Kind,
+	dt: bac.Node_Datatype,
+	lhs, rhs: Node_ID,
+) -> Node_ID {
+	op, name, lane, not_rhs := typecheck.tok_to_binop(ty, tok) or_else panic("")
+	rhs := rhs
+	if not_rhs do rhs = bac.add_un_op(ctx, name, .Not, dt, rhs, lane)
+	return bac.add_bin_op(ctx, name, op, dt, lhs, rhs, lane)
+}
+
 emit_wide_binary :: proc(
 	ctx: ^Gen_Ctx,
 	dest: Node_ID,
@@ -3153,7 +3146,7 @@ emit_wide_binary :: proc(
 	lhs, rhs: Value,
 	rhs_node: ^ast.Node,
 ) -> Value {
-	op, _, _ := typecheck.tok_to_binop(ty, tok) or_else panic("")
+	op, _, _, not_rhs := typecheck.tok_to_binop(ty, tok) or_else panic("")
 	a := wide_load(ctx, lhs)
 
 	if op == .Shl || op == .Shr || op == .U_Shr {
@@ -3190,7 +3183,11 @@ emit_wide_binary :: proc(
 	case .Div, .U_Div, .Rem, .U_Rem:
 		call := typecheck.division_libcall(ty, tok) or_else panic("")
 		emit_libcall(ctx, call, {a[0], a[1], b[0], b[1]}, {.I64, .I64}, r[:])
-	case .And, .Or, .Xor, .And_Not:
+	case .And, .Or, .Xor:
+		if not_rhs {
+			b[0] = bac.add_un_op(ctx, "wnot", .Not, .I64, b[0])
+			b[1] = bac.add_un_op(ctx, "wnot", .Not, .I64, b[1])
+		}
 		r[0] = bac.add_bin_op(ctx, "wbit", op, .I64, a[0], b[0])
 		r[1] = bac.add_bin_op(ctx, "wbit", op, .I64, a[1], b[1])
 	case .Eq:

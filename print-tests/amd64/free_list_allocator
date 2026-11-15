@@ -18,12 +18,12 @@ alloc_init:
     pop rbx
     ret
 align_up:
-    mov rax, rsi
-    add rdi, rax
-    sub rdi, 1
+    mov rax, rdi
+    add rax, rsi
     sub rax, 1
-    not rax
-    and rax, rdi
+    sub rsi, 1
+    not rsi
+    and rax, rsi
     ret
 alloc_off:
     push rbx
@@ -702,12 +702,12 @@ alloc_init:
     pop rbx
     ret
 align_up:
-    mov rax, rsi
-    add rdi, rax
-    sub rdi, 1
+    mov rax, rdi
+    add rax, rsi
     sub rax, 1
-    not rax
-    and rax, rdi
+    sub rsi, 1
+    not rsi
+    and rax, rsi
     ret
 alloc_off:
     push rbx
@@ -1363,12 +1363,12 @@ alloc_init:
     pop rbx
     ret
 align_up:
-    mov rax, rsi
-    add rdi, rax
-    sub rdi, 1
+    mov rax, rdi
+    add rax, rsi
     sub rax, 1
-    not rax
-    and rax, rdi
+    sub rsi, 1
+    not rsi
+    and rax, rsi
     ret
 alloc_off:
     push rbx
@@ -2053,12 +2053,12 @@ alloc_init:
     pop rbx
     ret
 align_up:
-    mov rax, rsi
-    add rdi, rax
-    sub rdi, 1
+    mov rax, rdi
+    add rax, rsi
     sub rax, 1
-    not rax
-    and rax, rdi
+    sub rsi, 1
+    not rsi
+    and rax, rsi
     ret
 alloc_off:
     push rbx
@@ -2719,12 +2719,12 @@ alloc_init:
     pop rbx
     ret
 align_up:
-    mov rax, rsi
-    add rdi, rax
-    sub rdi, 1
+    mov rax, rdi
+    add rax, rsi
     sub rax, 1
-    not rax
-    and rax, rdi
+    sub rsi, 1
+    not rsi
+    and rax, rsi
     ret
 alloc_off:
     push rbx
@@ -3404,27 +3404,28 @@ alloc_off:
     push r14
     push r15
     sub rsp, 0x88
-    mov r14, rdi
+    mov r15, rdi
     mov.q [rsp + 0x78], rsi
     mov.q [rsp + 0x70], rdx
     mov.q rax, [rsp + 0x78]
     cmp rax, 0
     jle 14
-    cmp.q [r14 + 0x610], 0
+    cmp.q [r15 + 0x610], 0
     jle 13
-    mov rax, r14
+    mov rax, r15
     add rax, 0x10
-    mov r15, rax
+    mov r14, rax
     mov.q rax, [rsp + 0x70]
     sub rax, 1
+    not rax
     mov r12, rax
     xor ebx, ebx
 1:
     imul rsi, rbx, 0x18
-    add rsi, r15
+    add rsi, r14
     lea rdi, [rsp]
     mov rdx, 0x18
-    call -0x11a
+    call -0x11d
     movzx.b eax, [rsp + 0x10]
     test al, al
     jne 2
@@ -3433,25 +3434,24 @@ alloc_off:
     mov.q rdx, [rsp]
     mov.q rbp, [rsp + 0x8]
     mov.q rcx, [rsp + 0x70]
-    add rcx, rdx
-    sub rcx, 1
-    mov rax, r12
-    not rax
-    and rax, rcx
+    mov rax, rdx
+    add rax, rcx
+    sub rax, 1
+    and rax, r12
     mov.q [rsp + 0x68], rax
-    mov.q rax, [rsp + 0x68]
-    sub rax, rdx
-    mov.q [rsp + 0x60], rax
-    mov.q rcx, [rsp + 0x60]
-    mov.q rax, [rsp + 0x78]
-    add rcx, rax
-    mov r13, rcx
+    mov.q rcx, [rsp + 0x68]
+    sub rcx, rdx
+    mov.q [rsp + 0x60], rcx
+    mov.q rcx, [rsp + 0x78]
+    mov.q rax, [rsp + 0x60]
+    add rax, rcx
+    mov r13, rax
     cmp rbp, r13
     jge 4
 3:
     mov rcx, rbx
     add rcx, 1
-    cmp.q rcx, [r14 + 0x610]
+    cmp.q rcx, [r15 + 0x610]
     mov rbx, rcx
     jl 1
     jmp 13
@@ -3491,39 +3491,39 @@ alloc_off:
     add rcx, 1
     cmp rbp, 0
     jg 7
-    mov r12, rcx
+    mov rbp, rcx
     jmp 8
 7:
     imul rsi, rcx, 0x18
     lea rcx, [rsp + 0x18]
     add rsi, rcx
-    mov.q rcx, [rsp + 0x68]
     mov.q rdx, [rsp + 0x78]
+    mov.q rcx, [rsp + 0x68]
     add rcx, rdx
     mov.q [rsi], rcx
     mov.q [rsi + 0x8], rbp
     mov.b [rsi + 0x10], 1
     add rax, 2
-    mov r12, rax
+    mov rbp, rax
 8:
-    mov rbp, r12
-    sub rbp, 1
-    cmp rbp, 0
+    mov r12, rbp
+    sub r12, 1
+    cmp r12, 0
     jg 9
     jmp 11
 9:
-    mov.q rax, [r14 + 0x610]
+    mov.q rax, [r15 + 0x610]
     sub rax, 1
     cmp rax, rbx
     jle 11
     mov r13, rax
 10:
     mov rax, r13
-    add rax, rbp
+    add rax, r12
     imul rdi, rax, 0x18
-    add rdi, r15
+    add rdi, r14
     imul rsi, r13, 0x18
-    add rsi, r15
+    add rsi, r14
     mov rdx, 0x18
     call -0x2ce
     mov rax, r13
@@ -3538,7 +3538,7 @@ alloc_off:
     mov rax, rbx
     add rax, r13
     imul rdi, rax, 0x18
-    add rdi, r15
+    add rdi, r14
     imul rsi, r13, 0x18
     lea rax, [rsp + 0x18]
     add rsi, rax
@@ -3546,10 +3546,10 @@ alloc_off:
     call -0x317
     mov rax, r13
     add rax, 1
-    cmp rax, r12
+    cmp rax, rbp
     mov r13, rax
     jl 12
-    add.q [r14 + 0x610], rbp
+    add.q [r15 + 0x610], r12
     mov.q rax, [rsp + 0x68]
     jmp 15
 13:

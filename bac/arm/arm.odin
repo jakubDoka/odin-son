@@ -55,8 +55,9 @@ ARM_SYSTEMV_CC :: 0
 
 @(tag = "api", rodata, export, link_name = "bac_arm_OPT_HINTS")
 OPT_HINTS := bac.Opt_Config {
-	select_types  = {.I8, .I16, .I32, .I64, .F32, .F64},
-	smallest_type = .I32,
+	select_types    = {.I8, .I16, .I32, .I64, .F32, .F64},
+	smallest_type   = .I32,
+	min_popcnt_type = .I64,
 }
 
 @(tag = "api", rodata, export, link_name = "bac_arm_CC_TABLE")
@@ -143,6 +144,7 @@ when SPEC_NOT_PRESENT {
 		Lslv,
 		Asrv,
 		Lsrv,
+		Bic,
 	}
 }
 
@@ -228,21 +230,13 @@ peep :: proc(
 		)
 		bac.worklist_add(ctx, ctx.worklist, guard)
 		return guard
-	case .Ctz:
-		return bac.normalize_ctz(ctx, node, .I32)
 	case .U_Mul_Hi:
 		return bac.normalize_u_mul_hi(ctx, node)
 	case .Popcnt:
-		// fmov d, x does not clear garbage above a narrow operand
-		ext := bac.normalize_popcnt(ctx, node, .I64)
-		if ext != nil do return ext
-
 		vec := bac.add_un_op(ctx, "pcv", .Cast, .F64, node.inps[0])
 		cnt := add_cnt(ctx, "pcc", .F64, vec)
 		sum := add_addv128(ctx, "pcs", .F64, cnt, lane = .I8)
 		return bac.add_un_op(ctx, "pcr", .Cast, node.dt, sum)
-	case .Conv, .U_Conv:
-		return bac.fold_bit_count_conv(ctx, node)
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -339,6 +333,17 @@ post_schedule_peep :: proc(
 	ctx: bac.PS_Peep_Ctx,
 	node: $N/bac.Expanded_Node,
 ) -> bac.Node_ID {
+	#partial switch atype(node) {
+	case .And:
+		if node.dt not_in bac.INT_DTS do break
+
+		for inp, i in node.inps {
+			inv := expand_node(ctx, inp)
+			if atype(inv) != .Not || len(inv.outs) != 1 do continue
+			return add_bic(ctx.prc, "bic", node.dt, node.inps[1 - i], inv.inps[0])
+		}
+	}
+
 	return 0
 }
 
@@ -396,7 +401,7 @@ meta_of :: #force_inline proc(
 		return {out = out, masks = VEC_MASKS[:1]}
 	case .Splat:
 		return {out = out, masks = GPA_MASKS[:1]}
-	case .Add ..= .Xor, .Shl ..= .And_Not, .Zip1, .Ext, .Lslv ..= .Lsrv:
+	case .Add ..= .Xor, .Shl ..= .U_Mul_Hi, .Zip1, .Ext, .Lslv ..= .Bic:
 		return {out = out, masks = nmasks[:2]}
 	case .Msub:
 		return {out = out, masks = nmasks[:3]}
@@ -668,34 +673,35 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, is_consecutive: bool) {
 
 	@(static, rodata)
 	NODE_TO_OP := #partial [Op_Type][Node_Type]u32 {
-		.Scalar = #partial{
-			.Add = 0x0B000000,
-			.Sub = 0x4B000000,
-			.And = 0x0A000000,
-			.Or = 0x2A000000,
-			.Xor = 0x4A000000,
-			.And_Not = 0x0A200000,
-			.Eq ..= .U_Ge = 0x6B00001F,
-			.Lslv = 0x1AC02000,
-			.Lsrv = 0x1AC02400,
-			.Asrv = 0x1AC02800,
-			.Mul = 0x1B007C00,
-			.U_Div = 0x1AC00800,
-			.Div = 0x1AC00C00,
-			.U_Rem = 0x1AC00800,
-			.Rem = 0x1AC00C00,
-			.Global_Addr = 0x10000000,
-			.Proc_Addr = 0x10000000,
-			.Neg = 0x4B000000,
-			.Not = 0x2a200000,
-			.Cast = 0x1e260000,
+		.Scalar = #partial {
+			.Add                    = 0x0B000000,
+			.Sub                    = 0x4B000000,
+			.And                    = 0x0A000000,
+			.Or                     = 0x2A000000,
+			.Xor                    = 0x4A000000,
+			// bic wd/xd, wn/xn, wm/xm
+			.Bic                    = 0x0A200000,
+			.Eq ..= .U_Ge                        = 0x6B00001F,
+			.Lslv                   = 0x1AC02000,
+			.Lsrv                   = 0x1AC02400,
+			.Asrv                   = 0x1AC02800,
+			.Mul                    = 0x1B007C00,
+			.U_Div                  = 0x1AC00800,
+			.Div                    = 0x1AC00C00,
+			.U_Rem                  = 0x1AC00800,
+			.Rem                    = 0x1AC00C00,
+			.Global_Addr            = 0x10000000,
+			.Proc_Addr              = 0x10000000,
+			.Neg                    = 0x4B000000,
+			.Not                    = 0x2a200000,
+			.Cast                   = 0x1e260000,
 			.Simd_Reduce_Add_Bisect = 0x4E31B800,
-			.Splat = 0x4E000C00,
-			.Cmlt = 0x4E20A800,
-			.Ext = 0x6E000000,
-			.Zip1 = 0x4E003800,
-			.Addv128 = 0x4E31B800,
-			.Umov = 0x0E003C00,
+			.Splat                  = 0x4E000C00,
+			.Cmlt                   = 0x4E20A800,
+			.Ext                    = 0x6E000000,
+			.Zip1                   = 0x4E003800,
+			.Addv128                = 0x4E31B800,
+			.Umov                   = 0x0E003C00,
 		},
 		.Float = #partial{
 			.Add = 0x1E202800,
@@ -1099,7 +1105,7 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, is_consecutive: bool) {
 				rrr(is_64, 0x1A800000 | u32(cc) << 12, dst, on_true, on_false),
 			)
 		}
-	case .Add ..= .Xor, .Div, .U_Div, .And_Not, .Shl ..= .U_Shr, .Lslv ..= .Lsrv:
+	case .Add ..= .Xor, .Div, .U_Div, .Shl ..= .U_Shr, .Lslv ..= .Bic:
 		rd := reg_of(ctx, instr)
 		rn := reg_of(ctx, node.inps[0])
 		rm := reg_of(ctx, node.inps[1])

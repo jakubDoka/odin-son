@@ -249,13 +249,13 @@ unsafe extern "C" {
     pub static bac_arm_CC_TABLE: [Call_Conv; 1];
     pub static bac_amd64_SPEC: Node_Spec;
     pub static bac_arm_SPEC: Node_Spec;
-    pub static bac_arm_OPT_HINTS: Opt_Hints;
+    pub static bac_arm_OPT_HINTS: Opt_Config;
     pub static bac_intel_xelp_CC_TABLE: [Call_Conv; 1];
     pub static bac_intel_xelp_SPEC: Node_Spec;
-    pub static bac_intel_xelp_OPT_HINTS: Opt_Hints;
+    pub static bac_intel_xelp_OPT_HINTS: Opt_Config;
     pub static bac_ssa_SPEC: Node_Spec;
     pub fn bac_set_local_size(r#prc: *mut Proc, r#loc: Node_ID, r#size: i32);
-    pub static bac_amd64_OPT_HINTS: Opt_Hints;
+    pub static bac_amd64_OPT_HINTS: Opt_Config;
     pub fn bac_add_arbitrary_load(
         r#ctx: *mut Proc,
         r#cfg: Node_ID,
@@ -382,7 +382,7 @@ unsafe extern "C" {
         r#node_scope: *mut Node_ID,
         r#state: *mut ssa_Loop_State,
     );
-    pub static bac_wasm_OPT_HINTS: Opt_Hints;
+    pub static bac_wasm_OPT_HINTS: Opt_Config;
     pub static bac_wasm_SPEC: Node_Spec;
 }
 crate::abi_enum! {
@@ -442,7 +442,6 @@ crate::abi_enum! {
         Rem,
         U_Rem,
         U_Mul_Hi,
-        And_Not,
         Split,
         Local_Addr,
         Global_Addr,
@@ -544,10 +543,10 @@ crate::abi_struct! {
 crate::abi_struct! {
     #[derive(AbiStruct)]
     #[repr(C, align(8))]
-    #[abi(size = 16)]
+    #[abi(size = 24)]
     pub struct Peep_Ctx {
         #[abi(offset = 0)] pub r#prc: *mut Proc,
-        #[abi(offset = 8)] pub r#opt_hints: Opt_Hints,
+        #[abi(offset = 8)] pub r#opt_hints: Opt_Config,
     }
 }
 crate::abi_struct! {
@@ -673,7 +672,7 @@ crate::abi_enum! {
     #[repr(u16)]
     #[abi(raw = Un_Op_Raw, counter = Un_Op_Counter, size = 2, align = 2)]
     pub enum Un_Op {
-        Neg = 61,
+        Neg = 60,
         Not,
         Cast,
         Conv,
@@ -766,7 +765,6 @@ crate::abi_enum! {
         Rem,
         U_Rem,
         U_Mul_Hi,
-        And_Not,
         Split,
         Local_Addr,
         Global_Addr,
@@ -943,10 +941,12 @@ crate::abi_struct! {
 }
 crate::abi_struct! {
     #[derive(AbiStruct)]
-    #[repr(C, align(2))]
-    #[abi(size = 2)]
-    pub struct Opt_Hints {
-        #[abi(offset = 0)] pub r#select_types: Opt_Hints_select_types,
+    #[repr(C, align(8))]
+    #[abi(size = 16)]
+    pub struct Opt_Config {
+        #[abi(offset = 0)] pub r#select_types: Opt_Config_select_types,
+        #[abi(offset = 2)] pub r#smallest_type: Node_Datatype,
+        #[abi(offset = 8)] pub r#flags: Opt_Config_flags,
     }
 }
 crate::abi_struct! {
@@ -1035,7 +1035,6 @@ crate::abi_enum! {
         Rem,
         U_Rem,
         U_Mul_Hi,
-        And_Not,
     }
 }
 crate::abi_struct! {
@@ -1369,9 +1368,12 @@ crate::abi_struct! {
         #[abi(offset = 32)] pub r#pre_regalloc_hook: Pre_Regalloc_Hook,
     }
 }
-pub type Opt_Hints_select_types = u16;
-const _: () = assert!(core::mem::size_of::<Opt_Hints_select_types>() == 2);
-const _: () = assert!(core::mem::align_of::<Opt_Hints_select_types>() == 2);
+pub type Opt_Config_select_types = u16;
+const _: () = assert!(core::mem::size_of::<Opt_Config_select_types>() == 2);
+const _: () = assert!(core::mem::align_of::<Opt_Config_select_types>() == 2);
+pub type Opt_Config_flags = u64;
+const _: () = assert!(core::mem::size_of::<Opt_Config_flags>() == 8);
+const _: () = assert!(core::mem::align_of::<Opt_Config_flags>() == 8);
 crate::abi_struct! {
     #[derive(AbiStruct)]
     #[repr(C, align(4))]

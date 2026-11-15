@@ -202,7 +202,7 @@ fold_bin_op_lattice :: proc(
 			for v in values[1:] do lo, hi = min(lo, v), max(hi, v)
 		}
 		if op != .Shr && b.max >= i64(bits) do lo, hi = min(lo, 0), max(hi, 0)
-	case .And, .Or, .Xor, .And_Not:
+	case .And, .Or, .Xor:
 		aone, apossible := known_bits(a, mask)
 		bone, bpossible := known_bits(b, mask)
 		one, possible: u64
@@ -214,8 +214,6 @@ fold_bin_op_lattice :: proc(
 		case .Xor:
 			one = (aone &~ bpossible) | (bone &~ apossible)
 			possible = (apossible &~ bone) | (bpossible &~ aone)
-		case .And_Not:
-			one, possible = aone &~ bpossible, apossible &~ bone
 		}
 		sign := u64(1) << (bits - 1)
 		if possible & sign != 0 && one & sign == 0 {
@@ -290,7 +288,7 @@ sccp_compute :: proc(
 				max  = sext(cint.value, node.dt),
 			}
 		}
-	case .Add ..= .And_Not:
+	case .Add ..= .U_Mul_Hi:
 		lhs := get_lattice(ctx, node.inps[0])
 		rhs := get_lattice(ctx, node.inps[1])
 

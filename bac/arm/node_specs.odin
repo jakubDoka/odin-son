@@ -5,7 +5,7 @@ Reg_Kind :: bac.Reg_Kind
 
 Class_Flag :: bac.Class_Flag
 
-import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta2/meta2.odin(210:3)
+import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta2/meta2.odin(211:3)
 
 @(tag = "api", rodata, export, link_name = "bac_arm_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
@@ -28,6 +28,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		0b10, // Lslv
 		0b10, // Asrv
 		0b10, // Lsrv
+		0b10, // Bic
 	}),
 	node_extra_sizes = intrinsics.concatenate(bac.NODE_EXTRA_SIZES, []u8{
 		0, // Msub -> No_Extra
@@ -40,6 +41,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		0, // Lslv -> No_Extra
 		0, // Asrv -> No_Extra
 		0, // Lsrv -> No_Extra
+		0, // Bic -> No_Extra
 	}),
 	node_flags = intrinsics.concatenate(bac.NODE_FLAGS, []bac.Class_Flags{
 		{}, // Msub
@@ -52,6 +54,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		{}, // Lslv
 		{}, // Asrv
 		{}, // Lsrv
+		{}, // Bic
 	}),
 	node_extra_types = ({}) when #config(NO_FMT, false) else (intrinsics.concatenate(bac.NODE_EXTRA_TYPES, []typeid{
 		bac.No_Extra,
@@ -60,6 +63,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		bac.No_Extra,
 		bac.No_Extra,
 		Arm_Op,
+		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -121,7 +125,6 @@ Node_Type :: enum u16 {
 	Rem,
 	U_Rem,
 	U_Mul_Hi,
-	And_Not,
 	Split,
 	Local_Addr,
 	Global_Addr,
@@ -155,6 +158,7 @@ Node_Type :: enum u16 {
 	Lslv,
 	Asrv,
 	Lsrv,
+	Bic,
 }
 
 collect_meta :: proc(ctx: ^bac.Proc,
@@ -186,6 +190,9 @@ add_umov :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Dataty
 }
 add_cnt :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID) -> (_id: bac.Node_ID) {
 	return bac.add_raw(prc, name, u16(Node_Type.Cnt), dt, {vec})
+}
+add_bic :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, lhs: bac.Node_ID, rhs: bac.Node_ID) -> (_id: bac.Node_ID) {
+	return bac.add_raw(prc, name, u16(Node_Type.Bic), dt, {lhs, rhs})
 }
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {

@@ -205,6 +205,7 @@ main :: proc() {
 			.Umov = {id = arm.Arm_Op, args = {"vec"}, extra_args = {"aux"}},
 			.Cnt = {args = {"vec"}},
 			.Lslv ..= .Lsrv = {no_ctor = true},
+			.Bic = {args = {"lhs", "rhs"}},
 		}
 
 		meta.generate_spec(

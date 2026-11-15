@@ -65,28 +65,24 @@ main:
     mov.d esi, [rsp + 0x9]
     call pack
     or.b [rip + 0xe23], 1
-    movzx.b ecx, [rip + 0xe1b]
-    mov dl, -0x80
-    not dl
-    and dl, cl
-    mov.b [rip + 0xe0b], dl
-    mov.w [rip + 0xe03], 0x88
-    movzx.b ecx, [rip + 0xdf9]
-    movzx.w edx, [rip + 0xdf3]
+    and.b [rip + 0xe1b], 0x7f
+    mov.w [rip + 0xe13], 0x88
+    movzx.b ecx, [rip + 0xe09]
+    movzx.w edx, [rip + 0xe03]
     mov.b [rsp], 0
+    movzx.b ebx, [rsp]
+    xor bl, -0x80
+    mov.b [rsp], bl
     imul rax, rax, 0x100
     add rax, rcx
-    movzx.b ecx, [rsp]
-    xor cl, -0x80
-    mov.b [rsp], cl
     shl rdx, 0x10
     xor rax, rdx
     imul rax, rax, 0x100
     add rax, 0x19
     imul rax, rax, 0x100
-    movzx ecx, cl
+    movzx ecx, bl
     add rax, rcx
-    movzx.w ecx, [rip + 0xdac]
+    movzx.w ecx, [rip + 0xdbc]
     shr cx, 7
     and cx, 1
     cmp cx, 0
@@ -99,11 +95,10 @@ main:
 4:
     mov rdx, rcx
     add rdx, 2
-    mov al, 0x19
-    movzx.b ebx, [rip + 0xd6c]
-    not bl
-    and bl, al
-    cmp bl, 0
+    movzx.b eax, [rip + 0xd7f]
+    not al
+    and al, 0x19
+    cmp al, 0
     mov rax, rcx
     cmove rax, rdx
     add rsp, 0x10
@@ -169,45 +164,40 @@ main:
     mov.d esi, [rsp + 0x9]
     call pack
     or.b [rip + 0xe50], 1
-    movzx.b edx, [rip + 0xe48]
-    mov cl, -0x80
-    not cl
-    and cl, dl
-    mov.b [rip + 0xe38], cl
-    mov.w [rip + 0xe30], 0x88
-    movzx.b ecx, [rip + 0xe26]
-    movzx.w edx, [rip + 0xe20]
+    and.b [rip + 0xe48], 0x7f
+    mov.w [rip + 0xe40], 0x88
+    movzx.b esi, [rip + 0xe36]
+    movzx.w edx, [rip + 0xe30]
     mov.b [rsp], 0
-    imul rax, rax, 0x100
-    add rax, rcx
     movzx.b ecx, [rsp]
     xor cl, -0x80
     mov.b [rsp], cl
+    imul rax, rax, 0x100
+    add rax, rsi
     shl rdx, 0x10
     xor rax, rdx
     imul rax, rax, 0x100
     add rax, 0x19
-    imul rsi, rax, 0x100
+    imul rdx, rax, 0x100
     movzx eax, cl
-    add rsi, rax
-    movzx.w eax, [rip + 0xdd9]
+    add rdx, rax
+    movzx.w eax, [rip + 0xde9]
     shr ax, 7
     and ax, 1
     cmp ax, 0
     jne 3
     jmp 4
 3:
-    add rsi, 1
+    add rdx, 1
 4:
-    mov rdx, rsi
-    add rdx, 2
-    mov cl, 0x19
-    movzx.b eax, [rip + 0xd9f]
+    mov rcx, rdx
+    add rcx, 2
+    movzx.b eax, [rip + 0xdb2]
     not al
-    and al, cl
+    and al, 0x19
     cmp al, 0
-    mov rax, rsi
-    cmove rax, rdx
+    mov rax, rdx
+    cmove rax, rcx
     add rsp, 0x18
     ret
 =========== OPT LEVEL: moderate-quick ===========
@@ -277,28 +267,24 @@ main:
     mov.d esi, [rsp + 0x9]
     call pack
     or.b [rip + 0xe23], 1
-    movzx.b ecx, [rip + 0xe1b]
-    mov dl, -0x80
-    not dl
-    and dl, cl
-    mov.b [rip + 0xe0b], dl
-    mov.w [rip + 0xe03], 0x88
-    movzx.b ecx, [rip + 0xdf9]
-    movzx.w edx, [rip + 0xdf3]
+    and.b [rip + 0xe1b], 0x7f
+    mov.w [rip + 0xe13], 0x88
+    movzx.b ecx, [rip + 0xe09]
+    movzx.w edx, [rip + 0xe03]
     mov.b [rsp], 0
+    movzx.b ebx, [rsp]
+    xor bl, -0x80
+    mov.b [rsp], bl
     imul rax, rax, 0x100
     add rax, rcx
-    movzx.b ecx, [rsp]
-    xor cl, -0x80
-    mov.b [rsp], cl
     shl rdx, 0x10
     xor rax, rdx
     imul rax, rax, 0x100
     add rax, 0x19
     imul rax, rax, 0x100
-    movzx ecx, cl
+    movzx ecx, bl
     add rax, rcx
-    movzx.w ecx, [rip + 0xdac]
+    movzx.w ecx, [rip + 0xdbc]
     shr cx, 7
     and cx, 1
     cmp cx, 0
@@ -311,11 +297,10 @@ main:
 4:
     mov rdx, rcx
     add rdx, 2
-    mov al, 0x19
-    movzx.b ebx, [rip + 0xd6c]
-    not bl
-    and bl, al
-    cmp bl, 0
+    movzx.b eax, [rip + 0xd7f]
+    not al
+    and al, 0x19
+    cmp al, 0
     mov rax, rcx
     cmove rax, rdx
     add rsp, 0x10
@@ -381,45 +366,40 @@ main:
     mov.d esi, [rsp + 0x9]
     call pack
     or.b [rip + 0xe50], 1
-    movzx.b edx, [rip + 0xe48]
-    mov cl, -0x80
-    not cl
-    and cl, dl
-    mov.b [rip + 0xe38], cl
-    mov.w [rip + 0xe30], 0x88
-    movzx.b ecx, [rip + 0xe26]
-    movzx.w edx, [rip + 0xe20]
+    and.b [rip + 0xe48], 0x7f
+    mov.w [rip + 0xe40], 0x88
+    movzx.b esi, [rip + 0xe36]
+    movzx.w edx, [rip + 0xe30]
     mov.b [rsp], 0
-    imul rax, rax, 0x100
-    add rax, rcx
     movzx.b ecx, [rsp]
     xor cl, -0x80
     mov.b [rsp], cl
+    imul rax, rax, 0x100
+    add rax, rsi
     shl rdx, 0x10
     xor rax, rdx
     imul rax, rax, 0x100
     add rax, 0x19
-    imul rsi, rax, 0x100
+    imul rdx, rax, 0x100
     movzx eax, cl
-    add rsi, rax
-    movzx.w eax, [rip + 0xdd9]
+    add rdx, rax
+    movzx.w eax, [rip + 0xde9]
     shr ax, 7
     and ax, 1
     cmp ax, 0
     jne 3
     jmp 4
 3:
-    add rsi, 1
+    add rdx, 1
 4:
-    mov rdx, rsi
-    add rdx, 2
-    mov cl, 0x19
-    movzx.b eax, [rip + 0xd9f]
+    mov rcx, rdx
+    add rcx, 2
+    movzx.b eax, [rip + 0xdb2]
     not al
-    and al, cl
+    and al, 0x19
     cmp al, 0
-    mov rax, rsi
-    cmove rax, rdx
+    mov rax, rdx
+    cmove rax, rcx
     add rsp, 0x18
     ret
 =========== OPT LEVEL: all ===========
@@ -482,40 +462,35 @@ main:
     mov.d esi, [rsp + 0x8]
     call pack
     or.b [rip + 0xe54], 1
-    movzx.b edx, [rip + 0xe4c]
+    and.b [rip + 0xe4c], 0x7f
+    mov.w [rip + 0xe44], 0x88
     imul rcx, rax, 0x100
-    mov al, -0x80
-    not al
-    and al, dl
-    mov.b [rip + 0xe35], al
-    mov.w [rip + 0xe2d], 0x88
-    movzx.b eax, [rip + 0xe23]
+    movzx.b eax, [rip + 0xe33]
     add rcx, rax
-    movzx.w eax, [rip + 0xe1a]
+    movzx.w eax, [rip + 0xe2a]
     shl rax, 0x10
     xor rcx, rax
     imul rax, rcx, 0x100
     add rax, 0x19
-    imul rsi, rax, 0x100
-    movzx.w eax, [rip + 0xdf6]
+    imul rdx, rax, 0x100
+    movzx.w eax, [rip + 0xe06]
     shr ax, 7
     and ax, 1
     cmp ax, 0
     jne 3
-    add rsi, 0x80
+    add rdx, 0x80
     jmp 4
 3:
-    add rsi, 0x81
+    add rdx, 0x81
 4:
-    mov rdx, rsi
-    add rdx, 2
-    mov cl, 0x19
-    movzx.b eax, [rip + 0xdb5]
+    mov rcx, rdx
+    add rcx, 2
+    movzx.b eax, [rip + 0xdc8]
     not al
-    and al, cl
+    and al, 0x19
     cmp al, 0
-    mov rax, rsi
-    cmove rax, rdx
+    mov rax, rdx
+    cmove rax, rcx
     add rsp, 0x18
     ret
 =========== OPT LEVEL: aggresive ===========
@@ -575,39 +550,34 @@ main:
     imul rcx, rcx, 0x100
     movzx.b eax, [rsp + 0x14]
     add rcx, rax
-    imul rdx, rcx, 0x100
-    movzx.b ecx, [rip + 0xe4b]
-    mov al, -0x80
-    not al
-    and al, cl
-    mov.b [rip + 0xe3b], al
-    mov.w [rip + 0xe33], 0x88
-    movzx.b eax, [rip + 0xe29]
-    add rdx, rax
-    movzx.w eax, [rip + 0xe20]
+    imul rcx, rcx, 0x100
+    and.b [rip + 0xe4b], 0x7f
+    mov.w [rip + 0xe43], 0x88
+    movzx.b eax, [rip + 0xe39]
+    add rcx, rax
+    movzx.w eax, [rip + 0xe30]
     shl rax, 0x10
-    xor rdx, rax
-    imul rax, rdx, 0x100
+    xor rcx, rax
+    imul rax, rcx, 0x100
     add rax, 0x19
-    imul rsi, rax, 0x100
-    movzx.w eax, [rip + 0xdfc]
+    imul rdx, rax, 0x100
+    movzx.w eax, [rip + 0xe0c]
     shr ax, 7
     and ax, 1
     cmp ax, 0
     jne 2
-    add rsi, 0x80
+    add rdx, 0x80
     jmp 3
 2:
-    add rsi, 0x81
+    add rdx, 0x81
 3:
-    mov rdx, rsi
-    add rdx, 2
-    movzx.b ecx, [rip + 0xdbe]
-    mov al, 0x19
-    not cl
-    and cl, al
-    cmp cl, 0
-    mov rax, rsi
-    cmove rax, rdx
+    mov rcx, rdx
+    add rcx, 2
+    movzx.b eax, [rip + 0xdce]
+    not al
+    and al, 0x19
+    cmp al, 0
+    mov rax, rdx
+    cmove rax, rcx
     add rsp, 0x18
     ret

@@ -90,7 +90,9 @@ AMD64_LINUX_SYSCALL_CC :: 1
 
 @(tag = "api", rodata, export, link_name = "bac_amd64_OPT_HINTS")
 OPT_HINTS := bac.Opt_Config {
-	select_types = {.I8, .I16, .I32, .I64},
+	select_types    = {.I8, .I16, .I32, .I64},
+	min_ctz_type    = .I16,
+	min_popcnt_type = .I16,
 }
 
 @(tag = "api", rodata, export, link_name = "bac_amd64_CC_TABLE")
@@ -407,8 +409,6 @@ peep :: proc(ctx: bac.Peep_Ctx, node: $N/bac.Expanded_Node) -> Maybe(Node_ID) {
 	case .Simd_Extract_Lsbs:
 		return bac.lsbs_to_msbs(ctx, node)
 	case .Conv, .U_Conv:
-		if res := bac.fold_bit_count_conv(ctx, node); res != nil do return res
-
 		inp := expand_node(ctx, node.inps[0])
 		assert(inp.dt != node.dt)
 		if inp.dt in bac.INT_DTS && node.dt in bac.INT_DTS {
@@ -489,10 +489,6 @@ peep :: proc(ctx: bac.Peep_Ctx, node: $N/bac.Expanded_Node) -> Maybe(Node_ID) {
 		delta = bac.add_un_op(ctx, "ufdb", .Cast, node.dt, delta)
 		_, res := add_node(ctx, "ufrs", .AMD64_Padd, node.dt, {converted, delta})
 		return res
-	case .Ctz:
-		return bac.normalize_ctz(ctx, node, .I16)
-	case .Popcnt:
-		return bac.normalize_popcnt(ctx, node, .I16)
 	case .CInt:
 		cnst: ^bac.CInt = bac.get_extra(ctx, node, bac.CInt)
 		if node.dt in bac.FLOAT_DTS && cnst.value != 0 {
@@ -1038,21 +1034,37 @@ meta_of :: proc(
 	CLOBBERS := [RK_COUNT]i64 {
 		RK_GENERAL = 1 << uint(FLAGS),
 	}
-	@(static, rodata)
-	SETS_FLAGS := #partial [Node_Type]bool {
-		.Add ..= .Xor            = true,
-		.Mul ..= .And_Not            = true,
-		.Neg        = true,
-		.Ctz        = true,
-		.Popcnt     = true,
-		.AMD64_Add ..= .AMD64_Xor            = true,
-		.AMD64_Shl ..= .AMD64_Div            = true,
-		.AMD64_Neg  = true,
-		.AMD64_Mul8 = true,
+	SETS_FLAGS :: bit_set[Node_Type] {
+		.Add,
+		.Sub,
+		.And,
+		.Or,
+		.Xor,
+		.Mul,
+		.Div,
+		.U_Div,
+		.Rem,
+		.U_Rem,
+		.U_Mul_Hi,
+		.Neg,
+		.Ctz,
+		.Popcnt,
+		.AMD64_Add,
+		.AMD64_Sub,
+		.AMD64_And,
+		.AMD64_Or,
+		.AMD64_Xor,
+		.AMD64_Shl,
+		.AMD64_Shr,
+		.AMD64_U_Shr,
+		.AMD64_Mul,
+		.AMD64_Div,
+		.AMD64_Neg,
+		.AMD64_Mul8,
 	}
 	mem_op := aextra(prc, node, Mem_Op)
 	dt := mem_op != nil && mem_op.dt != .Void ? mem_op.dt : node.dt
-	sets_flags := SETS_FLAGS[atype(node)] && dt in bac.INT_DTS
+	sets_flags := atype(node) in SETS_FLAGS && dt in bac.INT_DTS
 	if .AMD64_Shl <= atype(node) &&
 	   atype(node) <= .AMD64_U_Shr &&
 	   mem_op.mem_mode == .None &&
@@ -1190,8 +1202,6 @@ meta_of_raw :: proc(
 			masks = dup({single(ra, RAX), rslice(ra, RK_GENERAL, GPA_DIV_MASK[:])}),
 			clobbers = CLOBBERS[:],
 		}
-	case .And_Not:
-		return {out = out, masks = nmasks[:2], in_place_slot = 2}
 	case .Split:
 		if nkind == RK_GENERAL {
 			// Flags preserve truth values, not arbitrary integers.
@@ -1577,7 +1587,6 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: Node_ID, is_consecutive: bool) {
 		.Shl         = {0xD3, 0b100},
 		.U_Shr       = {0xD3, 0b101},
 		.Shr         = {0xD3, 0b111},
-		.And_Not     = {0xF7, 0b010},
 		.U_Div       = {0xF7, 0b110},
 		.U_Rem       = {0xF7, 0b110},
 		.Div         = {0xF7, 0b111},
@@ -2365,20 +2374,6 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: Node_ID, is_consecutive: bool) {
 				}
 			}
 		}
-	case .And_Not:
-		dst := reg_of(ctx, node.inps[1])
-		lhs := reg_of(ctx, node.inps[0])
-		// not $dst
-		rx := rex(RAX, dst, RAX, bac.DT_SIZE[node.dt] == 8)
-		emit_sized_opcode(ctx.code, node.dt, rx, 0xf7)
-		emit(ctx.code, {mod_sm(.Direct, 0b010, dst)})
-
-		next_sloc(ctx)
-
-		// and $dst, $lhs
-		rx = rex(lhs, dst, RAX, bac.DT_SIZE[node.dt] == 8)
-		emit_sized_opcode(ctx.code, node.dt, rx, 0x21)
-		emit(ctx.code, {mod_rm(.Direct, lhs, dst)})
 	case .Select:
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])

@@ -63,7 +63,7 @@ sync_value :: proc(
 
 	if group.idx == src {
 		intrinsics.mem_copy_non_overlapping(
-			group.slot,
+			&group.slot,
 			transmute(rawptr)value,
 			size_of(T),
 		)
@@ -72,7 +72,7 @@ sync_value :: proc(
 	if group.idx != src {
 		intrinsics.mem_copy_non_overlapping(
 			value,
-			transmute(rawptr)group.slot,
+			transmute(rawptr)&group.slot,
 			size_of(T),
 		)
 	}

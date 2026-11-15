@@ -1,31 +1,25 @@
 =========== OPT LEVEL: none-quick ===========
 poke:
     movzx.w eax, [rdi]
-    mov rcx, 7
-    not cx
-    and cx, ax
-    movzx eax, sil
-    and ax, 7
-    or cx, ax
-    mov rax, 0x1f8
-    not ax
-    and ax, cx
+    and ax, -8
+    movzx ecx, sil
+    and cx, 7
+    or ax, cx
+    and ax, -0x1f9
     movsx rcx, dl
     shl cx, 3
     and cx, 0x1f8
     or ax, cx
-    mov rcx, 0xfc00
-    not cx
-    and cx, ax
+    mov rcx, rax
+    and cx, 0x3ff
     shr ax, 0xa
     and ax, 0x3f
     add ax, 7
     shl ax, 0xa
     and ax, -0x400
     or cx, ax
-    mov rax, 0x200
-    not ax
-    and ax, cx
+    mov rax, rcx
+    and ax, -0x201
     shr cx, 9
     and cx, 1
     cmp cx, 0
@@ -47,9 +41,8 @@ poke_device:
     mov rcx, rdi
     mov rbx, rsi
     movzx.w eax, [rcx + 0x2]
-    mov rdx, 0x1f8
-    not dx
-    and dx, ax
+    mov rdx, rax
+    and dx, -0x1f9
     mov rbp, rbx
     add rbp, 1
     mov sil, 6
@@ -67,17 +60,13 @@ poke_device:
     idiv rdi
     lea rdi, [rcx + rdx*2 + 0x4]
     movzx.w eax, [rcx + rbx*2 + 0x4]
-    mov rdx, 7
-    not dx
-    and dx, ax
-    mov rax, rbx
-    add al, 2
-    movzx eax, al
-    and ax, 7
-    or dx, ax
-    mov rax, 0xfc00
-    not ax
-    and ax, dx
+    and ax, -8
+    mov rdx, rbx
+    add dl, 2
+    movzx edx, dl
+    and dx, 7
+    or ax, dx
+    and ax, 0x3ff
     mov rdx, rbx
     imul dx, dx, 9
     shl dx, 0xa
@@ -109,20 +98,17 @@ main:
     call bits
     mov rbx, rax
     movzx.w eax, [rsp]
-    mov rcx, 0x1f8
-    not cx
-    and cx, ax
-    or cx, 0xa8
-    mov rax, 7
-    not ax
-    and ax, cx
-    and cx, 7
-    or cl, 4
-    movzx ecx, cl
-    and cx, 7
-    or ax, cx
-    mov.w [rsp], ax
-    mov rdi, rax
+    and ax, -0x1f9
+    or ax, 0xa8
+    mov rcx, rax
+    and cx, -8
+    and ax, 7
+    or al, 4
+    movzx eax, al
+    and ax, 7
+    mov rdi, rcx
+    or di, ax
+    mov.w [rsp], di
     call bits
     mov rbp, rax
     mov.b [rsp + 0xb], 0
@@ -178,17 +164,13 @@ main:
     cmp rdx, 4
     jge 9
     movzx.w esi, [rsp + rdx*2 + 0x2]
-    mov rdi, 0xfc00
-    not di
-    and di, si
-    mov rsi, rdx
-    add si, 0x30
-    shl si, 0xa
-    and si, -0x400
-    or di, si
-    mov rsi, 0x1f8
-    not si
-    and si, di
+    and si, 0x3ff
+    mov rdi, rdx
+    add di, 0x30
+    shl di, 0xa
+    and di, -0x400
+    or si, di
+    and si, -0x1f9
     mov rdi, rdx
     sub dil, 2
     movsx rdi, dil
@@ -204,11 +186,9 @@ main:
     movzx.w ecx, [rsp + 0x6]
     xor rbx, rbp
     xor rbx, rax
-    mov rax, 0x200
-    not ax
-    and ax, cx
-    or ax, 0x200
-    mov.w [rsp + 0x6], ax
+    and cx, -0x201
+    or cx, 0x200
+    mov.w [rsp + 0x6], cx
     xor ecx, ecx
 10:
     mov rbp, rcx
@@ -224,68 +204,58 @@ main:
     jmp 10
 11:
     mov sil, 1
-    movzx.w eax, [rip + 0xb60]
-    lea rdi, [rip + 0xb59]
-    mov rcx, 0x1f8
-    not cx
-    and cx, ax
-    or cx, 0x100
-    mov.w [rip + 0xb3c], cx
-    movzx.w eax, [rip + 0xb34]
-    mov rcx, 0xfc00
-    not cx
-    and cx, ax
-    or cx, -0x400
-    mov.w [rip + 0xb17], cx
+    movzx.w eax, [rip + 0xbc0]
+    lea rdi, [rip + 0xbb9]
+    and ax, -0x1f9
+    or ax, 0x100
+    mov.w [rip + 0xba5], ax
+    movzx.w eax, [rip + 0xb9d]
+    and ax, 0x3ff
+    or ax, -0x400
+    mov.w [rip + 0xb89], ax
     mov dl, 0x1f
     call poke
-    movzx.w eax, [rip + 0xb11]
-    mov rcx, 7
-    not cx
-    and cx, ax
-    mov rax, rcx
+    movzx.w eax, [rip + 0xb83]
+    and ax, -8
     or ax, 7
-    mov.w [rip + 0xaf1], ax
-    movzx.w eax, [rip + 0xae5]
-    mov rcx, 0xfc00
-    not cx
-    and cx, ax
-    movzx.w eax, [rip + 0xadc]
-    shr ax, 0xa
-    and ax, 0x3f
-    add ax, 1
-    shl ax, 0xa
-    and ax, -0x400
-    or cx, ax
-    mov.w [rip + 0xaa6], cx
-    movzx.w edi, [rip + 0xa98]
+    mov.w [rip + 0xb6f], ax
+    movzx.w eax, [rip + 0xb63]
+    and ax, 0x3ff
+    movzx.w ecx, [rip + 0xb63]
+    shr cx, 0xa
+    and cx, 0x3f
+    add cx, 1
+    shl cx, 0xa
+    and cx, -0x400
+    or ax, cx
+    mov.w [rip + 0xb2d], ax
+    movzx.w edi, [rip + 0xb1f]
     call bits
     mov rbp, rax
-    movzx.w edi, [rip + 0xa92]
+    movzx.w edi, [rip + 0xb19]
     call bits
     mov r12, rax
-    movzx.w edi, [rip + 0xa7e]
+    movzx.w edi, [rip + 0xb05]
     call bits
     mov r13, rax
-    movzx.w r14d, [rip + 0xa7c]
+    movzx.w r14d, [rip + 0xb03]
     xor eax, eax
 12:
     mov rcx, rax
-    movzx.w edi, [rip + 0xa70]
+    movzx.w edi, [rip + 0xaf7]
     cmp rcx, 5
     jge 13
-    mov rdx, 0xfc00
-    not dx
-    and dx, di
-    shr di, 0xa
-    and di, 0x3f
-    add di, 0xd
-    shl di, 0xa
-    and di, -0x400
-    or dx, di
-    mov rsi, 0x1f8
-    not si
-    and si, dx
+    mov rdx, rdi
+    and dx, 0x3ff
+    mov rsi, rdi
+    shr si, 0xa
+    and si, 0x3f
+    add si, 0xd
+    shl si, 0xa
+    and si, -0x400
+    or dx, si
+    mov rsi, rdx
+    and si, -0x1f9
     shl dx, 7
     sar dx, 0xa
     sub dl, 9
@@ -294,7 +264,7 @@ main:
     and dx, 0x1f8
     or si, dx
     add rcx, 1
-    mov.w [rip + 0x9f5], si
+    mov.w [rip + 0xa85], si
     mov rax, rcx
     jmp 12
 13:
@@ -323,53 +293,46 @@ main:
 =========== OPT LEVEL: none ===========
 poke:
     movzx.w eax, [rdi]
-    mov r8, 7
-    not r8w
-    and r8w, ax
-    movzx eax, sil
-    and ax, 7
-    or r8w, ax
-    mov rcx, 0x1f8
-    not cx
-    and cx, r8w
-    movsx rax, dl
-    shl ax, 3
-    and ax, 0x1f8
-    or cx, ax
-    mov rax, 0xfc00
-    not ax
-    and ax, cx
-    shr cx, 0xa
-    and cx, 0x3f
-    add cx, 7
-    shl cx, 0xa
-    and cx, -0x400
+    and ax, -8
+    movzx ecx, sil
+    and cx, 7
     or ax, cx
-    mov rcx, 0x200
-    not cx
-    and cx, ax
-    shr ax, 9
-    and ax, 1
-    cmp ax, 0
-    setne al
-    movzx eax, al
-    cmp al, 0
-    sete al
-    movzx eax, al
-    movzx eax, al
-    shl ax, 9
-    and ax, 0x200
+    and ax, -0x1f9
+    movsx rcx, dl
+    shl cx, 3
+    and cx, 0x1f8
+    or ax, cx
+    mov rcx, rax
+    and cx, 0x3ff
+    shr ax, 0xa
+    and ax, 0x3f
+    add ax, 7
+    shl ax, 0xa
+    and ax, -0x400
     or cx, ax
-    mov.w [rdi], cx
+    mov rax, rcx
+    and ax, -0x201
+    shr cx, 9
+    and cx, 1
+    cmp cx, 0
+    setne cl
+    movzx ecx, cl
+    cmp cl, 0
+    sete cl
+    movzx ecx, cl
+    movzx ecx, cl
+    shl cx, 9
+    and cx, 0x200
+    or ax, cx
+    mov.w [rdi], ax
     ret
 poke_device:
     sub rsp, 8
     mov r9, rdi
     mov r8, rsi
     movzx.w eax, [r9 + 0x2]
-    mov rcx, 0x1f8
-    not cx
-    and cx, ax
+    mov rcx, rax
+    and cx, -0x1f9
     mov rdx, r8
     add rdx, 1
     mov sil, 6
@@ -386,18 +349,14 @@ poke_device:
     cqo
     idiv rcx
     lea rdi, [r9 + rdx*2 + 0x4]
-    movzx.w eax, [r9 + r8*2 + 0x4]
-    mov rcx, 7
-    not cx
-    and cx, ax
+    movzx.w edx, [r9 + r8*2 + 0x4]
+    and dx, -8
     mov rax, r8
     add al, 2
     movzx eax, al
     and ax, 7
-    or cx, ax
-    mov rdx, 0xfc00
-    not dx
-    and dx, cx
+    or dx, ax
+    and dx, 0x3ff
     mov rax, r8
     imul ax, ax, 9
     shl ax, 0xa
@@ -426,21 +385,18 @@ main:
     movzx.w edi, [rsp]
     call bits
     mov r12, rax
-    movzx.w ecx, [rsp]
-    mov rax, 0x1f8
-    not ax
-    and ax, cx
+    movzx.w eax, [rsp]
+    and ax, -0x1f9
     or ax, 0xa8
-    mov rcx, 7
-    not cx
-    and cx, ax
+    mov rcx, rax
+    and cx, -8
     and ax, 7
     or al, 4
     movzx eax, al
     and ax, 7
-    or cx, ax
-    mov.w [rsp], cx
     mov rdi, rcx
+    or di, ax
+    mov.w [rsp], di
     call bits
     mov rbp, rax
     mov.b [rsp + 0xb], 0
@@ -485,42 +441,36 @@ main:
     jmp 6
 7:
     movzx.b ebp, [rsp + 0xa]
-    mov.d eax, [rsp + 0x16]
+    mov.d esi, [rsp + 0x16]
     mov.q [rsp + 0x2], 0
-    xor ecx, ecx
+    xor eax, eax
 8:
-    mov rdi, rcx
-    cmp rdi, 4
+    cmp rax, 4
     jge 9
-    movzx.w edx, [rsp + rdi*2 + 0x2]
-    mov rcx, 0xfc00
-    not cx
-    and cx, dx
-    mov rdx, rdi
-    add dx, 0x30
-    shl dx, 0xa
-    and dx, -0x400
-    or cx, dx
-    mov rsi, 0x1f8
-    not si
-    and si, cx
-    mov rcx, rdi
+    movzx.w edx, [rsp + rax*2 + 0x2]
+    and dx, 0x3ff
+    mov rcx, rax
+    add cx, 0x30
+    shl cx, 0xa
+    and cx, -0x400
+    or dx, cx
+    and dx, -0x1f9
+    mov rcx, rax
     sub cl, 2
     movsx rcx, cl
     shl cx, 3
     and cx, 0x1f8
-    or si, cx
-    mov rcx, rdi
+    or dx, cx
+    mov rcx, rax
     add rcx, 1
-    mov.w [rsp + rdi*2 + 0x2], si
+    mov.w [rsp + rax*2 + 0x2], dx
+    mov rax, rcx
     jmp 8
 9:
-    movzx.w ecx, [rsp + 0x6]
+    movzx.w eax, [rsp + 0x6]
     xor rbp, rbx
-    xor rbp, rax
-    mov rax, 0x200
-    not ax
-    and ax, cx
+    xor rbp, rsi
+    and ax, -0x201
     or ax, 0x200
     mov.w [rsp + 0x6], ax
     xor ebx, ebx
@@ -535,75 +485,68 @@ main:
     jmp 10
 11:
     mov sil, 1
-    movzx.w ecx, [rip + 0xb9a]
-    lea rdi, [rip + 0xb93]
-    mov rax, 0x1f8
-    not ax
-    and ax, cx
+    movzx.w eax, [rip + 0xbfa]
+    lea rdi, [rip + 0xbf3]
+    and ax, -0x1f9
     or ax, 0x100
-    mov.w [rip + 0xb76], ax
-    movzx.w ecx, [rip + 0xb6e]
-    mov rax, 0xfc00
-    not ax
-    and ax, cx
+    mov.w [rip + 0xbdf], ax
+    movzx.w eax, [rip + 0xbd7]
+    and ax, 0x3ff
     or ax, -0x400
-    mov.w [rip + 0xb51], ax
+    mov.w [rip + 0xbc3], ax
     mov dl, 0x1f
     call poke
-    movzx.w ecx, [rip + 0xb4b]
-    mov rax, 7
-    not ax
-    and ax, cx
+    movzx.w eax, [rip + 0xbbd]
+    and ax, -8
     or ax, 7
-    mov.w [rip + 0xb2e], ax
-    movzx.w ecx, [rip + 0xb22]
-    mov rax, 0xfc00
-    not ax
-    and ax, cx
-    movzx.w ecx, [rip + 0xb19]
+    mov.w [rip + 0xba9], ax
+    movzx.w ecx, [rip + 0xb9d]
+    and cx, 0x3ff
+    movzx.w eax, [rip + 0xb9d]
+    shr ax, 0xa
+    and ax, 0x3f
+    add ax, 1
+    shl ax, 0xa
+    and ax, -0x400
+    or cx, ax
+    mov.w [rip + 0xb67], cx
+    movzx.w edi, [rip + 0xb59]
+    call bits
+    mov r14, rax
+    movzx.w edi, [rip + 0xb53]
+    call bits
+    mov r13, rax
+    movzx.w edi, [rip + 0xb3f]
+    call bits
+    mov r12, rax
+    movzx.w ebx, [rip + 0xb3d]
+    xor eax, eax
+12:
+    mov rdx, rax
+    movzx.w edi, [rip + 0xb31]
+    cmp rdx, 5
+    jge 13
+    mov rax, rdi
+    and ax, 0x3ff
+    mov rcx, rdi
     shr cx, 0xa
     and cx, 0x3f
-    add cx, 1
+    add cx, 0xd
     shl cx, 0xa
     and cx, -0x400
     or ax, cx
-    mov.w [rip + 0xae3], ax
-    movzx.w edi, [rip + 0xad5]
-    call bits
-    mov r14, rax
-    movzx.w edi, [rip + 0xacf]
-    call bits
-    mov r13, rax
-    movzx.w edi, [rip + 0xabb]
-    call bits
-    mov r12, rax
-    movzx.w ebx, [rip + 0xab9]
-    xor eax, eax
-12:
-    movzx.w edi, [rip + 0xab0]
-    cmp rax, 5
-    jge 13
-    mov rdx, 0xfc00
-    not dx
-    and dx, di
-    shr di, 0xa
-    and di, 0x3f
-    add di, 0xd
-    shl di, 0xa
-    and di, -0x400
-    or dx, di
-    mov rcx, 0x1f8
-    not cx
-    and cx, dx
-    shl dx, 7
-    sar dx, 0xa
-    sub dl, 9
-    movsx rdx, dl
-    shl dx, 3
-    and dx, 0x1f8
-    or cx, dx
+    mov rcx, rax
+    and cx, -0x1f9
+    shl ax, 7
+    sar ax, 0xa
+    sub al, 9
+    movsx rax, al
+    shl ax, 3
+    and ax, 0x1f8
+    or cx, ax
+    mov rax, rdx
     add rax, 1
-    mov.w [rip + 0xa35], cx
+    mov.w [rip + 0xabc], cx
     jmp 12
 13:
     call bits
@@ -631,31 +574,25 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 poke:
     movzx.w eax, [rdi]
-    mov rcx, 7
-    not cx
-    and cx, ax
-    movzx eax, sil
-    and ax, 7
-    or cx, ax
-    mov rax, 0x1f8
-    not ax
-    and ax, cx
+    and ax, -8
+    movzx ecx, sil
+    and cx, 7
+    or ax, cx
+    and ax, -0x1f9
     movsx rcx, dl
     shl cx, 3
     and cx, 0x1f8
     or ax, cx
-    mov rcx, 0xfc00
-    not cx
-    and cx, ax
+    mov rcx, rax
+    and cx, 0x3ff
     shr ax, 0xa
     and ax, 0x3f
     add ax, 7
     shl ax, 0xa
     and ax, -0x400
     or cx, ax
-    mov rax, 0x200
-    not ax
-    and ax, cx
+    mov rax, rcx
+    and ax, -0x201
     shr cx, 9
     and cx, 1
     cmp cx, 0
@@ -677,9 +614,8 @@ poke_device:
     mov rcx, rdi
     mov rbx, rsi
     movzx.w eax, [rcx + 0x2]
-    mov rdx, 0x1f8
-    not dx
-    and dx, ax
+    mov rdx, rax
+    and dx, -0x1f9
     mov rbp, rbx
     add rbp, 1
     mov sil, 6
@@ -697,17 +633,13 @@ poke_device:
     idiv rdi
     lea rdi, [rcx + rdx*2 + 0x4]
     movzx.w eax, [rcx + rbx*2 + 0x4]
-    mov rdx, 7
-    not dx
-    and dx, ax
-    mov rax, rbx
-    add al, 2
-    movzx eax, al
-    and ax, 7
-    or dx, ax
-    mov rax, 0xfc00
-    not ax
-    and ax, dx
+    and ax, -8
+    mov rdx, rbx
+    add dl, 2
+    movzx edx, dl
+    and dx, 7
+    or ax, dx
+    and ax, 0x3ff
     mov rdx, rbx
     imul dx, dx, 9
     shl dx, 0xa
@@ -739,20 +671,17 @@ main:
     call bits
     mov rbx, rax
     movzx.w eax, [rsp]
-    mov rcx, 0x1f8
-    not cx
-    and cx, ax
-    or cx, 0xa8
-    mov rax, 7
-    not ax
-    and ax, cx
-    and cx, 7
-    or cl, 4
-    movzx ecx, cl
-    and cx, 7
-    or ax, cx
-    mov.w [rsp], ax
-    mov rdi, rax
+    and ax, -0x1f9
+    or ax, 0xa8
+    mov rcx, rax
+    and cx, -8
+    and ax, 7
+    or al, 4
+    movzx eax, al
+    and ax, 7
+    mov rdi, rcx
+    or di, ax
+    mov.w [rsp], di
     call bits
     mov rbp, rax
     mov.b [rsp + 0xb], 0
@@ -808,17 +737,13 @@ main:
     cmp rdx, 4
     jge 9
     movzx.w esi, [rsp + rdx*2 + 0x2]
-    mov rdi, 0xfc00
-    not di
-    and di, si
-    mov rsi, rdx
-    add si, 0x30
-    shl si, 0xa
-    and si, -0x400
-    or di, si
-    mov rsi, 0x1f8
-    not si
-    and si, di
+    and si, 0x3ff
+    mov rdi, rdx
+    add di, 0x30
+    shl di, 0xa
+    and di, -0x400
+    or si, di
+    and si, -0x1f9
     mov rdi, rdx
     sub dil, 2
     movsx rdi, dil
@@ -834,11 +759,9 @@ main:
     movzx.w ecx, [rsp + 0x6]
     xor rbx, rbp
     xor rbx, rax
-    mov rax, 0x200
-    not ax
-    and ax, cx
-    or ax, 0x200
-    mov.w [rsp + 0x6], ax
+    and cx, -0x201
+    or cx, 0x200
+    mov.w [rsp + 0x6], cx
     xor ecx, ecx
 10:
     mov rbp, rcx
@@ -854,69 +777,58 @@ main:
     jmp 10
 11:
     mov sil, 1
-    movzx.w eax, [rip + 0xb60]
-    lea rdi, [rip + 0xb59]
-    mov rcx, 0x1f8
-    not cx
-    and cx, ax
-    or cx, 0x100
-    mov.w [rip + 0xb3c], cx
-    movzx.w eax, [rip + 0xb34]
-    mov rcx, 0xfc00
-    not cx
-    and cx, ax
-    or cx, -0x400
-    mov.w [rip + 0xb17], cx
+    movzx.w eax, [rip + 0xbc0]
+    lea rdi, [rip + 0xbb9]
+    and ax, -0x1f9
+    or ax, 0x100
+    mov.w [rip + 0xba5], ax
+    movzx.w eax, [rip + 0xb9d]
+    and ax, 0x3ff
+    or ax, -0x400
+    mov.w [rip + 0xb89], ax
     mov dl, 0x1f
     call poke
-    movzx.w eax, [rip + 0xb11]
-    mov rcx, 7
-    not cx
-    and cx, ax
-    mov rax, rcx
+    movzx.w eax, [rip + 0xb83]
+    and ax, -8
     or ax, 7
-    mov.w [rip + 0xaf1], ax
-    movzx.w eax, [rip + 0xae5]
-    movzx.w ecx, [rip + 0xaeb]
-    mov rdx, 0xfc00
-    not dx
-    and dx, ax
+    mov.w [rip + 0xb6f], ax
+    movzx.w eax, [rip + 0xb63]
+    movzx.w ecx, [rip + 0xb69]
+    and ax, 0x3ff
     shr cx, 0xa
     and cx, 0x3f
     add cx, 1
     shl cx, 0xa
     and cx, -0x400
-    mov rax, rdx
     or ax, cx
-    mov.w [rip + 0xaa3], ax
-    movzx.w edi, [rip + 0xa95]
+    mov.w [rip + 0xb2d], ax
+    movzx.w edi, [rip + 0xb1f]
     call bits
     mov rbp, rax
-    movzx.w edi, [rip + 0xa8f]
+    movzx.w edi, [rip + 0xb19]
     call bits
     mov r12, rax
-    movzx.w edi, [rip + 0xa7b]
+    movzx.w edi, [rip + 0xb05]
     call bits
     mov r13, rax
-    movzx.w r14d, [rip + 0xa79]
+    movzx.w r14d, [rip + 0xb03]
     xor eax, eax
 12:
     mov rcx, rax
-    movzx.w edi, [rip + 0xa6d]
+    movzx.w edi, [rip + 0xaf7]
     cmp rcx, 5
     jge 13
-    mov rdx, 0xfc00
-    not dx
-    and dx, di
-    shr di, 0xa
-    and di, 0x3f
-    add di, 0xd
-    shl di, 0xa
-    and di, -0x400
-    or dx, di
-    mov rsi, 0x1f8
-    not si
-    and si, dx
+    mov rdx, rdi
+    and dx, 0x3ff
+    mov rsi, rdi
+    shr si, 0xa
+    and si, 0x3f
+    add si, 0xd
+    shl si, 0xa
+    and si, -0x400
+    or dx, si
+    mov rsi, rdx
+    and si, -0x1f9
     shl dx, 7
     sar dx, 0xa
     sub dl, 9
@@ -925,7 +837,7 @@ main:
     and dx, 0x1f8
     or si, dx
     add rcx, 1
-    mov.w [rip + 0x9f2], si
+    mov.w [rip + 0xa85], si
     mov rax, rcx
     jmp 12
 13:
@@ -954,53 +866,46 @@ main:
 =========== OPT LEVEL: moderate ===========
 poke:
     movzx.w eax, [rdi]
-    mov r8, 7
-    not r8w
-    and r8w, ax
-    movzx eax, sil
-    and ax, 7
-    or r8w, ax
-    mov rcx, 0x1f8
-    not cx
-    and cx, r8w
-    movsx rax, dl
-    shl ax, 3
-    and ax, 0x1f8
-    or cx, ax
-    mov rax, 0xfc00
-    not ax
-    and ax, cx
-    shr cx, 0xa
-    and cx, 0x3f
-    add cx, 7
-    shl cx, 0xa
-    and cx, -0x400
+    and ax, -8
+    movzx ecx, sil
+    and cx, 7
     or ax, cx
-    mov rcx, 0x200
-    not cx
-    and cx, ax
-    shr ax, 9
-    and ax, 1
-    cmp ax, 0
-    setne al
-    movzx eax, al
-    cmp al, 0
-    sete al
-    movzx eax, al
-    movzx eax, al
-    shl ax, 9
-    and ax, 0x200
+    and ax, -0x1f9
+    movsx rcx, dl
+    shl cx, 3
+    and cx, 0x1f8
+    or ax, cx
+    mov rcx, rax
+    and cx, 0x3ff
+    shr ax, 0xa
+    and ax, 0x3f
+    add ax, 7
+    shl ax, 0xa
+    and ax, -0x400
     or cx, ax
-    mov.w [rdi], cx
+    mov rax, rcx
+    and ax, -0x201
+    shr cx, 9
+    and cx, 1
+    cmp cx, 0
+    setne cl
+    movzx ecx, cl
+    cmp cl, 0
+    sete cl
+    movzx ecx, cl
+    movzx ecx, cl
+    shl cx, 9
+    and cx, 0x200
+    or ax, cx
+    mov.w [rdi], ax
     ret
 poke_device:
     sub rsp, 8
     mov r9, rdi
     mov r8, rsi
     movzx.w eax, [r9 + 0x2]
-    mov rcx, 0x1f8
-    not cx
-    and cx, ax
+    mov rcx, rax
+    and cx, -0x1f9
     mov rdx, r8
     add rdx, 1
     mov sil, 6
@@ -1017,18 +922,14 @@ poke_device:
     cqo
     idiv rcx
     lea rdi, [r9 + rdx*2 + 0x4]
-    movzx.w eax, [r9 + r8*2 + 0x4]
-    mov rcx, 7
-    not cx
-    and cx, ax
+    movzx.w edx, [r9 + r8*2 + 0x4]
+    and dx, -8
     mov rax, r8
     add al, 2
     movzx eax, al
     and ax, 7
-    or cx, ax
-    mov rdx, 0xfc00
-    not dx
-    and dx, cx
+    or dx, ax
+    and dx, 0x3ff
     mov rax, r8
     imul ax, ax, 9
     shl ax, 0xa
@@ -1057,21 +958,18 @@ main:
     movzx.w edi, [rsp]
     call bits
     mov r12, rax
-    movzx.w ecx, [rsp]
-    mov rax, 0x1f8
-    not ax
-    and ax, cx
+    movzx.w eax, [rsp]
+    and ax, -0x1f9
     or ax, 0xa8
-    mov rcx, 7
-    not cx
-    and cx, ax
+    mov rcx, rax
+    and cx, -8
     and ax, 7
     or al, 4
     movzx eax, al
     and ax, 7
-    or cx, ax
-    mov.w [rsp], cx
     mov rdi, rcx
+    or di, ax
+    mov.w [rsp], di
     call bits
     mov rbp, rax
     mov.b [rsp + 0xb], 0
@@ -1116,42 +1014,36 @@ main:
     jmp 6
 7:
     movzx.b ebp, [rsp + 0xa]
-    mov.d eax, [rsp + 0x16]
+    mov.d esi, [rsp + 0x16]
     mov.q [rsp + 0x2], 0
-    xor ecx, ecx
+    xor eax, eax
 8:
-    mov rdi, rcx
-    cmp rdi, 4
+    cmp rax, 4
     jge 9
-    movzx.w edx, [rsp + rdi*2 + 0x2]
-    mov rcx, 0xfc00
-    not cx
-    and cx, dx
-    mov rdx, rdi
-    add dx, 0x30
-    shl dx, 0xa
-    and dx, -0x400
-    or cx, dx
-    mov rsi, 0x1f8
-    not si
-    and si, cx
-    mov rcx, rdi
+    movzx.w edx, [rsp + rax*2 + 0x2]
+    and dx, 0x3ff
+    mov rcx, rax
+    add cx, 0x30
+    shl cx, 0xa
+    and cx, -0x400
+    or dx, cx
+    and dx, -0x1f9
+    mov rcx, rax
     sub cl, 2
     movsx rcx, cl
     shl cx, 3
     and cx, 0x1f8
-    or si, cx
-    mov rcx, rdi
+    or dx, cx
+    mov rcx, rax
     add rcx, 1
-    mov.w [rsp + rdi*2 + 0x2], si
+    mov.w [rsp + rax*2 + 0x2], dx
+    mov rax, rcx
     jmp 8
 9:
-    movzx.w ecx, [rsp + 0x6]
+    movzx.w eax, [rsp + 0x6]
     xor rbp, rbx
-    xor rbp, rax
-    mov rax, 0x200
-    not ax
-    and ax, cx
+    xor rbp, rsi
+    and ax, -0x201
     or ax, 0x200
     mov.w [rsp + 0x6], ax
     xor ebx, ebx
@@ -1166,75 +1058,68 @@ main:
     jmp 10
 11:
     mov sil, 1
-    movzx.w ecx, [rip + 0xb9a]
-    lea rdi, [rip + 0xb93]
-    mov rax, 0x1f8
-    not ax
-    and ax, cx
+    movzx.w eax, [rip + 0xbfa]
+    lea rdi, [rip + 0xbf3]
+    and ax, -0x1f9
     or ax, 0x100
-    mov.w [rip + 0xb76], ax
-    movzx.w ecx, [rip + 0xb6e]
-    mov rax, 0xfc00
-    not ax
-    and ax, cx
+    mov.w [rip + 0xbdf], ax
+    movzx.w eax, [rip + 0xbd7]
+    and ax, 0x3ff
     or ax, -0x400
-    mov.w [rip + 0xb51], ax
+    mov.w [rip + 0xbc3], ax
     mov dl, 0x1f
     call poke
-    movzx.w ecx, [rip + 0xb4b]
-    mov rax, 7
-    not ax
-    and ax, cx
+    movzx.w eax, [rip + 0xbbd]
+    and ax, -8
     or ax, 7
-    mov.w [rip + 0xb2e], ax
-    movzx.w edx, [rip + 0xb22]
-    movzx.w ecx, [rip + 0xb28]
-    mov rax, 0xfc00
-    not ax
-    and ax, dx
+    mov.w [rip + 0xba9], ax
+    movzx.w ecx, [rip + 0xb9d]
+    movzx.w eax, [rip + 0xba3]
+    and cx, 0x3ff
+    shr ax, 0xa
+    and ax, 0x3f
+    add ax, 1
+    shl ax, 0xa
+    and ax, -0x400
+    or cx, ax
+    mov.w [rip + 0xb67], cx
+    movzx.w edi, [rip + 0xb59]
+    call bits
+    mov r14, rax
+    movzx.w edi, [rip + 0xb53]
+    call bits
+    mov r13, rax
+    movzx.w edi, [rip + 0xb3f]
+    call bits
+    mov r12, rax
+    movzx.w ebx, [rip + 0xb3d]
+    xor eax, eax
+12:
+    mov rdx, rax
+    movzx.w edi, [rip + 0xb31]
+    cmp rdx, 5
+    jge 13
+    mov rax, rdi
+    and ax, 0x3ff
+    mov rcx, rdi
     shr cx, 0xa
     and cx, 0x3f
-    add cx, 1
+    add cx, 0xd
     shl cx, 0xa
     and cx, -0x400
     or ax, cx
-    mov.w [rip + 0xae3], ax
-    movzx.w edi, [rip + 0xad5]
-    call bits
-    mov r14, rax
-    movzx.w edi, [rip + 0xacf]
-    call bits
-    mov r13, rax
-    movzx.w edi, [rip + 0xabb]
-    call bits
-    mov r12, rax
-    movzx.w ebx, [rip + 0xab9]
-    xor eax, eax
-12:
-    movzx.w edi, [rip + 0xab0]
-    cmp rax, 5
-    jge 13
-    mov rdx, 0xfc00
-    not dx
-    and dx, di
-    shr di, 0xa
-    and di, 0x3f
-    add di, 0xd
-    shl di, 0xa
-    and di, -0x400
-    or dx, di
-    mov rcx, 0x1f8
-    not cx
-    and cx, dx
-    shl dx, 7
-    sar dx, 0xa
-    sub dl, 9
-    movsx rdx, dl
-    shl dx, 3
-    and dx, 0x1f8
-    or cx, dx
+    mov rcx, rax
+    and cx, -0x1f9
+    shl ax, 7
+    sar ax, 0xa
+    sub al, 9
+    movsx rax, al
+    shl ax, 3
+    and ax, 0x1f8
+    or cx, ax
+    mov rax, rdx
     add rax, 1
-    mov.w [rip + 0xa35], cx
+    mov.w [rip + 0xabc], cx
     jmp 12
 13:
     call bits
@@ -1262,53 +1147,46 @@ main:
 =========== OPT LEVEL: all ===========
 poke:
     movzx.w eax, [rdi]
-    mov r8, 7
-    not r8w
-    and r8w, ax
-    movzx eax, sil
-    and ax, 7
-    or r8w, ax
-    mov rcx, 0x1f8
-    not cx
-    and cx, r8w
-    movsx rax, dl
-    shl ax, 3
-    and ax, 0x1f8
-    or cx, ax
-    mov rax, 0xfc00
-    not ax
-    and ax, cx
-    shr cx, 0xa
-    and cx, 0x3f
-    add cx, 7
-    shl cx, 0xa
-    and cx, -0x400
+    and ax, -8
+    movzx ecx, sil
+    and cx, 7
     or ax, cx
-    mov rcx, 0x200
-    not cx
-    and cx, ax
-    shr ax, 9
-    and ax, 1
-    cmp ax, 0
-    setne al
-    movzx eax, al
-    cmp al, 0
-    sete al
-    movzx eax, al
-    movzx eax, al
-    shl ax, 9
-    and ax, 0x200
+    and ax, -0x1f9
+    movsx rcx, dl
+    shl cx, 3
+    and cx, 0x1f8
+    or ax, cx
+    mov rcx, rax
+    and cx, 0x3ff
+    shr ax, 0xa
+    and ax, 0x3f
+    add ax, 7
+    shl ax, 0xa
+    and ax, -0x400
     or cx, ax
-    mov.w [rdi], cx
+    mov rax, rcx
+    and ax, -0x201
+    shr cx, 9
+    and cx, 1
+    cmp cx, 0
+    setne cl
+    movzx ecx, cl
+    cmp cl, 0
+    sete cl
+    movzx ecx, cl
+    movzx ecx, cl
+    shl cx, 9
+    and cx, 0x200
+    or ax, cx
+    mov.w [rdi], ax
     ret
 poke_device:
     sub rsp, 8
     mov r9, rdi
     mov r8, rsi
     movzx.w eax, [r9 + 0x2]
-    mov rcx, 0x1f8
-    not cx
-    and cx, ax
+    mov rcx, rax
+    and cx, -0x1f9
     mov rdx, r8
     add rdx, 1
     mov sil, 6
@@ -1325,18 +1203,14 @@ poke_device:
     cqo
     idiv rcx
     lea rdi, [r9 + rdx*2 + 0x4]
-    movzx.w eax, [r9 + r8*2 + 0x4]
-    mov rcx, 7
-    not cx
-    and cx, ax
+    movzx.w edx, [r9 + r8*2 + 0x4]
+    and dx, -8
     mov rax, r8
     add al, 2
     movzx eax, al
     and ax, 7
-    or cx, ax
-    mov rdx, 0xfc00
-    not dx
-    and dx, cx
+    or dx, ax
+    and dx, 0x3ff
     mov rax, r8
     imul ax, ax, 9
     shl ax, 0xa
@@ -1365,21 +1239,18 @@ main:
     movzx.w edi, [rsp]
     call bits
     mov r12, rax
-    movzx.w ecx, [rsp]
-    mov rax, 0x1f8
-    not ax
-    and ax, cx
+    movzx.w eax, [rsp]
+    and ax, -0x1f9
     or ax, 0xa8
-    mov rcx, 7
-    not cx
-    and cx, ax
+    mov rcx, rax
+    and cx, -8
     and ax, 7
     or al, 4
     movzx eax, al
     and ax, 7
-    or cx, ax
-    mov.w [rsp], cx
     mov rdi, rcx
+    or di, ax
+    mov.w [rsp], di
     call bits
     mov rbp, rax
     mov.b [rsp + 0xb], 0
@@ -1423,41 +1294,35 @@ main:
     mov.q [rsp + 0x2], 0
     xor eax, eax
 6:
-    mov r8, rax
-    cmp r8, 4
+    cmp rax, 4
     jge 7
-    movzx.w esi, [rsp + r8*2 + 0x2]
-    mov rax, 0xfc00
-    not ax
-    and ax, si
-    mov rsi, r8
+    movzx.w edi, [rsp + rax*2 + 0x2]
+    and di, 0x3ff
+    mov rsi, rax
     add si, 0x30
     shl si, 0xa
     and si, -0x400
-    or ax, si
-    mov rdi, 0x1f8
-    not di
-    and di, ax
-    mov rax, r8
-    sub al, 2
-    movsx rax, al
-    shl ax, 3
-    and ax, 0x1f8
-    or di, ax
-    mov rax, r8
-    add rax, 1
-    mov.w [rsp + r8*2 + 0x2], di
+    or di, si
+    and di, -0x1f9
+    mov rsi, rax
+    sub sil, 2
+    movsx rsi, sil
+    shl si, 3
+    and si, 0x1f8
+    or di, si
+    mov rsi, rax
+    add rsi, 1
+    mov.w [rsp + rax*2 + 0x2], di
+    mov rax, rsi
     jmp 6
 7:
-    movzx.w esi, [rsp + 0x6]
+    movzx.w eax, [rsp + 0x6]
+    and ax, -0x201
+    or ax, 0x200
+    mov.w [rsp + 0x6], ax
     imul rbp, rbx, 3
     xor rbp, rdx
     xor rbp, rcx
-    mov rax, 0x200
-    not ax
-    and ax, si
-    or ax, 0x200
-    mov.w [rsp + 0x6], ax
     xor ebx, ebx
 8:
     cmp rbx, 4
@@ -1470,55 +1335,46 @@ main:
     jmp 8
 9:
     mov sil, 1
-    movzx.w ecx, [rip + 0xba0]
-    lea rdi, [rip + 0xb99]
-    mov rax, 0x1f8
-    not ax
-    and ax, cx
+    movzx.w eax, [rip + 0xc00]
+    lea rdi, [rip + 0xbf9]
+    and ax, -0x1f9
     or ax, 0x100
-    mov.w [rip + 0xb7c], ax
-    movzx.w ecx, [rip + 0xb74]
-    mov rax, 0xfc00
-    not ax
-    and ax, cx
+    mov.w [rip + 0xbe5], ax
+    movzx.w eax, [rip + 0xbdd]
+    and ax, 0x3ff
     or ax, -0x400
-    mov.w [rip + 0xb57], ax
+    mov.w [rip + 0xbc9], ax
     mov dl, 0x1f
     call poke
-    movzx.w ecx, [rip + 0xb51]
-    mov rax, 7
-    not ax
-    and ax, cx
+    movzx.w eax, [rip + 0xbc3]
+    and ax, -8
     or ax, 7
-    mov.w [rip + 0xb34], ax
-    movzx.w edx, [rip + 0xb28]
-    movzx.w ecx, [rip + 0xb2e]
-    mov rax, 0xfc00
-    not ax
-    and ax, dx
-    shr cx, 0xa
-    and cx, 0x3f
-    add cx, 1
-    shl cx, 0xa
-    and cx, -0x400
-    or ax, cx
-    mov.w [rip + 0xae9], ax
-    movzx.w edi, [rip + 0xadb]
+    mov.w [rip + 0xbaf], ax
+    movzx.w ecx, [rip + 0xba3]
+    movzx.w eax, [rip + 0xba9]
+    and cx, 0x3ff
+    shr ax, 0xa
+    and ax, 0x3f
+    add ax, 1
+    shl ax, 0xa
+    and ax, -0x400
+    or cx, ax
+    mov.w [rip + 0xb6d], cx
+    movzx.w edi, [rip + 0xb5f]
     call bits
     mov r14, rax
-    movzx.w edi, [rip + 0xad5]
+    movzx.w edi, [rip + 0xb59]
     call bits
     mov r13, rax
-    movzx.w edi, [rip + 0xac1]
+    movzx.w edi, [rip + 0xb45]
     call bits
     mov r12, rax
-    movzx.w ebx, [rip + 0xabf]
+    movzx.w ebx, [rip + 0xb43]
     xor eax, eax
 10:
-    movzx.w edi, [rip + 0xab6]
-    mov rdx, 0xfc00
-    not dx
-    and dx, di
+    movzx.w edi, [rip + 0xb3a]
+    mov rdx, rdi
+    and dx, 0x3ff
     mov rcx, rdi
     shr cx, 0xa
     and cx, 0x3f
@@ -1526,9 +1382,8 @@ main:
     shl cx, 0xa
     and cx, -0x400
     or dx, cx
-    mov rcx, 0x1f8
-    not cx
-    and cx, dx
+    mov rcx, rdx
+    and cx, -0x1f9
     shl dx, 7
     sar dx, 0xa
     sub dl, 9
@@ -1536,7 +1391,7 @@ main:
     shl dx, 3
     and dx, 0x1f8
     or cx, dx
-    mov.w [rip + 0xa4c], cx
+    mov.w [rip + 0xadc], cx
     cmp rax, 5
     setge cl
     movzx ecx, cl
@@ -1568,44 +1423,38 @@ main:
 =========== OPT LEVEL: aggresive ===========
 poke:
     movzx.w eax, [rdi]
-    mov r8, 7
-    not r8w
-    and r8w, ax
-    movzx eax, sil
-    and ax, 7
-    or r8w, ax
-    mov rcx, 0x1f8
-    not cx
-    and cx, r8w
-    movsx rax, dl
-    shl ax, 3
-    and ax, 0x1f8
-    or cx, ax
-    mov rax, 0xfc00
-    not ax
-    and ax, cx
-    shr cx, 0xa
-    and cx, 0x3f
-    add cx, 7
-    shl cx, 0xa
-    and cx, -0x400
+    and ax, -8
+    movzx ecx, sil
+    and cx, 7
     or ax, cx
-    mov rcx, 0x200
-    not cx
-    and cx, ax
-    shr ax, 9
-    and ax, 1
-    cmp ax, 0
-    setne al
-    movzx eax, al
-    cmp al, 0
-    sete al
-    movzx eax, al
-    movzx eax, al
-    shl ax, 9
-    and ax, 0x200
+    and ax, -0x1f9
+    movsx rcx, dl
+    shl cx, 3
+    and cx, 0x1f8
+    or ax, cx
+    mov rcx, rax
+    and cx, 0x3ff
+    shr ax, 0xa
+    and ax, 0x3f
+    add ax, 7
+    shl ax, 0xa
+    and ax, -0x400
     or cx, ax
-    mov.w [rdi], cx
+    mov rax, rcx
+    and ax, -0x201
+    shr cx, 9
+    and cx, 1
+    cmp cx, 0
+    setne cl
+    movzx ecx, cl
+    cmp cl, 0
+    sete cl
+    movzx ecx, cl
+    movzx ecx, cl
+    shl cx, 9
+    and cx, 0x200
+    or ax, cx
+    mov.w [rdi], ax
     ret
 main:
     push rbx
@@ -1619,13 +1468,11 @@ main:
     mov dl, -0x1f
     call poke
     movzx.w ebp, [rsp]
-    mov rax, 0x1f8
-    not ax
-    and ax, bp
+    mov rax, rbp
+    and ax, -0x1f9
     or ax, 0xa8
-    mov rcx, 7
-    not cx
-    and cx, ax
+    mov rcx, rax
+    and cx, -8
     and ax, 7
     or al, 4
     movzx eax, al
@@ -1643,9 +1490,8 @@ main:
     xor edx, edx
 2:
     movzx.w ecx, [rsp + 0xc]
-    mov rax, 0x1f8
-    not ax
-    and ax, cx
+    mov rax, rcx
+    and ax, -0x1f9
     shl cx, 7
     sar cx, 0xa
     sub cl, 0x11
@@ -1655,17 +1501,13 @@ main:
     or ax, cx
     mov.w [rsp + 0xc], ax
     movzx.w ecx, [rsp + rdx*2 + 0xe]
-    mov rax, 7
-    not ax
-    and ax, cx
-    mov rcx, rdx
-    add cl, 2
-    movzx ecx, cl
-    and cx, 7
-    or ax, cx
-    mov rcx, 0xfc00
-    not cx
-    and cx, ax
+    and cx, -8
+    mov rax, rdx
+    add al, 2
+    movzx eax, al
+    and ax, 7
+    or cx, ax
+    and cx, 0x3ff
     mov rax, rdx
     imul ax, ax, 9
     shl ax, 0xa
@@ -1714,41 +1556,35 @@ main:
     mov.q [rsp + 0x2], 0
     xor esi, esi
 4:
-    mov r9, rsi
-    cmp r9, 4
+    cmp rsi, 4
     jge 5
-    movzx.w edi, [rsp + r9*2 + 0x2]
-    mov rsi, 0xfc00
-    not si
-    and si, di
-    mov rdi, r9
+    movzx.w r8d, [rsp + rsi*2 + 0x2]
+    and r8w, 0x3ff
+    mov rdi, rsi
     add di, 0x30
     shl di, 0xa
     and di, -0x400
-    or si, di
-    mov r8, 0x1f8
-    not r8w
-    and r8w, si
-    mov rsi, r9
-    sub sil, 2
-    movsx rsi, sil
-    shl si, 3
-    and si, 0x1f8
-    or r8w, si
-    mov rsi, r9
-    add rsi, 1
-    mov.w [rsp + r9*2 + 0x2], r8w
+    or r8w, di
+    and r8w, -0x1f9
+    mov rdi, rsi
+    sub dil, 2
+    movsx rdi, dil
+    shl di, 3
+    and di, 0x1f8
+    or r8w, di
+    mov rdi, rsi
+    add rdi, 1
+    mov.w [rsp + rsi*2 + 0x2], r8w
+    mov rsi, rdi
     jmp 4
 5:
     movzx.w esi, [rsp + 0x6]
+    and si, -0x201
+    or si, 0x200
+    mov.w [rsp + 0x6], si
     imul rbx, rdx, 3
     xor rbx, rcx
     xor rbx, rax
-    mov rax, 0x200
-    not ax
-    and ax, si
-    or ax, 0x200
-    mov.w [rsp + 0x6], ax
     xor eax, eax
 6:
     imul rbx, rbx, 5
@@ -1761,49 +1597,40 @@ main:
     test cl, cl
     je 6
     mov sil, 1
-    movzx.w ecx, [rip + 0xbd2]
-    lea rdi, [rip + 0xbcb]
-    mov rax, 0x1f8
-    not ax
-    and ax, cx
+    movzx.w eax, [rip + 0xc2f]
+    lea rdi, [rip + 0xc28]
+    and ax, -0x1f9
     or ax, 0x100
-    mov.w [rip + 0xbae], ax
-    movzx.w ecx, [rip + 0xba6]
-    mov rax, 0xfc00
-    not ax
-    and ax, cx
+    mov.w [rip + 0xc14], ax
+    movzx.w eax, [rip + 0xc0c]
+    and ax, 0x3ff
     or ax, -0x400
-    mov.w [rip + 0xb89], ax
+    mov.w [rip + 0xbf8], ax
     mov dl, 0x1f
     call poke
-    movzx.w ecx, [rip + 0xb83]
-    mov rax, 7
-    not ax
-    and ax, cx
+    movzx.w eax, [rip + 0xbf2]
+    and ax, -8
     or ax, 7
-    mov.w [rip + 0xb66], ax
-    movzx.w edx, [rip + 0xb5a]
-    movzx.w ecx, [rip + 0xb60]
-    mov rax, 0xfc00
-    not ax
-    and ax, dx
-    shr cx, 0xa
-    and cx, 0x3f
-    add cx, 1
-    shl cx, 0xa
-    and cx, -0x400
-    or ax, cx
-    mov.w [rip + 0xb1b], ax
-    movzx.w edx, [rip + 0xb13]
-    movzx.w eax, [rip + 0xb19]
-    movzx.w r10d, [rip + 0xb07]
-    movzx.w r9d, [rip + 0xaf5]
+    mov.w [rip + 0xbde], ax
+    movzx.w ecx, [rip + 0xbd2]
+    movzx.w eax, [rip + 0xbd8]
+    and cx, 0x3ff
+    shr ax, 0xa
+    and ax, 0x3f
+    add ax, 1
+    shl ax, 0xa
+    and ax, -0x400
+    or cx, ax
+    mov.w [rip + 0xb9c], cx
+    movzx.w edx, [rip + 0xb94]
+    movzx.w eax, [rip + 0xb9a]
+    movzx.w r10d, [rip + 0xb88]
+    movzx.w r9d, [rip + 0xb76]
     xor esi, esi
 7:
-    movzx.w ecx, [rip + 0xb00]
-    mov r8, 0xfc00
-    not r8w
-    and r8w, cx
+    movzx.w ecx, [rip + 0xb81]
+    mov r8, rcx
+    and r8w, 0x3ff
     mov rdi, rcx
     shr di, 0xa
     and di, 0x3f
@@ -1811,9 +1638,8 @@ main:
     shl di, 0xa
     and di, -0x400
     or r8w, di
-    mov rdi, 0x1f8
-    not di
-    and di, r8w
+    mov rdi, r8
+    and di, -0x1f9
     shl r8w, 7
     sar r8w, 0xa
     sub r8b, 9
@@ -1821,7 +1647,7 @@ main:
     shl r8w, 3
     and r8w, 0x1f8
     or di, r8w
-    mov.w [rip + 0xa96], di
+    mov.w [rip + 0xb23], di
     cmp rsi, 5
     setge dil
     movzx edi, dil

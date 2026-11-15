@@ -1,7 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
-Error{inst_idx = 188, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 436, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 192, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 448, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 make_packet:
     uxtb w0, w0
     sxth w1, w1
@@ -68,68 +68,71 @@ main:
     movz x4, #4
     str w2, [x1]
     movz x5, #19
-    movz x6, #15
-    movz x7, #8
-    add x7, x7, x1
-    movz x8, #7
-    add x9, x1, x4
-    str w19, [x9]
-    movz x9, #8194
-    str w9, [x7]
-    movz x7, #3
-    movz x9, #25
-    movz x10, #26
-    lsl w10, w19, w10
-    bic w11, w20, w6
-    orr w11, w11, w6
-    movz x12, #5637
-    movk x12, #663, lsl #16
-    movk x12, #6, lsl #32
-    eor x3, x3, x12
-    madd x3, x3, x7, xzr
+    movz x6, #8
+    add x6, x6, x1
+    movz x7, #7
+    add x8, x1, x4
+    str w19, [x8]
+    movz x8, #8194
+    str w8, [x6]
+    movz x6, #3
+    movz x8, #25
+    movz x9, #26
+    lsl w9, w19, w9
+    movz x10, #15
+    movz x11, #5637
+    movk x11, #663, lsl #16
+    movk x11, #6, lsl #32
+    eor x3, x3, x11
+    madd x3, x3, x6, xzr
+    movn x11, #15
+    and w11, w11, w20
+    orr w11, w11, w10
     movz x12, #13
     lsl w13, w19, w5
-    asr w13, w13, w9
+    asr w13, w13, w8
     uxth w13, w13
     invalid
     eor x3, x3, x13
     movz x13, #1
     movz x14, #30
-    asr w10, w10, w14
-    uxtb w10, w10
+    asr w9, w9, w14
+    uxtb w9, w9
     invalid
-    eor x3, x3, x10
-    add x10, x3, x13
+    eor x3, x3, x9
+    add x9, x3, x13
     cmp w19, w20
-    csel x3, x10, x3, eq
-    movz x10, #16
-    add x10, x10, x3
-    movz x14, #8128
-    bic w11, w11, w14
-    movz x14, #49152
-    movk x14, #65535, lsl #16
-    movz x15, #1
-    movz x16, #0
-    movz x17, #4032
-    orr w11, w11, w17
-    bic w11, w11, w14
+    csel x3, x9, x3, eq
+    movz x9, #16
+    add x9, x9, x3
+    movn x14, #8128
+    and w11, w11, w14
+    movz x14, #4032
     orr w11, w11, w14
+    movz x14, #1
+    movn x15, #49152
+    movk x15, #0, lsl #16
+    and w11, w11, w15
+    movz x15, #0
+    movz x16, #49152
+    movk x16, #65535, lsl #16
+    orr w11, w11, w16
     cmp w11, w19
-    csel x3, x10, x3, eq
-    movz x10, #256
-    add x10, x10, x3
+    csel x3, x9, x3, eq
+    movz x9, #256
+    add x9, x9, x3
     cmp w19, w2
-    csel x2, x10, x3, ne
+    csel x2, x9, x3, ne
     movz x3, #5
     madd x2, x2, x3, xzr
     uxtb w3, w0
     add x2, x2, x3
     uxtb w0, w0
-    and w0, w0, w6
+    and w0, w0, w10
     uxtb w0, w0
     uxtb w0, w0
     add x0, x2, x0
-    madd x0, x0, x7, xzr
+    madd x0, x0, x6, xzr
     movz x2, #38156
     movk x2, #541, lsl #16
     eor x0, x0, x2
@@ -141,29 +144,29 @@ main:
     movz x3, #0
     add x0, x0, x2
 3:
-    cmp x3, x7
-    b.ge 0x1dc
-    madd x2, x8, x0, xzr
-    madd x10, x3, x4, xzr
-    add x10, x10, x1
-    ldr w10, [x10]
-    and w11, w10, w6
+    cmp x3, x6
+    b.ge 0x1e8
+    madd x2, x7, x0, xzr
+    madd x9, x3, x4, xzr
+    add x9, x9, x1
+    ldr w9, [x9]
+    and w11, w9, w10
     uxtb w11, w11
     uxtb w11, w11
     add x2, x2, x11
-    lsl w11, w10, w5
-    asr w11, w11, w9
+    lsl w11, w9, w5
+    asr w11, w11, w8
     uxth w11, w11
     invalid
     add x2, x2, x11
-    lsr w10, w10, w12
-    and w10, w10, w15
-    cmp w10, w16
-    cset w10, ne
-    uxtb w10, w10
+    lsr w9, w9, w12
+    and w9, w9, w14
+    cmp w9, w15
+    cset w9, ne
+    uxtb w9, w9
     add x3, x3, x13
-    add x0, x2, x10
-    b 0x180
+    add x0, x2, x9
+    b 0x18c
 4:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -171,9 +174,9 @@ main:
     add sp, sp, #48
     ret
 =========== OPT LEVEL: none ===========
-Error{inst_idx = 188, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 436, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 192, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 448, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 make_packet:
     uxtb w3, w0
     sxth w1, w1
@@ -236,32 +239,33 @@ main:
     add x9, sp, #32
     movz x12, #29673
     movk x12, #43763, lsl #16
-    mov w11, w19
+    mov w10, w19
     movz x8, #4
     str w12, [x9]
     movz x7, #19
-    movz x6, #15
     movz x1, #8
     add x3, x1, x9
-    movz x5, #7
+    movz x6, #7
     add x2, x9, x8
     str w19, [x2]
     movz x1, #8194
     str w1, [x3]
-    movz x4, #3
-    movz x3, #25
+    movz x5, #3
+    movz x4, #25
     movz x2, #26
     lsl w14, w19, w2
-    bic w1, w20, w6
-    orr w10, w1, w6
+    movz x3, #15
     movz x1, #5637
     movk x1, #663, lsl #16
     movk x1, #6, lsl #32
-    eor x1, x11, x1
-    madd x11, x1, x4, xzr
+    eor x1, x10, x1
+    madd x11, x1, x5, xzr
+    movn x2, #15
+    and w1, w2, w20
+    orr w10, w1, w3
     movz x2, #13
     lsl w1, w19, w7
-    asr w1, w1, w3
+    asr w1, w1, w4
     uxth w1, w1
     invalid
     eor x13, x11, x1
@@ -273,21 +277,23 @@ main:
     eor x15, x13, x11
     add x14, x15, x1
     cmp w19, w20
-    csel x17, x14, x15, eq
+    csel x16, x14, x15, eq
     movz x11, #16
-    add x16, x11, x17
-    movz x11, #8128
-    bic w15, w10, w11
-    movz x14, #49152
-    movk x14, #65535, lsl #16
+    add x15, x11, x16
+    movn x11, #8128
+    and w11, w10, w11
+    movz x10, #4032
+    orr w13, w11, w10
     movz x11, #1
+    movn x10, #49152
+    movk x10, #0, lsl #16
+    and w14, w13, w10
     movz x10, #0
-    movz x13, #4032
-    orr w13, w15, w13
-    bic w13, w13, w14
-    orr w14, w13, w14
+    movz x13, #49152
+    movk x13, #65535, lsl #16
+    orr w14, w14, w13
     cmp w14, w19
-    csel x15, x16, x17, eq
+    csel x15, x15, x16, eq
     movz x13, #256
     add x14, x13, x15
     cmp w19, w12
@@ -297,11 +303,11 @@ main:
     uxtb w12, w0
     add x12, x13, x12
     uxtb w0, w0
-    and w0, w0, w6
+    and w0, w0, w3
     uxtb w0, w0
     uxtb w0, w0
     add x0, x12, x0
-    madd x12, x0, x4, xzr
+    madd x12, x0, x5, xzr
     movz x0, #38156
     movk x0, #541, lsl #16
     eor x12, x12, x0
@@ -313,18 +319,18 @@ main:
     movz x12, #0
     add x0, x13, x0
 3:
-    cmp x12, x4
-    b.ge 0x1dc
-    madd x13, x5, x0, xzr
+    cmp x12, x5
+    b.ge 0x1e8
+    madd x13, x6, x0, xzr
     madd x0, x12, x8, xzr
     add x0, x0, x9
     ldr w14, [x0]
-    and w0, w14, w6
+    and w0, w14, w3
     uxtb w0, w0
     uxtb w0, w0
     add x13, x13, x0
     lsl w0, w14, w7
-    asr w0, w0, w3
+    asr w0, w0, w4
     uxth w0, w0
     invalid
     add x13, x13, x0
@@ -335,7 +341,7 @@ main:
     uxtb w0, w0
     add x12, x12, x1
     add x0, x13, x0
-    b 0x180
+    b 0x18c
 4:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -343,9 +349,9 @@ main:
     add sp, sp, #48
     ret
 =========== OPT LEVEL: moderate-quick ===========
-Error{inst_idx = 188, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 436, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 192, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 448, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 make_packet:
     uxtb w0, w0
     sxth w1, w1
@@ -412,68 +418,71 @@ main:
     movz x4, #4
     str w2, [x1]
     movz x5, #19
-    movz x6, #15
-    movz x7, #8
-    add x7, x7, x1
-    movz x8, #7
-    add x9, x1, x4
-    str w19, [x9]
-    movz x9, #8194
-    str w9, [x7]
-    movz x7, #3
-    movz x9, #25
-    movz x10, #26
-    lsl w10, w19, w10
-    bic w11, w20, w6
-    orr w11, w11, w6
-    movz x12, #5637
-    movk x12, #663, lsl #16
-    movk x12, #6, lsl #32
-    eor x3, x3, x12
-    madd x3, x3, x7, xzr
+    movz x6, #8
+    add x6, x6, x1
+    movz x7, #7
+    add x8, x1, x4
+    str w19, [x8]
+    movz x8, #8194
+    str w8, [x6]
+    movz x6, #3
+    movz x8, #25
+    movz x9, #26
+    lsl w9, w19, w9
+    movz x10, #15
+    movz x11, #5637
+    movk x11, #663, lsl #16
+    movk x11, #6, lsl #32
+    eor x3, x3, x11
+    madd x3, x3, x6, xzr
+    movn x11, #15
+    and w11, w11, w20
+    orr w11, w11, w10
     movz x12, #13
     lsl w13, w19, w5
-    asr w13, w13, w9
+    asr w13, w13, w8
     uxth w13, w13
     invalid
     eor x3, x3, x13
     movz x13, #1
     movz x14, #30
-    asr w10, w10, w14
-    uxtb w10, w10
+    asr w9, w9, w14
+    uxtb w9, w9
     invalid
-    eor x3, x3, x10
-    add x10, x3, x13
+    eor x3, x3, x9
+    add x9, x3, x13
     cmp w19, w20
-    csel x3, x10, x3, eq
-    movz x10, #16
-    add x10, x10, x3
-    movz x14, #8128
-    bic w11, w11, w14
-    movz x14, #49152
-    movk x14, #65535, lsl #16
-    movz x15, #1
-    movz x16, #0
-    movz x17, #4032
-    orr w11, w11, w17
-    bic w11, w11, w14
+    csel x3, x9, x3, eq
+    movz x9, #16
+    add x9, x9, x3
+    movn x14, #8128
+    and w11, w11, w14
+    movz x14, #4032
     orr w11, w11, w14
+    movz x14, #1
+    movn x15, #49152
+    movk x15, #0, lsl #16
+    and w11, w11, w15
+    movz x15, #0
+    movz x16, #49152
+    movk x16, #65535, lsl #16
+    orr w11, w11, w16
     cmp w11, w19
-    csel x3, x10, x3, eq
-    movz x10, #256
-    add x10, x10, x3
+    csel x3, x9, x3, eq
+    movz x9, #256
+    add x9, x9, x3
     cmp w19, w2
-    csel x2, x10, x3, ne
+    csel x2, x9, x3, ne
     movz x3, #5
     madd x2, x2, x3, xzr
     uxtb w3, w0
     add x2, x2, x3
     uxtb w0, w0
-    and w0, w0, w6
+    and w0, w0, w10
     uxtb w0, w0
     uxtb w0, w0
     add x0, x2, x0
-    madd x0, x0, x7, xzr
+    madd x0, x0, x6, xzr
     movz x2, #38156
     movk x2, #541, lsl #16
     eor x0, x0, x2
@@ -485,29 +494,29 @@ main:
     movz x3, #0
     add x0, x0, x2
 3:
-    cmp x3, x7
-    b.ge 0x1dc
-    madd x2, x8, x0, xzr
-    madd x10, x3, x4, xzr
-    add x10, x10, x1
-    ldr w10, [x10]
-    and w11, w10, w6
+    cmp x3, x6
+    b.ge 0x1e8
+    madd x2, x7, x0, xzr
+    madd x9, x3, x4, xzr
+    add x9, x9, x1
+    ldr w9, [x9]
+    and w11, w9, w10
     uxtb w11, w11
     uxtb w11, w11
     add x2, x2, x11
-    lsl w11, w10, w5
-    asr w11, w11, w9
+    lsl w11, w9, w5
+    asr w11, w11, w8
     uxth w11, w11
     invalid
     add x2, x2, x11
-    lsr w10, w10, w12
-    and w10, w10, w15
-    cmp w10, w16
-    cset w10, ne
-    uxtb w10, w10
+    lsr w9, w9, w12
+    and w9, w9, w14
+    cmp w9, w15
+    cset w9, ne
+    uxtb w9, w9
     add x3, x3, x13
-    add x0, x2, x10
-    b 0x180
+    add x0, x2, x9
+    b 0x18c
 4:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -515,9 +524,9 @@ main:
     add sp, sp, #48
     ret
 =========== OPT LEVEL: moderate ===========
-Error{inst_idx = 188, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 212, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 436, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 192, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 448, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 make_packet:
     uxtb w3, w0
     sxth w1, w1
@@ -580,32 +589,33 @@ main:
     add x9, sp, #32
     movz x12, #29673
     movk x12, #43763, lsl #16
-    mov w11, w19
+    mov w10, w19
     movz x8, #4
     str w12, [x9]
     movz x7, #19
-    movz x6, #15
     movz x1, #8
     add x3, x1, x9
-    movz x5, #7
+    movz x6, #7
     add x2, x9, x8
     str w19, [x2]
     movz x1, #8194
     str w1, [x3]
-    movz x4, #3
-    movz x3, #25
+    movz x5, #3
+    movz x4, #25
     movz x2, #26
     lsl w14, w19, w2
-    bic w1, w20, w6
-    orr w10, w1, w6
+    movz x3, #15
     movz x1, #5637
     movk x1, #663, lsl #16
     movk x1, #6, lsl #32
-    eor x1, x11, x1
-    madd x11, x1, x4, xzr
+    eor x1, x10, x1
+    madd x11, x1, x5, xzr
+    movn x2, #15
+    and w1, w2, w20
+    orr w10, w1, w3
     movz x2, #13
     lsl w1, w19, w7
-    asr w1, w1, w3
+    asr w1, w1, w4
     uxth w1, w1
     invalid
     eor x13, x11, x1
@@ -617,21 +627,23 @@ main:
     eor x15, x13, x11
     add x14, x15, x1
     cmp w19, w20
-    csel x17, x14, x15, eq
+    csel x16, x14, x15, eq
     movz x11, #16
-    add x16, x11, x17
-    movz x11, #8128
-    bic w15, w10, w11
-    movz x14, #49152
-    movk x14, #65535, lsl #16
+    add x15, x11, x16
+    movn x11, #8128
+    and w11, w10, w11
+    movz x10, #4032
+    orr w13, w11, w10
     movz x11, #1
+    movn x10, #49152
+    movk x10, #0, lsl #16
+    and w14, w13, w10
     movz x10, #0
-    movz x13, #4032
-    orr w13, w15, w13
-    bic w13, w13, w14
-    orr w14, w13, w14
+    movz x13, #49152
+    movk x13, #65535, lsl #16
+    orr w14, w14, w13
     cmp w14, w19
-    csel x15, x16, x17, eq
+    csel x15, x15, x16, eq
     movz x13, #256
     add x14, x13, x15
     cmp w19, w12
@@ -641,11 +653,11 @@ main:
     uxtb w12, w0
     add x12, x13, x12
     uxtb w0, w0
-    and w0, w0, w6
+    and w0, w0, w3
     uxtb w0, w0
     uxtb w0, w0
     add x0, x12, x0
-    madd x12, x0, x4, xzr
+    madd x12, x0, x5, xzr
     movz x0, #38156
     movk x0, #541, lsl #16
     eor x12, x12, x0
@@ -657,18 +669,18 @@ main:
     movz x12, #0
     add x0, x13, x0
 3:
-    cmp x12, x4
-    b.ge 0x1dc
-    madd x13, x5, x0, xzr
+    cmp x12, x5
+    b.ge 0x1e8
+    madd x13, x6, x0, xzr
     madd x0, x12, x8, xzr
     add x0, x0, x9
     ldr w14, [x0]
-    and w0, w14, w6
+    and w0, w14, w3
     uxtb w0, w0
     uxtb w0, w0
     add x13, x13, x0
     lsl w0, w14, w7
-    asr w0, w0, w3
+    asr w0, w0, w4
     uxth w0, w0
     invalid
     add x13, x13, x0
@@ -679,7 +691,7 @@ main:
     uxtb w0, w0
     add x12, x12, x1
     add x0, x13, x0
-    b 0x180
+    b 0x18c
 4:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -687,9 +699,9 @@ main:
     add sp, sp, #48
     ret
 =========== OPT LEVEL: all ===========
-Error{inst_idx = 192, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 428, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 196, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 220, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 440, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 make_packet:
     uxtb w3, w0
     sxth w1, w1
@@ -756,54 +768,57 @@ main:
     str w12, [x10]
     mov w4, w19
     movz x8, #19
-    movz x7, #15
     movz x1, #8
     add x3, x1, x10
     add x2, x10, x9
     str w19, [x2]
     movz x1, #8194
     str w1, [x3]
-    movz x6, #25
+    movz x7, #25
     movz x2, #26
-    lsl w15, w19, w2
-    movz x5, #3
-    bic w1, w20, w7
-    orr w11, w1, w7
+    lsl w13, w19, w2
+    movz x6, #3
+    movz x5, #15
     movz x1, #5637
     movk x1, #663, lsl #16
     movk x1, #6, lsl #32
     eor x1, x4, x1
-    madd x13, x1, x5, xzr
+    madd x14, x1, x6, xzr
+    movn x2, #15
+    and w1, w2, w20
+    orr w11, w1, w5
     movz x4, #13
     movz x3, #0
     movz x2, #7
     lsl w1, w19, w8
-    asr w1, w1, w6
+    asr w1, w1, w7
     uxth w1, w1
     invalid
-    eor x14, x13, x1
+    eor x15, x14, x1
     movz x1, #1
-    movz x13, #30
-    asr w13, w15, w13
+    movz x14, #30
+    asr w13, w13, w14
     uxtb w13, w13
     invalid
-    eor x16, x14, x13
+    eor x16, x15, x13
     add x15, x16, x1
     cmp w19, w20
-    csel x17, x15, x16, eq
-    movz x13, #8128
-    bic w16, w11, w13
-    movz x14, #49152
-    movk x14, #65535, lsl #16
+    csel x16, x15, x16, eq
+    movn x13, #8128
+    and w13, w11, w13
     movz x11, #16
-    add x15, x11, x17
+    add x15, x11, x16
+    movz x11, #4032
+    orr w14, w13, w11
     movz x11, #1
-    movz x13, #4032
-    orr w13, w16, w13
-    bic w13, w13, w14
-    orr w14, w13, w14
+    movn x13, #49152
+    movk x13, #0, lsl #16
+    and w14, w14, w13
+    movz x13, #49152
+    movk x13, #65535, lsl #16
+    orr w14, w14, w13
     cmp w14, w19
-    csel x15, x15, x17, eq
+    csel x15, x15, x16, eq
     movz x13, #256
     add x14, x13, x15
     cmp w19, w12
@@ -813,11 +828,11 @@ main:
     uxtb w12, w0
     add x12, x13, x12
     uxtb w0, w0
-    and w0, w0, w7
+    and w0, w0, w5
     uxtb w0, w0
     uxtb w0, w0
     add x0, x12, x0
-    madd x12, x0, x5, xzr
+    madd x12, x0, x6, xzr
     movz x0, #38156
     movk x0, #541, lsl #16
     eor x12, x12, x0
@@ -833,12 +848,12 @@ main:
     madd x0, x12, x9, xzr
     add x0, x0, x10
     ldr w14, [x0]
-    and w0, w14, w7
+    and w0, w14, w5
     uxtb w0, w0
     uxtb w0, w0
     add x13, x13, x0
     lsl w0, w14, w8
-    asr w0, w0, w6
+    asr w0, w0, w7
     uxth w0, w0
     invalid
     add x13, x13, x0
@@ -848,18 +863,18 @@ main:
     cset w0, ne
     uxtb w0, w0
     add x12, x12, x1
-    cmp x12, x5
+    cmp x12, x6
     add x0, x13, x0
-    b.lt 0x180
+    b.lt 0x18c
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
     add sp, sp, #48
     ret
 =========== OPT LEVEL: aggresive ===========
-Error{inst_idx = 176, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 200, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 392, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 180, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 204, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 404, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 make_packet:
     uxtb w3, w0
     sxth w1, w1
@@ -893,59 +908,62 @@ main:
     movn x1, #1
     movz x2, #16
     bl 0xffffffb8
-    add x10, sp, #24
+    add x11, sp, #24
     movz x12, #29673
     movk x12, #43763, lsl #16
-    movz x9, #4
-    str w12, [x10]
+    movz x10, #4
+    str w12, [x11]
     mov w4, w19
-    movz x8, #19
-    movz x7, #15
+    movz x9, #19
     movz x1, #8
-    add x3, x1, x10
-    add x2, x10, x9
+    add x3, x1, x11
+    add x2, x11, x10
     str w19, [x2]
     movz x1, #8194
     str w1, [x3]
-    movz x6, #25
+    movz x8, #25
     movz x2, #26
-    lsl w15, w19, w2
-    movz x5, #3
-    bic w1, w0, w7
-    orr w11, w1, w7
+    lsl w14, w19, w2
+    movz x7, #3
+    movz x6, #15
     movz x1, #5637
     movk x1, #663, lsl #16
     movk x1, #6, lsl #32
     eor x1, x4, x1
-    madd x13, x1, x5, xzr
-    movz x4, #13
-    movz x3, #0
-    movz x2, #7
-    lsl w1, w19, w8
-    asr w1, w1, w6
+    madd x2, x1, x7, xzr
+    movn x1, #15
+    and w1, w1, w0
+    orr w16, w1, w6
+    movz x5, #13
+    movz x4, #0
+    movz x3, #7
+    lsl w1, w19, w9
+    asr w1, w1, w8
     uxth w1, w1
     invalid
-    eor x14, x13, x1
-    movz x1, #1
-    movz x13, #30
-    asr w13, w15, w13
-    uxtb w13, w13
+    eor x13, x2, x1
+    movz x2, #1
+    movz x1, #30
+    asr w1, w14, w1
+    uxtb w1, w1
     invalid
-    eor x15, x14, x13
-    add x14, x15, x1
-    movz x13, #8128
-    bic w16, w11, w13
-    movz x13, #49152
-    movk x13, #65535, lsl #16
+    eor x15, x13, x1
+    add x14, x15, x2
+    movn x1, #8128
+    and w13, w16, w1
     cmp w19, w0
     csel x15, x14, x15, eq
     movz x0, #16
     add x14, x0, x15
-    movz x11, #1
     movz x0, #4032
-    orr w0, w16, w0
-    bic w0, w0, w13
-    orr w13, w0, w13
+    orr w13, w13, w0
+    movz x1, #1
+    movn x0, #49152
+    movk x0, #0, lsl #16
+    and w13, w13, w0
+    movz x0, #49152
+    movk x0, #65535, lsl #16
+    orr w13, w13, w0
     cmp w13, w19
     csel x14, x14, x15, eq
     movz x0, #256
@@ -956,7 +974,7 @@ main:
     madd x12, x12, x0, xzr
     movz x0, #102
     add x0, x12, x0
-    madd x12, x0, x5, xzr
+    madd x12, x0, x7, xzr
     movz x0, #38156
     movk x0, #541, lsl #16
     eor x12, x12, x0
@@ -968,28 +986,28 @@ main:
     movz x12, #0
     add x0, x13, x0
 2:
-    madd x13, x0, x2, xzr
-    madd x0, x12, x9, xzr
-    add x0, x0, x10
+    madd x13, x0, x3, xzr
+    madd x0, x12, x10, xzr
+    add x0, x0, x11
     ldr w14, [x0]
-    and w0, w14, w7
+    and w0, w14, w6
     uxtb w0, w0
     uxtb w0, w0
     add x13, x13, x0
-    lsl w0, w14, w8
-    asr w0, w0, w6
+    lsl w0, w14, w9
+    asr w0, w0, w8
     uxth w0, w0
     invalid
     add x13, x13, x0
-    lsr w0, w14, w4
-    and w0, w0, w11
-    cmp w0, w3
+    lsr w0, w14, w5
+    and w0, w0, w1
+    cmp w0, w4
     cset w0, ne
     uxtb w0, w0
-    add x12, x12, x1
-    cmp x12, x5
+    add x12, x12, x2
+    cmp x12, x7
     add x0, x13, x0
-    b.lt 0x15c
+    b.lt 0x168
     ldr x19, [xzr]
     ldp x29, x30, [xzr, #8]
     add sp, sp, #48

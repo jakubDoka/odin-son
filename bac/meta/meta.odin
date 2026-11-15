@@ -893,9 +893,8 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	.And = SIMPLE_WIDENING_BINOP_CLASS,
 	.Or = SIMPLE_WIDENING_BINOP_CLASS,
 	.Xor = SIMPLE_WIDENING_BINOP_CLASS,
-	.And_Not = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Neg = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}, api = true},
-	.Not = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
+	.Not = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned, .Widening}},
 	.Cast = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned}},
 	.Conv = {args = {"oprnd"}, group = "Un_Op", flags = {.Interned, .Widening}},
 	.U_Conv = {

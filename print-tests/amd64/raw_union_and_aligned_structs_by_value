@@ -1,4 +1,9 @@
 =========== OPT LEVEL: none-quick ===========
+swap_d:
+    mov rax, rdi
+    movabs rcx, -0x8000000000000000
+    xor rax, rcx
+    ret
 flip:
     mov.q [rsp - 0x18], rdi
     mov.q [rsp - 0x10], 0
@@ -23,14 +28,14 @@ wide:
     mov rbx, rdi
     lea rdi, [rsp]
     mov rdx, 0x18
-    call -0x11f
+    call -0x130
     movzx.b eax, [rsp]
     add.q rax, [rsp + 0x8]
     mov.q [rsp + 0x10], rax
     lea rsi, [rsp]
     mov rdi, rbx
     mov rdx, 0x18
-    call -0x141
+    call -0x152
     add rsp, 0x20
     pop rbx
     ret
@@ -39,7 +44,7 @@ aligned:
     imul rax, rdx
     mov.q [rdi], rax
     movss.d xmm0, [rsi + 0x8]
-    addss.d xmm0, [rip + 0xe9f]
+    addss.d xmm0, [rip + 0xe8e]
     movss.d [rdi + 0x8], xmm0
     ret
 padded:
@@ -67,7 +72,7 @@ main:
     push rbx
     push rbp
     push r12
-    sub rsp, 0x100
+    sub rsp, 0x110
     movabs rdi, 0x200000001
     call flip
     mov rbx, rax
@@ -86,62 +91,62 @@ main:
     sete al
     movzx eax, al
     test al, al
-    jne 7
-    jmp 8
-7:
+    jne 8
+    jmp 9
+8:
     cmp.w [rsp], 5
     sete al
     movzx eax, al
-8:
+9:
     mov rbp, rax
-    mov.q [rsp + 0x28], 0
+    mov.q [rsp + 0x38], 0
     pxor xmm0, xmm0
-    movups.x [rsp + 0x18], xmm0
-    mov.q [rsp + 0x48], 5
-    mov.q [rsp + 0x50], 6
-    mov.q [rsp + 0x58], 7
-    lea rsi, [rsp + 0x48]
-    lea rdi, [rsp + 0x30]
+    movups.x [rsp + 0x28], xmm0
+    mov.q [rsp + 0x58], 5
+    mov.q [rsp + 0x60], 6
+    mov.q [rsp + 0x68], 7
+    lea rsi, [rsp + 0x58]
+    lea rdi, [rsp + 0x40]
     call wide
-    lea rdi, [rsp + 0x18]
+    lea rdi, [rsp + 0x28]
     mov rdx, 0x18
-    lea rsi, [rsp + 0x30]
-    call -0x2a5
-    mov.q r12, [rsp + 0x28]
-    lea rsi, [rsp + 0xe0]
-    mov.q [rsp + 0xa0], 0
-    mov.d [rsp + 0xa8], 0
-    mov.d [rsp + 0xbc], 0
+    lea rsi, [rsp + 0x40]
+    call -0x2b6
+    mov.q r12, [rsp + 0x38]
+    lea rsi, [rsp + 0xf0]
+    mov.q [rsp + 0xb0], 0
+    mov.d [rsp + 0xb8], 0
+    mov.d [rsp + 0xcc], 0
     pxor xmm0, xmm0
-    movups.x [rsp + 0xac], xmm0
-    mov.d [rsp + 0xec], 0
+    movups.x [rsp + 0xbc], xmm0
+    mov.d [rsp + 0xfc], 0
     pxor xmm0, xmm0
-    movups.x [rsp + 0xf0], xmm0
-    mov.q [rsp + 0xe0], 3
-    movss.d xmm0, [rip + 0xcf1]
-    movss.d [rsp + 0xe8], xmm0
+    movups.x [rsp + 0x100], xmm0
+    mov.q [rsp + 0xf0], 3
+    movss.d xmm0, [rip + 0xce0]
+    movss.d [rsp + 0xf8], xmm0
     mov rdx, 4
-    lea rdi, [rsp + 0xc0]
+    lea rdi, [rsp + 0xd0]
     call aligned
-    lea rdi, [rsp + 0xa0]
+    lea rdi, [rsp + 0xb0]
     mov rdx, 0x20
-    lea rsi, [rsp + 0xc0]
-    call -0x34d
-    cmp.q [rsp + 0xa0], 0xc
+    lea rsi, [rsp + 0xd0]
+    call -0x35e
+    cmp.q [rsp + 0xb0], 0xc
     sete al
     movzx eax, al
     test al, al
-    jne 9
-    jmp 11
-9:
-    movss.d xmm0, [rsp + 0xa8]
-    ucomiss.d xmm0, [rip + 0xc87]
-    sete al
-    jnp 10
-    mov al, 0
+    jne 10
+    jmp 12
 10:
-    movzx eax, al
+    movss.d xmm0, [rsp + 0xb8]
+    ucomiss.d xmm0, [rip + 0xc76]
+    sete al
+    jnp 11
+    mov al, 0
 11:
+    movzx eax, al
+12:
     mov rcx, 1
     movabs rdx, 0x100000002
     cmp rbx, rdx
@@ -160,66 +165,82 @@ main:
     cmp r12, 0xb
     cmove rcx, rdx
     test al, al
-    jne 12
+    jne 13
     mov rax, rcx
-    jmp 13
-12:
+    jmp 14
+13:
     add rcx, 8
     mov rax, rcx
-13:
+14:
     mov rbx, rax
     pxor xmm0, xmm0
-    movups.x [rsp + 0x80], xmm0
+    movups.x [rsp + 0x70], xmm0
     mov rdi, 0x10
     mov rsi, 9
     call wrap
-    mov.q [rsp + 0x80], rax
-    mov.q [rsp + 0x88], rdx
-    cmp.d [rsp + 0x80], 0x100
+    mov.q [rsp + 0x70], rax
+    mov.q [rsp + 0x78], rdx
+    cmp.d [rsp + 0x70], 0x100
     sete al
     movzx eax, al
     test al, al
-    jne 14
-    jmp 15
-14:
+    jne 15
+    jmp 16
+15:
     cmp rdx, 0xa
     sete al
     movzx eax, al
-15:
+16:
     mov rbp, rax
     pxor xmm0, xmm0
     movups.x [rsp + 0x90], xmm0
-    mov.d [rsp + 0x64], 0
-    mov.q [rsp + 0x68], 0
-    mov.d [rsp + 0x60], 3
-    mov.q rsi, [rsp + 0x68]
-    mov.q rdi, [rsp + 0x60]
-    mov.d [rsp + 0x74], 0
-    mov.q [rsp + 0x78], 0
-    mov.d [rsp + 0x70], 4
-    mov.q rdx, [rsp + 0x70]
-    mov.q rcx, [rsp + 0x78]
+    mov.d [rsp + 0xa4], 0
+    mov.q [rsp + 0xa8], 0
+    mov.d [rsp + 0xa0], 3
+    mov.q rdi, [rsp + 0xa0]
+    mov.q rsi, [rsp + 0xa8]
+    mov.d [rsp + 0x84], 0
+    mov.q [rsp + 0x88], 0
+    mov.d [rsp + 0x80], 4
+    mov.q rdx, [rsp + 0x80]
+    mov.q rcx, [rsp + 0x88]
     call padded
     mov.q [rsp + 0x90], rax
     mov.q [rsp + 0x98], rdx
-    mov.d eax, [rsp + 0x90]
-    mov rcx, rbx
-    add rcx, 0x10
+    mov.d r12d, [rsp + 0x90]
+    movsd.q xmm0, [rip + 0xb0f]
+    movsd.q [rsp + 0x18], xmm0
+    mov.q rdi, [rsp + 0x18]
+    call swap_d
+    mov.q [rsp + 0x20], rax
+    movsd.q xmm0, [rsp + 0x20]
+    mov rax, rbx
+    add rax, 0x10
     test bpl, bpl
-    mov rdx, rbx
-    cmovne rdx, rcx
-    mov rcx, rdx
-    mov rdx, rcx
-    add rdx, 0x20
-    cmp eax, 0x34
+    mov rcx, rbx
+    cmovne rcx, rax
     mov rax, rcx
-    cmove rax, rdx
-    add rsp, 0x100
+    mov rcx, rax
+    add rcx, 0x20
+    cmp r12d, 0x34
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 0x40
+    ucomisd.q xmm0, [rip + 0xabb]
+    jp 17
+    cmove rax, rcx
+17:
+    add rsp, 0x110
     pop r12
     pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
+swap_d:
+    mov rax, rdi
+    movabs rcx, -0x8000000000000000
+    xor rax, rcx
+    ret
 flip:
     mov.q [rsp - 0x18], rdi
     mov.q [rsp - 0x10], 0
@@ -244,14 +265,14 @@ wide:
     mov rbx, rdi
     lea rdi, [rsp]
     mov rdx, 0x18
-    call -0x102
+    call -0x113
     movzx.b eax, [rsp]
     add.q rax, [rsp + 0x8]
     mov.q [rsp + 0x10], rax
     lea rsi, [rsp]
     mov rdi, rbx
     mov rdx, 0x18
-    call -0x124
+    call -0x135
     add rsp, 0x20
     pop rbx
     ret
@@ -260,7 +281,7 @@ aligned:
     imul rax, rdx
     mov.q [rdi], rax
     movss.d xmm0, [rsi + 0x8]
-    addss.d xmm0, [rip + 0xebc]
+    addss.d xmm0, [rip + 0xeab]
     movss.d [rdi + 0x8], xmm0
     ret
 padded:
@@ -288,7 +309,7 @@ main:
     push rbx
     push rbp
     push r12
-    sub rsp, 0x100
+    sub rsp, 0x110
     movabs rdi, 0x200000001
     call flip
     mov r12, rax
@@ -307,61 +328,61 @@ main:
     sete bpl
     movzx ebp, bpl
     test bpl, bpl
-    jne 7
-    jmp 8
-7:
+    jne 8
+    jmp 9
+8:
     cmp.w [rsp], 5
     sete bpl
     movzx ebp, bpl
-8:
-    mov.q [rsp + 0x28], 0
+9:
+    mov.q [rsp + 0x38], 0
     pxor xmm0, xmm0
-    movups.x [rsp + 0x18], xmm0
-    mov.q [rsp + 0x48], 5
-    mov.q [rsp + 0x50], 6
-    mov.q [rsp + 0x58], 7
-    lea rsi, [rsp + 0x48]
-    lea rdi, [rsp + 0x30]
+    movups.x [rsp + 0x28], xmm0
+    mov.q [rsp + 0x58], 5
+    mov.q [rsp + 0x60], 6
+    mov.q [rsp + 0x68], 7
+    lea rsi, [rsp + 0x58]
+    lea rdi, [rsp + 0x40]
     call wide
-    lea rdi, [rsp + 0x18]
+    lea rdi, [rsp + 0x28]
     mov rdx, 0x18
-    lea rsi, [rsp + 0x30]
-    call -0x285
-    mov.q rbx, [rsp + 0x28]
-    lea rsi, [rsp + 0xe0]
-    mov.q [rsp + 0xa0], 0
-    mov.d [rsp + 0xa8], 0
-    mov.d [rsp + 0xbc], 0
+    lea rsi, [rsp + 0x40]
+    call -0x296
+    mov.q rbx, [rsp + 0x38]
+    lea rsi, [rsp + 0xf0]
+    mov.q [rsp + 0xb0], 0
+    mov.d [rsp + 0xb8], 0
+    mov.d [rsp + 0xcc], 0
     pxor xmm0, xmm0
-    movups.x [rsp + 0xac], xmm0
-    mov.d [rsp + 0xec], 0
+    movups.x [rsp + 0xbc], xmm0
+    mov.d [rsp + 0xfc], 0
     pxor xmm0, xmm0
-    movups.x [rsp + 0xf0], xmm0
-    mov.q [rsp + 0xe0], 3
-    movss.d xmm0, [rip + 0xd11]
-    movss.d [rsp + 0xe8], xmm0
+    movups.x [rsp + 0x100], xmm0
+    mov.q [rsp + 0xf0], 3
+    movss.d xmm0, [rip + 0xd00]
+    movss.d [rsp + 0xf8], xmm0
     mov rdx, 4
-    lea rdi, [rsp + 0xc0]
+    lea rdi, [rsp + 0xd0]
     call aligned
-    lea rdi, [rsp + 0xa0]
+    lea rdi, [rsp + 0xb0]
     mov rdx, 0x20
-    lea rsi, [rsp + 0xc0]
-    call -0x32d
-    cmp.q [rsp + 0xa0], 0xc
+    lea rsi, [rsp + 0xd0]
+    call -0x33e
+    cmp.q [rsp + 0xb0], 0xc
     sete sil
     movzx esi, sil
     test sil, sil
-    jne 9
-    jmp 11
-9:
-    movss.d xmm0, [rsp + 0xa8]
-    ucomiss.d xmm0, [rip + 0xca7]
-    sete sil
-    jnp 10
-    mov sil, 0
+    jne 10
+    jmp 12
 10:
-    movzx esi, sil
+    movss.d xmm0, [rsp + 0xb8]
+    ucomiss.d xmm0, [rip + 0xc96]
+    sete sil
+    jnp 11
+    mov sil, 0
 11:
+    movzx esi, sil
+12:
     mov rdx, 1
     movabs rcx, 0x100000002
     cmp r12, rcx
@@ -379,62 +400,79 @@ main:
     cmp rbx, 0xb
     cmove rax, rcx
     test sil, sil
-    jne 12
-    jmp 13
-12:
-    add rax, 8
+    jne 13
+    jmp 14
 13:
-    mov rbp, rax
+    add rax, 8
+14:
+    mov r12, rax
     pxor xmm0, xmm0
-    movups.x [rsp + 0x80], xmm0
+    movups.x [rsp + 0x70], xmm0
     mov rdi, 0x10
     mov rsi, 9
     call wrap
-    mov.q [rsp + 0x80], rax
-    mov.q [rsp + 0x88], rdx
-    cmp.d [rsp + 0x80], 0x100
-    sete bl
-    movzx ebx, bl
-    test bl, bl
-    jne 14
-    jmp 15
-14:
-    cmp rdx, 0xa
-    sete bl
-    movzx ebx, bl
+    mov.q [rsp + 0x70], rax
+    mov.q [rsp + 0x78], rdx
+    cmp.d [rsp + 0x70], 0x100
+    sete bpl
+    movzx ebp, bpl
+    test bpl, bpl
+    jne 15
+    jmp 16
 15:
+    cmp rdx, 0xa
+    sete bpl
+    movzx ebp, bpl
+16:
     pxor xmm0, xmm0
     movups.x [rsp + 0x90], xmm0
-    mov.d [rsp + 0x64], 0
-    mov.q [rsp + 0x68], 0
-    mov.d [rsp + 0x60], 3
-    mov.q rsi, [rsp + 0x68]
-    mov.q rdi, [rsp + 0x60]
-    mov.d [rsp + 0x74], 0
-    mov.q [rsp + 0x78], 0
-    mov.d [rsp + 0x70], 4
-    mov.q rdx, [rsp + 0x70]
-    mov.q rcx, [rsp + 0x78]
+    mov.d [rsp + 0xa4], 0
+    mov.q [rsp + 0xa8], 0
+    mov.d [rsp + 0xa0], 3
+    mov.q rdi, [rsp + 0xa0]
+    mov.q rsi, [rsp + 0xa8]
+    mov.d [rsp + 0x84], 0
+    mov.q [rsp + 0x88], 0
+    mov.d [rsp + 0x80], 4
+    mov.q rdx, [rsp + 0x80]
+    mov.q rcx, [rsp + 0x88]
     call padded
     mov.q [rsp + 0x90], rax
     mov.q [rsp + 0x98], rdx
-    mov.d edx, [rsp + 0x90]
-    mov rax, rbp
+    mov.d ebx, [rsp + 0x90]
+    movsd.q xmm0, [rip + 0xb3b]
+    movsd.q [rsp + 0x18], xmm0
+    mov.q rdi, [rsp + 0x18]
+    call swap_d
+    mov.q [rsp + 0x20], rax
+    movsd.q xmm0, [rsp + 0x20]
+    mov rax, r12
     add rax, 0x10
-    test bl, bl
-    mov rcx, rbp
+    test bpl, bpl
+    mov rcx, r12
     cmovne rcx, rax
     mov rax, rcx
     add rax, 0x20
-    cmp edx, 0x34
+    cmp ebx, 0x34
     cmove rcx, rax
     mov rax, rcx
-    add rsp, 0x100
+    add rax, 0x40
+    ucomisd.q xmm0, [rip + 0xaea]
+    jp 17
+    cmove rcx, rax
+17:
+    mov rax, rcx
+    add rsp, 0x110
     pop r12
     pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate-quick ===========
+swap_d:
+    mov rax, rdi
+    movabs rcx, -0x8000000000000000
+    xor rax, rcx
+    ret
 flip:
     mov.q [rsp - 0x18], rdi
     mov.q [rsp - 0x10], 0
@@ -460,14 +498,14 @@ wide:
     mov rbx, rdi
     lea rdi, [rsp]
     mov rdx, 0x18
-    call -0x11e
+    call -0x12f
     movzx.b eax, [rsp]
     add.q rax, [rsp + 0x8]
     mov.q [rsp + 0x10], rax
     lea rsi, [rsp]
     mov rdi, rbx
     mov rdx, 0x18
-    call -0x140
+    call -0x151
     add rsp, 0x20
     pop rbx
     ret
@@ -476,7 +514,7 @@ aligned:
     imul rax, rdx
     mov.q [rdi], rax
     movss.d xmm0, [rsi + 0x8]
-    addss.d xmm0, [rip + 0xea0]
+    addss.d xmm0, [rip + 0xe8f]
     movss.d [rdi + 0x8], xmm0
     ret
 padded:
@@ -504,7 +542,7 @@ main:
     push rbx
     push rbp
     push r12
-    sub rsp, 0x100
+    sub rsp, 0x110
     movabs rdi, 0x200000001
     call flip
     mov rbx, rax
@@ -523,62 +561,62 @@ main:
     sete al
     movzx eax, al
     test al, al
-    jne 7
-    jmp 8
-7:
+    jne 8
+    jmp 9
+8:
     cmp.w [rsp], 5
     sete al
     movzx eax, al
-8:
+9:
     mov rbp, rax
     pxor xmm0, xmm0
-    movups.x [rsp + 0x18], xmm0
-    mov.q [rsp + 0x28], 0
-    mov.q [rsp + 0x48], 5
-    mov.q [rsp + 0x50], 6
-    mov.q [rsp + 0x58], 7
-    lea rsi, [rsp + 0x48]
-    lea rdi, [rsp + 0x30]
+    movups.x [rsp + 0x28], xmm0
+    mov.q [rsp + 0x38], 0
+    mov.q [rsp + 0x58], 5
+    mov.q [rsp + 0x60], 6
+    mov.q [rsp + 0x68], 7
+    lea rsi, [rsp + 0x58]
+    lea rdi, [rsp + 0x40]
     call wide
-    lea rdi, [rsp + 0x18]
+    lea rdi, [rsp + 0x28]
     mov rdx, 0x18
-    lea rsi, [rsp + 0x30]
-    call -0x2a2
-    mov.q r12, [rsp + 0x28]
-    lea rsi, [rsp + 0xe0]
-    mov.q [rsp + 0xa0], 0
-    mov.d [rsp + 0xa8], 0
-    mov.d [rsp + 0xbc], 0
+    lea rsi, [rsp + 0x40]
+    call -0x2b3
+    mov.q r12, [rsp + 0x38]
+    lea rsi, [rsp + 0xf0]
+    mov.q [rsp + 0xb0], 0
+    mov.d [rsp + 0xb8], 0
+    mov.d [rsp + 0xcc], 0
     pxor xmm0, xmm0
-    movups.x [rsp + 0xac], xmm0
-    mov.d [rsp + 0xec], 0
+    movups.x [rsp + 0xbc], xmm0
+    mov.d [rsp + 0xfc], 0
     pxor xmm0, xmm0
-    movups.x [rsp + 0xf0], xmm0
-    mov.q [rsp + 0xe0], 3
-    movss.d xmm0, [rip + 0xcf4]
-    movss.d [rsp + 0xe8], xmm0
+    movups.x [rsp + 0x100], xmm0
+    mov.q [rsp + 0xf0], 3
+    movss.d xmm0, [rip + 0xce3]
+    movss.d [rsp + 0xf8], xmm0
     mov rdx, 4
-    lea rdi, [rsp + 0xc0]
+    lea rdi, [rsp + 0xd0]
     call aligned
-    lea rdi, [rsp + 0xa0]
+    lea rdi, [rsp + 0xb0]
     mov rdx, 0x20
-    lea rsi, [rsp + 0xc0]
-    call -0x34a
-    cmp.q [rsp + 0xa0], 0xc
+    lea rsi, [rsp + 0xd0]
+    call -0x35b
+    cmp.q [rsp + 0xb0], 0xc
     sete al
     movzx eax, al
     test al, al
-    jne 9
-    jmp 11
-9:
-    movss.d xmm0, [rsp + 0xa8]
-    ucomiss.d xmm0, [rip + 0xc8a]
-    sete al
-    jnp 10
-    mov al, 0
+    jne 10
+    jmp 12
 10:
-    movzx eax, al
+    movss.d xmm0, [rsp + 0xb8]
+    ucomiss.d xmm0, [rip + 0xc79]
+    sete al
+    jnp 11
+    mov al, 0
 11:
+    movzx eax, al
+12:
     mov rcx, 1
     movabs rdx, 0x100000002
     cmp rbx, rdx
@@ -597,66 +635,82 @@ main:
     cmp r12, 0xb
     cmove rcx, rdx
     test al, al
-    jne 12
+    jne 13
     mov rax, rcx
-    jmp 13
-12:
+    jmp 14
+13:
     add rcx, 8
     mov rax, rcx
-13:
+14:
     mov rbx, rax
     pxor xmm0, xmm0
-    movups.x [rsp + 0x80], xmm0
+    movups.x [rsp + 0x70], xmm0
     mov rdi, 0x10
     mov rsi, 9
     call wrap
-    mov.q [rsp + 0x80], rax
-    mov.q [rsp + 0x88], rdx
-    cmp.d [rsp + 0x80], 0x100
+    mov.q [rsp + 0x70], rax
+    mov.q [rsp + 0x78], rdx
+    cmp.d [rsp + 0x70], 0x100
     sete al
     movzx eax, al
     test al, al
-    jne 14
-    jmp 15
-14:
+    jne 15
+    jmp 16
+15:
     cmp rdx, 0xa
     sete al
     movzx eax, al
-15:
+16:
     mov rbp, rax
     pxor xmm0, xmm0
     movups.x [rsp + 0x90], xmm0
-    mov.d [rsp + 0x64], 0
-    mov.q [rsp + 0x68], 0
-    mov.d [rsp + 0x60], 3
-    mov.q rsi, [rsp + 0x68]
-    mov.q rdi, [rsp + 0x60]
-    mov.d [rsp + 0x74], 0
-    mov.q [rsp + 0x78], 0
-    mov.d [rsp + 0x70], 4
-    mov.q rdx, [rsp + 0x70]
-    mov.q rcx, [rsp + 0x78]
+    mov.d [rsp + 0xa4], 0
+    mov.q [rsp + 0xa8], 0
+    mov.d [rsp + 0xa0], 3
+    mov.q rdi, [rsp + 0xa0]
+    mov.q rsi, [rsp + 0xa8]
+    mov.d [rsp + 0x84], 0
+    mov.q [rsp + 0x88], 0
+    mov.d [rsp + 0x80], 4
+    mov.q rdx, [rsp + 0x80]
+    mov.q rcx, [rsp + 0x88]
     call padded
     mov.q [rsp + 0x90], rax
     mov.q [rsp + 0x98], rdx
-    mov.d eax, [rsp + 0x90]
-    mov rcx, rbx
-    add rcx, 0x10
+    mov.d r12d, [rsp + 0x90]
+    movsd.q xmm0, [rip + 0xb12]
+    movsd.q [rsp + 0x18], xmm0
+    mov.q rdi, [rsp + 0x18]
+    call swap_d
+    mov.q [rsp + 0x20], rax
+    movsd.q xmm0, [rsp + 0x20]
+    mov rax, rbx
+    add rax, 0x10
     test bpl, bpl
-    mov rdx, rbx
-    cmovne rdx, rcx
-    mov rcx, rdx
-    mov rdx, rcx
-    add rdx, 0x20
-    cmp eax, 0x34
+    mov rcx, rbx
+    cmovne rcx, rax
     mov rax, rcx
-    cmove rax, rdx
-    add rsp, 0x100
+    mov rcx, rax
+    add rcx, 0x20
+    cmp r12d, 0x34
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 0x40
+    ucomisd.q xmm0, [rip + 0xabe]
+    jp 17
+    cmove rax, rcx
+17:
+    add rsp, 0x110
     pop r12
     pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
+swap_d:
+    mov rax, rdi
+    movabs rcx, -0x8000000000000000
+    xor rax, rcx
+    ret
 flip:
     mov.q [rsp - 0x18], rdi
     mov.q [rsp - 0x10], 0
@@ -682,14 +736,14 @@ wide:
     mov rbx, rdi
     lea rdi, [rsp]
     mov rdx, 0x18
-    call -0x101
+    call -0x112
     movzx.b eax, [rsp]
     add.q rax, [rsp + 0x8]
     mov.q [rsp + 0x10], rax
     lea rsi, [rsp]
     mov rdi, rbx
     mov rdx, 0x18
-    call -0x123
+    call -0x134
     add rsp, 0x20
     pop rbx
     ret
@@ -698,7 +752,7 @@ aligned:
     imul rax, rdx
     mov.q [rdi], rax
     movss.d xmm0, [rsi + 0x8]
-    addss.d xmm0, [rip + 0xebd]
+    addss.d xmm0, [rip + 0xeac]
     movss.d [rdi + 0x8], xmm0
     ret
 padded:
@@ -726,7 +780,7 @@ main:
     push rbx
     push rbp
     push r12
-    sub rsp, 0x100
+    sub rsp, 0x110
     movabs rdi, 0x200000001
     call flip
     mov r12, rax
@@ -745,61 +799,61 @@ main:
     sete bpl
     movzx ebp, bpl
     test bpl, bpl
-    jne 7
-    jmp 8
-7:
+    jne 8
+    jmp 9
+8:
     cmp.w [rsp], 5
     sete bpl
     movzx ebp, bpl
-8:
+9:
     pxor xmm0, xmm0
-    movups.x [rsp + 0x18], xmm0
-    mov.q [rsp + 0x28], 0
-    mov.q [rsp + 0x48], 5
-    mov.q [rsp + 0x50], 6
-    mov.q [rsp + 0x58], 7
-    lea rsi, [rsp + 0x48]
-    lea rdi, [rsp + 0x30]
+    movups.x [rsp + 0x28], xmm0
+    mov.q [rsp + 0x38], 0
+    mov.q [rsp + 0x58], 5
+    mov.q [rsp + 0x60], 6
+    mov.q [rsp + 0x68], 7
+    lea rsi, [rsp + 0x58]
+    lea rdi, [rsp + 0x40]
     call wide
-    lea rdi, [rsp + 0x18]
+    lea rdi, [rsp + 0x28]
     mov rdx, 0x18
-    lea rsi, [rsp + 0x30]
-    call -0x282
-    mov.q rbx, [rsp + 0x28]
-    lea rsi, [rsp + 0xe0]
-    mov.q [rsp + 0xa0], 0
-    mov.d [rsp + 0xa8], 0
-    mov.d [rsp + 0xbc], 0
+    lea rsi, [rsp + 0x40]
+    call -0x293
+    mov.q rbx, [rsp + 0x38]
+    lea rsi, [rsp + 0xf0]
+    mov.q [rsp + 0xb0], 0
+    mov.d [rsp + 0xb8], 0
+    mov.d [rsp + 0xcc], 0
     pxor xmm0, xmm0
-    movups.x [rsp + 0xac], xmm0
-    mov.d [rsp + 0xec], 0
+    movups.x [rsp + 0xbc], xmm0
+    mov.d [rsp + 0xfc], 0
     pxor xmm0, xmm0
-    movups.x [rsp + 0xf0], xmm0
-    mov.q [rsp + 0xe0], 3
-    movss.d xmm0, [rip + 0xd14]
-    movss.d [rsp + 0xe8], xmm0
+    movups.x [rsp + 0x100], xmm0
+    mov.q [rsp + 0xf0], 3
+    movss.d xmm0, [rip + 0xd03]
+    movss.d [rsp + 0xf8], xmm0
     mov rdx, 4
-    lea rdi, [rsp + 0xc0]
+    lea rdi, [rsp + 0xd0]
     call aligned
-    lea rdi, [rsp + 0xa0]
+    lea rdi, [rsp + 0xb0]
     mov rdx, 0x20
-    lea rsi, [rsp + 0xc0]
-    call -0x32a
-    cmp.q [rsp + 0xa0], 0xc
+    lea rsi, [rsp + 0xd0]
+    call -0x33b
+    cmp.q [rsp + 0xb0], 0xc
     sete sil
     movzx esi, sil
     test sil, sil
-    jne 9
-    jmp 11
-9:
-    movss.d xmm0, [rsp + 0xa8]
-    ucomiss.d xmm0, [rip + 0xcaa]
-    sete sil
-    jnp 10
-    mov sil, 0
+    jne 10
+    jmp 12
 10:
-    movzx esi, sil
+    movss.d xmm0, [rsp + 0xb8]
+    ucomiss.d xmm0, [rip + 0xc99]
+    sete sil
+    jnp 11
+    mov sil, 0
 11:
+    movzx esi, sil
+12:
     mov rdx, 1
     movabs rcx, 0x100000002
     cmp r12, rcx
@@ -817,62 +871,79 @@ main:
     cmp rbx, 0xb
     cmove rax, rcx
     test sil, sil
-    jne 12
-    jmp 13
-12:
-    add rax, 8
+    jne 13
+    jmp 14
 13:
-    mov rbp, rax
+    add rax, 8
+14:
+    mov r12, rax
     pxor xmm0, xmm0
-    movups.x [rsp + 0x80], xmm0
+    movups.x [rsp + 0x70], xmm0
     mov rdi, 0x10
     mov rsi, 9
     call wrap
-    mov.q [rsp + 0x80], rax
-    mov.q [rsp + 0x88], rdx
-    cmp.d [rsp + 0x80], 0x100
-    sete bl
-    movzx ebx, bl
-    test bl, bl
-    jne 14
-    jmp 15
-14:
-    cmp rdx, 0xa
-    sete bl
-    movzx ebx, bl
+    mov.q [rsp + 0x70], rax
+    mov.q [rsp + 0x78], rdx
+    cmp.d [rsp + 0x70], 0x100
+    sete bpl
+    movzx ebp, bpl
+    test bpl, bpl
+    jne 15
+    jmp 16
 15:
+    cmp rdx, 0xa
+    sete bpl
+    movzx ebp, bpl
+16:
     pxor xmm0, xmm0
     movups.x [rsp + 0x90], xmm0
-    mov.d [rsp + 0x64], 0
-    mov.q [rsp + 0x68], 0
-    mov.d [rsp + 0x60], 3
-    mov.q rsi, [rsp + 0x68]
-    mov.q rdi, [rsp + 0x60]
-    mov.d [rsp + 0x74], 0
-    mov.q [rsp + 0x78], 0
-    mov.d [rsp + 0x70], 4
-    mov.q rdx, [rsp + 0x70]
-    mov.q rcx, [rsp + 0x78]
+    mov.d [rsp + 0xa4], 0
+    mov.q [rsp + 0xa8], 0
+    mov.d [rsp + 0xa0], 3
+    mov.q rdi, [rsp + 0xa0]
+    mov.q rsi, [rsp + 0xa8]
+    mov.d [rsp + 0x84], 0
+    mov.q [rsp + 0x88], 0
+    mov.d [rsp + 0x80], 4
+    mov.q rdx, [rsp + 0x80]
+    mov.q rcx, [rsp + 0x88]
     call padded
     mov.q [rsp + 0x90], rax
     mov.q [rsp + 0x98], rdx
-    mov.d edx, [rsp + 0x90]
-    mov rax, rbp
+    mov.d ebx, [rsp + 0x90]
+    movsd.q xmm0, [rip + 0xb3e]
+    movsd.q [rsp + 0x18], xmm0
+    mov.q rdi, [rsp + 0x18]
+    call swap_d
+    mov.q [rsp + 0x20], rax
+    movsd.q xmm0, [rsp + 0x20]
+    mov rax, r12
     add rax, 0x10
-    test bl, bl
-    mov rcx, rbp
+    test bpl, bpl
+    mov rcx, r12
     cmovne rcx, rax
     mov rax, rcx
     add rax, 0x20
-    cmp edx, 0x34
+    cmp ebx, 0x34
     cmove rcx, rax
     mov rax, rcx
-    add rsp, 0x100
+    add rax, 0x40
+    ucomisd.q xmm0, [rip + 0xaed]
+    jp 17
+    cmove rcx, rax
+17:
+    mov rax, rcx
+    add rsp, 0x110
     pop r12
     pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: all ===========
+swap_d:
+    mov rax, rdi
+    movabs rcx, -0x8000000000000000
+    xor rax, rcx
+    ret
 flip:
     mov.q [rsp - 0x18], rdi
     mov.d ecx, [rsp - 0x14]
@@ -898,14 +969,14 @@ wide:
     mov rbx, rdi
     lea rdi, [rsp]
     mov rdx, 0x18
-    call -0x101
+    call -0x112
     movzx.b eax, [rsp]
     add.q rax, [rsp + 0x8]
     mov.q [rsp + 0x10], rax
     lea rsi, [rsp]
     mov rdi, rbx
     mov rdx, 0x18
-    call -0x123
+    call -0x134
     add rsp, 0x20
     pop rbx
     ret
@@ -914,7 +985,7 @@ aligned:
     imul rax, rdx
     mov.q [rdi], rax
     movss.d xmm0, [rsi + 0x8]
-    addss.d xmm0, [rip + 0xebd]
+    addss.d xmm0, [rip + 0xeac]
     movss.d [rdi + 0x8], xmm0
     ret
 padded:
@@ -942,7 +1013,8 @@ main:
     push rbx
     push rbp
     push r12
-    sub rsp, 0x100
+    push r13
+    sub rsp, 0x108
     movabs rdi, 0x200000001
     call flip
     mov r12, rax
@@ -959,13 +1031,13 @@ main:
     sete bpl
     movzx ebp, bpl
     test bpl, bpl
-    jne 7
-    jmp 8
-7:
+    jne 8
+    jmp 9
+8:
     cmp.w [rsp], 5
     sete bpl
     movzx ebp, bpl
-8:
+9:
     pxor xmm0, xmm0
     movups.x [rsp + 0x18], xmm0
     mov.q [rsp + 0x28], 0
@@ -978,7 +1050,7 @@ main:
     lea rdi, [rsp + 0x18]
     mov rdx, 0x18
     lea rsi, [rsp + 0x30]
-    call -0x271
+    call -0x284
     mov.q rbx, [rsp + 0x28]
     lea rsi, [rsp + 0xe0]
     mov.q [rsp + 0xa0], 0
@@ -990,7 +1062,7 @@ main:
     pxor xmm0, xmm0
     movups.x [rsp + 0xf0], xmm0
     mov.q [rsp + 0xe0], 3
-    movss.d xmm0, [rip + 0xd25]
+    movss.d xmm0, [rip + 0xd12]
     movss.d [rsp + 0xe8], xmm0
     mov rdx, 4
     lea rdi, [rsp + 0xc0]
@@ -998,22 +1070,22 @@ main:
     lea rdi, [rsp + 0xa0]
     mov rdx, 0x20
     lea rsi, [rsp + 0xc0]
-    call -0x319
+    call -0x32c
     cmp.q [rsp + 0xa0], 0xc
     sete sil
     movzx esi, sil
     test sil, sil
-    jne 9
-    jmp 11
-9:
-    movss.d xmm0, [rsp + 0xa8]
-    ucomiss.d xmm0, [rip + 0xcbb]
-    sete sil
-    jnp 10
-    mov sil, 0
+    jne 10
+    jmp 12
 10:
-    movzx esi, sil
+    movss.d xmm0, [rsp + 0xa8]
+    ucomiss.d xmm0, [rip + 0xca8]
+    sete sil
+    jnp 11
+    mov sil, 0
 11:
+    movzx esi, sil
+12:
     mov rdx, 1
     movabs rcx, 0x100000002
     cmp r12, rcx
@@ -1031,12 +1103,12 @@ main:
     cmp rbx, 0xb
     cmove rax, rcx
     test sil, sil
-    jne 12
-    jmp 13
-12:
-    add rax, 8
+    jne 13
+    jmp 14
 13:
-    mov rbp, rax
+    add rax, 8
+14:
+    mov r13, rax
     mov rdi, 0x10
     mov rsi, 9
     call wrap
@@ -1045,43 +1117,55 @@ main:
     mov.q [rsp + 0x80], rax
     mov.q [rsp + 0x88], rdx
     cmp.d [rsp + 0x80], 0x100
-    sete bl
-    movzx ebx, bl
-    test bl, bl
-    jne 14
-    jmp 15
-14:
-    cmp rdx, 0xa
-    sete bl
-    movzx ebx, bl
+    sete r12b
+    movzx r12d, r12b
+    test r12b, r12b
+    jne 15
+    jmp 16
 15:
+    cmp rdx, 0xa
+    sete r12b
+    movzx r12d, r12b
+16:
     mov.d [rsp + 0x64], 0
     mov.q [rsp + 0x68], 0
     mov.d [rsp + 0x60], 3
     mov.q rsi, [rsp + 0x68]
-    mov.d [rsp + 0x74], 0
-    mov.q [rsp + 0x78], 0
-    mov.d [rsp + 0x70], 4
+    mov.d [rsp + 0x94], 0
+    mov.q [rsp + 0x98], 0
+    mov.d [rsp + 0x90], 4
     mov.q rdi, [rsp + 0x60]
-    mov.q rdx, [rsp + 0x70]
-    mov.q rcx, [rsp + 0x78]
+    mov.q rdx, [rsp + 0x90]
+    mov.q rcx, [rsp + 0x98]
     call padded
+    mov rbx, rax
+    mov rbp, rdx
+    movabs rdi, 0x4000000000000000
+    call swap_d
     pxor xmm0, xmm0
-    movups.x [rsp + 0x90], xmm0
-    mov.q [rsp + 0x90], rax
-    mov.q [rsp + 0x98], rdx
-    mov.d edx, [rsp + 0x90]
-    mov rax, rbp
-    add rax, 0x10
-    test bl, bl
-    mov rcx, rbp
-    cmovne rcx, rax
+    movups.x [rsp + 0x70], xmm0
+    mov.q [rsp + 0x70], rbx
+    mov.q [rsp + 0x78], rbp
+    mov.d esi, [rsp + 0x70]
+    mov rdx, r13
+    add rdx, 0x10
+    test r12b, r12b
+    mov rcx, r13
+    cmovne rcx, rdx
+    movq xmm0, rax
     mov rax, rcx
     add rax, 0x20
-    cmp edx, 0x34
+    cmp esi, 0x34
     cmove rcx, rax
     mov rax, rcx
-    add rsp, 0x100
+    add rax, 0x40
+    ucomisd.q xmm0, [rip + 0xb0f]
+    jp 17
+    cmove rcx, rax
+17:
+    mov rax, rcx
+    add rsp, 0x108
+    pop r13
     pop r12
     pop rbp
     pop rbx
@@ -1136,75 +1220,78 @@ main:
     mov.d [rsp + 0x68], 0
     mov.q [rsp + 0x6c], 0
     mov.d [rsp + 0x64], 3
-    mov.q r8, [rsp + 0x64]
-    mov.q rdx, [rsp + 0x6c]
-    mov.d [rsp + 0x78], 0
-    mov.q [rsp + 0x7c], 0
-    mov.d [rsp + 0x74], 4
-    mov.q rcx, [rsp + 0x7c]
-    mov.q rax, [rsp + 0x74]
+    mov.q rcx, [rsp + 0x64]
+    mov.q rax, [rsp + 0x6c]
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x84], xmm0
+    mov.q [rsp + 0xb4], rcx
+    mov.q [rsp + 0xbc], rax
     lea rdi, [rsp + 0x24]
-    movabs rsi, 0x200000001
-    mov.q [rsp + 0x44], rsi
-    mov.d r9d, [rsp + 0x48]
-    mov.d esi, [rsp + 0x44]
+    movabs rax, 0x200000001
+    mov.q [rsp + 0x44], rax
+    mov.d ecx, [rsp + 0x48]
+    mov.d eax, [rsp + 0x44]
     mov.q [rsp + 0x3c], 0
-    mov.d [rsp + 0x3c], r9d
-    mov.d [rsp + 0x40], esi
+    mov.d [rsp + 0x3c], ecx
+    mov.d [rsp + 0x40], eax
     lea rsi, [rsp + 0x4c]
+    pxor xmm0, xmm0
     movups.x [rsp + 0x24], xmm0
     mov.q [rsp + 0x34], 0
     mov.q [rsp + 0x4c], 5
     mov.q [rsp + 0x54], 6
     mov.q [rsp + 0x5c], 7
-    movzx.b r9d, [rsp + 0x4c]
-    add r9, 6
-    mov.q [rsp + 0x5c], r9
-    movups.x [rsp + 0x84], xmm0
-    mov.q [rsp + 0xb4], r8
-    mov.q [rsp + 0xbc], rdx
+    movzx.b eax, [rsp + 0x4c]
+    add rax, 6
+    mov.q [rsp + 0x5c], rax
     mov.d edx, [rsp + 0xb4]
-    mov.q [rsp + 0xc4], rax
-    mov.q [rsp + 0xcc], rcx
+    mov.d [rsp + 0xa8], 0
+    mov.q [rsp + 0xac], 0
+    mov.d [rsp + 0xa4], 4
+    mov.q rcx, [rsp + 0xa4]
+    mov.q rax, [rsp + 0xac]
+    mov.q [rsp + 0xc4], rcx
+    mov.q [rsp + 0xcc], rax
     imul eax, edx, 0x10
     add.d eax, [rsp + 0xc4]
     mov.d [rsp + 0x84], eax
-    mov.q rcx, [rsp + 0x84]
-    mov.q rax, [rsp + 0x8c]
-    movups.x [rsp + 0xa4], xmm0
-    mov.q [rsp + 0xa4], rcx
-    mov.q [rsp + 0xac], rax
-    mov.d r12d, [rsp + 0xa4]
-    mov.q r13, [rsp + 0x3c]
+    mov.q r13, [rsp + 0x84]
+    mov.q r12, [rsp + 0x8c]
     mov rdx, 0x18
-    call -0x2b9
-    mov.q rdx, [rsp + 0x34]
+    call -0x2ac
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x74], xmm0
+    mov.q [rsp + 0x74], r13
+    mov.q [rsp + 0x7c], r12
+    mov.q rsi, [rsp + 0x34]
+    mov.q rcx, [rsp + 0x3c]
+    mov.d edx, [rsp + 0x74]
     mov.d [rsp + 0x20], ebp
     movabs rax, 0x100000002
-    cmp r13, rax
-    sete al
-    movzx eax, al
-    xor ecx, ecx
-    test al, al
-    cmovne rcx, rbx
-    mov rax, rcx
-    add rax, 2
+    cmp rcx, rax
+    sete cl
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, rbx
+    mov rcx, rax
+    add rcx, 2
     test r15b, r15b
-    cmovne rcx, rax
-    mov rax, rcx
-    add rax, 4
-    cmp rdx, 0xb
-    cmove rcx, rax
-    mov rax, rcx
-    add rax, 0x18
-    add rcx, 8
+    cmovne rax, rcx
+    mov rcx, rax
+    add rcx, 4
+    cmp rsi, 0xb
+    cmove rax, rcx
+    mov rcx, rax
+    add rcx, 0x18
+    add rax, 8
     test r14b, r14b
-    cmovne rcx, rax
-    mov rax, rcx
-    add rax, 0x20
-    cmp r12d, 0x34
-    cmove rcx, rax
-    mov rax, rcx
+    cmovne rax, rcx
+    mov rcx, rax
+    add rcx, 0x20
+    cmp edx, 0x34
+    cmove rax, rcx
+    add rax, 0x40
     add rsp, 0xd8
     pop r15
     pop r14

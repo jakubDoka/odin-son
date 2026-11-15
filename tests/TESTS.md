@@ -8003,16 +8003,11 @@ main :: proc() -> int {
 	       shifts(i32(-21845), u16(65535)) +
 	       shifts(u64(2779096485), u32(63)) +
 	       shifts(i64(-1431655765), u32(64)) +
-	       // COMPILER BUG: u64((1 << 32) + 1) is rejected during constant folding.
-	       // COMPILER BUG: Odin truncates large counts to u32 for sub-64-bit shifts.
-	       // shifts(u32(165), u64((1 << 32) + 1)) + shifts(i32(-85), u64((1 << 32) + 1))
-	       shifts(u64(165), u64(4294967297)) +
-	       shifts(i64(-85), u64(4294967297)) +
+	       shifts(u64(165), u64((1 << 32) + 1)) +
+	       shifts(i64(-85), u64((1 << 32) + 1)) +
 	       shifts(u64(165), u64(4294967296)) +
 	       shifts(i64(-85), u64(18446744073709551615))
-	// COMPILER BUG: ARM skips zero halfwords when materializing negative folded constants.
-	// return r
-	return r % 251
+	return r
 }
 ```
 
@@ -9581,7 +9576,7 @@ main :: proc() -> int {
 ```odin
 package main
 
-// COMPILER BUG: Odin rejects self-referential initializers, so its reference initializes at runtime.
+// Odin rejects self-referential initializers, so its reference initializes at runtime.
 // pointer: rawptr = rawptr(&pointer)
 when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
 	@(static) pointer: rawptr
@@ -9614,7 +9609,7 @@ Node :: struct {
 	view:  []int,
 }
 
-// COMPILER BUG: Odin rejects self-referential initializers, so its reference initializes at runtime.
+// Odin rejects self-referential initializers, so its reference initializes at runtime.
 // root: Node = {&root, 0x12, &root.value, {0x20, 0x30, 0x40}, root.items[1:]}
 when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
 	@(static) root: Node
@@ -9650,7 +9645,7 @@ Node :: struct {
 	next:  ^Node,
 }
 
-// COMPILER BUG: Odin rejects cyclic initializers, so its reference initializes at runtime.
+// Odin rejects cyclic initializers, so its reference initializes at runtime.
 // left: Node = {0x12, &right}; right := Node{0x23, &left}
 when #config(TEST_NATIVE_GLOBAL_REFERENCE, true) {
 	@(static) left: Node
@@ -9965,12 +9960,7 @@ push :: proc(v: ^Vec($T), x: T) {
 }
 
 sum :: proc(v: Vec(int)) -> int {
-	// COMPILER BUG: the optimizer asserts in apply_peeps when the loop below
-	// gets inlined after the pushes into the array field
-	s := 0
-	for i in 0 ..< v.len do s += v.data[i]
-	return s
-	//return v.data[0] + v.data[1] + v.data[2] + v.data[3] + v.len
+	return v.data[0] + v.data[1] + v.data[2] + v.data[3] + v.len
 }
 
 // the polymorphic T of the caller must not leak into the fields of Vec(u8)
@@ -10111,13 +10101,8 @@ swap :: proc(s: Small) -> Small {
 	return Small{s.b, s.a}
 }
 
-// COMPILER BUG: wasm rejects returning a mixed int/float struct, the
-// generated return is typed [i64, i64] instead of [i64, f64]
-// scale :: proc(p: Pair, k: int) -> Pair {
-// 	return Pair{p.x * k, p.y * f64(k)}
-// }
-scale :: proc(p: Pair, k: int) -> int {
-	return p.x * k + int(p.y * f64(k))
+scale :: proc(p: Pair, k: int) -> Pair {
+	return Pair{p.x * k, p.y * f64(k)}
 }
 
 grow :: proc(b: Big) -> Big {
@@ -10128,7 +10113,7 @@ main :: proc() -> int {
 	s := swap(Small{0x3, 0x5})
 	p := scale(Pair{0x2, 1.5}, 4)
 	b := grow(Big{0x10, 0x20, 0x30})
-	return int(s.a) * 0x10 + int(s.b) + p + b.a + b.b + b.c
+	return int(s.a) * 0x10 + int(s.b) + p.x + int(p.y) + b.a + b.b + b.c
 }
 ```
 
@@ -10738,48 +10723,29 @@ D_Bits :: struct #raw_union {
 	h: [2]u32,
 }
 
-// COMPILER BUG: with Mem_Opt the f32 store is forwarded into the u32 load
-// (and back) as a value conversion instead of a bitcast, 1.0 reads back as 1,
-// the same happens with (^u32)(&f)^
-// to_bits :: proc(f: f32) -> u32 {
-// 	b: F_Bits
-// 	b.f = f
-// 	return b.u
-// }
-//
-// from_bits :: proc(u: u32) -> f32 {
-// 	b := F_Bits{u = u}
-// 	return b.f
-// }
-
-halves :: proc(d: ^D_Bits) -> (u32, u32) {
-	return d.h[0], d.h[1]
+to_bits :: proc(f: f32) -> u32 {
+	b: F_Bits
+	b.f = f
+	return b.u
 }
 
-set_low :: proc(d: ^D_Bits, v: u32) {
-	d.h[0] = v
+from_bits :: proc(u: u32) -> f32 {
+	b := F_Bits{u = u}
+	return b.f
 }
 
 main :: proc() -> int {
 	r := 0
-	// COMPILER BUG: see to_bits
-	// if to_bits(1.0) == 0x3f80_0000 do r += 1
-	// if to_bits(-2.0) == 0xc000_0000 do r += 2
-	// if from_bits(0x4040_0000) == 3.0 do r += 4
+	if to_bits(1.0) == 0x3f80_0000 do r += 1
+	if to_bits(-2.0) == 0xc000_0000 do r += 2
+	if from_bits(0x4040_0000) == 3.0 do r += 4
 	r += size_of(F_Bits)
 
-	// COMPILER BUG: zero initializing the union and then mixing 8 and 4 byte
-	// accesses at offset 0 trips slot.size == bac.DT_SIZE[onode.dt] in
-	// bac/ssa/peep.odin, the same happens with (^[2]u32)(&u64_local)
-	// d: D_Bits
-	// d.f = 1.0
-	// if d.h[1] == 0x3ff0_0000 && d.h[0] == 0 do r += 0x10
-	// d.h[0] = 1
-	d := D_Bits{f = 1.0}
+	d: D_Bits
+	d.f = 1.0
 	if d.u == 0x3ff0_0000_0000_0000 do r += 8
-	lo, hi := halves(&d)
-	if hi == 0x3ff0_0000 && lo == 0 do r += 0x10
-	set_low(&d, 1)
+	if d.h[1] == 0x3ff0_0000 && d.h[0] == 0 do r += 0x10
+	d.h[0] = 1
 	if d.u == 0x3ff0_0000_0000_0001 do r += 0x20
 	d.u = 0xc000_0000_0000_0000
 	if d.f == -2.0 do r += 0x40
@@ -10820,20 +10786,15 @@ main :: proc() -> int {
 ```odin
 package main
 
-// COMPILER BUG: with Mem_Opt a float store forwarded into an integer load of
-// the same slot (and back) is not bitcast, this miscompiles or trips the
-// regalloc on every float field passed by value, the same happens with
-// struct {f: f64} or a u64 written through a ^f64
-// D :: struct #raw_union {
-// 	f: f64,
-// 	i: u64,
-// }
-//
-// swap_d :: proc(d: D) -> D {
-// 	return D{i = d.i ~ 0x8000_0000_0000_0000}
-// }
-//
-// if swap_d(D{f = 2.0}).f == -2.0 do r += 1
+D :: struct #raw_union {
+	f: f64,
+	i: u64,
+}
+
+swap_d :: proc(d: D) -> D {
+	return D{i = d.i ~ 0x8000_0000_0000_0000}
+}
+
 Halves :: struct #raw_union {
 	wide:   u64,
 	halves: [2]u32,
@@ -10901,6 +10862,7 @@ main :: proc() -> int {
 	if wr.u.halves[0] == 0x100 && wr.n == 10 do r += 0x10
 	p := padded(Padded{3}, Padded{4})
 	if p.x == 0x34 do r += 0x20
+	if swap_d(D{f = 2.0}).f == -2.0 do r += 0x40
 	return r
 }
 ```

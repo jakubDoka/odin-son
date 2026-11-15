@@ -42,7 +42,8 @@ set dff '-define:DIFF=false'
 set nrn '-define:NO_RUN=true'
 
 alias gen-meta 'odin run bac/tag-gen'
-alias run-test 'odin test tests -keep-executable -debug -define:ODIN_TEST_FANCY=false'
+alias run-test 'odin test tests -keep-executable -debug \
+    -define:ODIN_TEST_FANCY=false'
 
 script-alias run-programs
 

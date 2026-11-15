@@ -177,12 +177,7 @@ package main
 
 main :: proc(a: f32, b: f32) -> f32 {
 	result := a
-	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
-	// for i: f32 = 0; i < 4; i += 1 {
-	i: f32 = 0
-	for {
-		if i >= 4 do break
-		i += 1
+	for i: f32 = 0; i < 4; i += 1 {
 		result += b
 	}
 	return result
@@ -195,12 +190,7 @@ package main
 
 main :: proc(a: f32, b: f32) -> f32 {
 	result := a
-	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
-	// for i: f32 = 0; i < 4; i += 1 {
-	i: f32 = 0
-	for {
-		if i >= 4 do break
-		i += 1
+	for i: f32 = 0; i < 4; i += 1 {
 		result += b
 		if result > 1 {
 			break
@@ -216,13 +206,8 @@ package main
 
 main :: proc(a: f32, b: f32) -> f32 {
 	result := a
-	// COMPILER BUG: the frontend does not lower three-clause for statements yet.
-	// for i: f32 = 0; i < 4; i += 1 {
-	i: f32 = 0
-	for {
-		if i >= 4 do break
+	for i: f32 = 0; i < 4; i += 1 {
 		iteration := i
-		i += 1
 		if iteration < b {
 			continue
 		}

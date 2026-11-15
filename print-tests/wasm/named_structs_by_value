@@ -1,7 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 (module
   (type (;0;) (func (param i64) (result i64)))
-  (type (;1;) (func (param i64 f64 i64) (result i64)))
+  (type (;1;) (func (param i64 f64 i64) (result i64 f64)))
   (type (;2;) (func (param i64 i64)))
   (type (;3;) (func (result i64)))
   (func $swap (type 0) (param i64) (result i64)
@@ -44,7 +44,7 @@
     return
     end
   )
-  (func $scale (type 1) (param i64 f64 i64) (result i64)
+  (func $scale (type 1) (param i64 f64 i64) (result i64 f64)
     local.get 0
     local.get 2
     i64.mul
@@ -52,8 +52,6 @@
     local.get 2
     f64.convert_i64_s
     f64.mul
-    i64.trunc_f64_s
-    i64.add
     return
     end
   )
@@ -87,9 +85,9 @@
     end
   )
   (func $main (type 3) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 f64 v128)
     global.get 0
-    i64.const 80
+    i64.const 96
     i64.sub
     global.set 0
     i64.const 0
@@ -106,21 +104,35 @@
     local.get 1
     local.get 2
     i64.store align=1
+    global.get 0
+    i64.const 80
+    i64.add
+    local.tee 1
+    i32.const 0
+    i32x4.splat
+    local.tee 8
+    v128.store align=1
     i64.const 2
     f64.const +1.5
     i64.const 4
     call $scale
-    local.set 1
-    i64.const 16
+    local.set 7
     local.set 2
+    i64.const 16
+    local.set 3
+    local.get 1
+    local.get 2
+    i64.store align=1
+    local.get 1
+    local.get 7
+    f64.store offset=8 align=1
     global.get 0
     i64.const 56
     i64.add
-    local.tee 3
-    i32.const 0
-    i32x4.splat
+    local.tee 1
+    local.get 8
     v128.store align=1
-    local.get 3
+    local.get 1
     local.get 0
     i64.store offset=16 align=1
     global.get 0
@@ -138,11 +150,11 @@
     global.get 0
     i64.const 32
     i64.add
-    local.tee 4
+    local.tee 2
     local.get 0
     call $grow
-    local.get 3
-    local.get 4
+    local.get 1
+    local.get 2
     i64.const 24
     call 4
     global.get 0
@@ -150,7 +162,13 @@
     local.set 0
     global.get 0
     i64.load32_s offset=4 align=1
-    local.set 3
+    local.set 1
+    global.get 0
+    i64.load offset=80 align=1
+    local.set 2
+    global.get 0
+    f64.load offset=88 align=1
+    local.set 7
     global.get 0
     i64.load offset=56 align=1
     local.set 4
@@ -161,11 +179,14 @@
     i64.load offset=72 align=1
     local.set 6
     local.get 0
-    local.get 2
-    i64.mul
     local.get 3
-    i64.add
+    i64.mul
     local.get 1
+    i64.add
+    local.get 2
+    i64.add
+    local.get 7
+    i64.trunc_f64_s
     i64.add
     local.get 4
     i64.add
@@ -174,7 +195,7 @@
     local.get 6
     i64.add
     global.get 0
-    i64.const 80
+    i64.const 96
     i64.add
     global.set 0
     return
@@ -195,7 +216,7 @@
 =========== OPT LEVEL: none ===========
 (module
   (type (;0;) (func (param i64) (result i64)))
-  (type (;1;) (func (param i64 f64 i64) (result i64)))
+  (type (;1;) (func (param i64 f64 i64) (result i64 f64)))
   (type (;2;) (func (param i64 i64)))
   (type (;3;) (func (result i64)))
   (func $swap (type 0) (param i64) (result i64)
@@ -238,7 +259,7 @@
     return
     end
   )
-  (func $scale (type 1) (param i64 f64 i64) (result i64)
+  (func $scale (type 1) (param i64 f64 i64) (result i64 f64)
     local.get 0
     local.get 2
     i64.mul
@@ -246,8 +267,6 @@
     local.get 2
     f64.convert_i64_s
     f64.mul
-    i64.trunc_f64_s
-    i64.add
     return
     end
   )
@@ -281,9 +300,9 @@
     end
   )
   (func $main (type 3) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 f64 v128)
     global.get 0
-    i64.const 80
+    i64.const 96
     i64.sub
     global.set 0
     i64.const 0
@@ -300,19 +319,33 @@
     local.get 1
     local.get 0
     i64.store align=1
+    global.get 0
+    i64.const 80
+    i64.add
+    local.tee 1
+    i32.const 0
+    i32x4.splat
+    local.tee 8
+    v128.store align=1
     i64.const 2
     f64.const +1.5
     i64.const 4
     call $scale
-    local.set 6
+    local.set 7
+    local.set 0
     i64.const 16
-    local.set 5
+    local.set 6
+    local.get 1
+    local.get 0
+    i64.store align=1
+    local.get 1
+    local.get 7
+    f64.store offset=8 align=1
     global.get 0
     i64.const 56
     i64.add
     local.tee 2
-    i32.const 0
-    i32x4.splat
+    local.get 8
     v128.store align=1
     local.get 2
     local.get 3
@@ -341,10 +374,16 @@
     call 4
     global.get 0
     i64.load32_s align=1
-    local.set 4
+    local.set 5
     global.get 0
     i64.load32_s offset=4 align=1
+    local.set 4
+    global.get 0
+    i64.load offset=80 align=1
     local.set 3
+    global.get 0
+    f64.load offset=88 align=1
+    local.set 7
     global.get 0
     i64.load offset=56 align=1
     local.set 2
@@ -354,12 +393,15 @@
     global.get 0
     i64.load offset=72 align=1
     local.set 0
-    local.get 4
     local.get 5
+    local.get 6
     i64.mul
+    local.get 4
+    i64.add
     local.get 3
     i64.add
-    local.get 6
+    local.get 7
+    i64.trunc_f64_s
     i64.add
     local.get 2
     i64.add
@@ -368,7 +410,7 @@
     local.get 0
     i64.add
     global.get 0
-    i64.const 80
+    i64.const 96
     i64.add
     global.set 0
     return
@@ -389,7 +431,7 @@
 =========== OPT LEVEL: moderate-quick ===========
 (module
   (type (;0;) (func (param i64) (result i64)))
-  (type (;1;) (func (param i64 f64 i64) (result i64)))
+  (type (;1;) (func (param i64 f64 i64) (result i64 f64)))
   (type (;2;) (func (param i64 i64)))
   (type (;3;) (func (result i64)))
   (func $swap (type 0) (param i64) (result i64)
@@ -432,7 +474,7 @@
     return
     end
   )
-  (func $scale (type 1) (param i64 f64 i64) (result i64)
+  (func $scale (type 1) (param i64 f64 i64) (result i64 f64)
     local.get 0
     local.get 2
     i64.mul
@@ -440,8 +482,6 @@
     local.get 2
     f64.convert_i64_s
     f64.mul
-    i64.trunc_f64_s
-    i64.add
     return
     end
   )
@@ -475,9 +515,9 @@
     end
   )
   (func $main (type 3) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 f64 v128)
     global.get 0
-    i64.const 80
+    i64.const 96
     i64.sub
     global.set 0
     i64.const 0
@@ -494,21 +534,35 @@
     local.get 1
     local.get 2
     i64.store align=1
+    global.get 0
+    i64.const 80
+    i64.add
+    local.tee 1
+    i32.const 0
+    i32x4.splat
+    local.tee 8
+    v128.store align=1
     i64.const 2
     f64.const +1.5
     i64.const 4
     call $scale
-    local.set 1
-    i64.const 16
+    local.set 7
     local.set 2
+    i64.const 16
+    local.set 3
+    local.get 1
+    local.get 2
+    i64.store align=1
+    local.get 1
+    local.get 7
+    f64.store offset=8 align=1
     global.get 0
     i64.const 56
     i64.add
-    local.tee 3
-    i32.const 0
-    i32x4.splat
+    local.tee 1
+    local.get 8
     v128.store align=1
-    local.get 3
+    local.get 1
     local.get 0
     i64.store offset=16 align=1
     global.get 0
@@ -526,11 +580,11 @@
     global.get 0
     i64.const 32
     i64.add
-    local.tee 4
+    local.tee 2
     local.get 0
     call $grow
-    local.get 3
-    local.get 4
+    local.get 1
+    local.get 2
     i64.const 24
     call 4
     global.get 0
@@ -538,7 +592,13 @@
     local.set 0
     global.get 0
     i64.load32_s offset=4 align=1
-    local.set 3
+    local.set 1
+    global.get 0
+    i64.load offset=80 align=1
+    local.set 2
+    global.get 0
+    f64.load offset=88 align=1
+    local.set 7
     global.get 0
     i64.load offset=56 align=1
     local.set 4
@@ -549,11 +609,14 @@
     i64.load offset=72 align=1
     local.set 6
     local.get 0
-    local.get 2
-    i64.mul
     local.get 3
-    i64.add
+    i64.mul
     local.get 1
+    i64.add
+    local.get 2
+    i64.add
+    local.get 7
+    i64.trunc_f64_s
     i64.add
     local.get 4
     i64.add
@@ -562,7 +625,7 @@
     local.get 6
     i64.add
     global.get 0
-    i64.const 80
+    i64.const 96
     i64.add
     global.set 0
     return
@@ -583,7 +646,7 @@
 =========== OPT LEVEL: moderate ===========
 (module
   (type (;0;) (func (param i64) (result i64)))
-  (type (;1;) (func (param i64 f64 i64) (result i64)))
+  (type (;1;) (func (param i64 f64 i64) (result i64 f64)))
   (type (;2;) (func (param i64 i64)))
   (type (;3;) (func (result i64)))
   (func $swap (type 0) (param i64) (result i64)
@@ -626,7 +689,7 @@
     return
     end
   )
-  (func $scale (type 1) (param i64 f64 i64) (result i64)
+  (func $scale (type 1) (param i64 f64 i64) (result i64 f64)
     local.get 0
     local.get 2
     i64.mul
@@ -634,8 +697,6 @@
     local.get 2
     f64.convert_i64_s
     f64.mul
-    i64.trunc_f64_s
-    i64.add
     return
     end
   )
@@ -669,9 +730,9 @@
     end
   )
   (func $main (type 3) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 f64 v128)
     global.get 0
-    i64.const 80
+    i64.const 96
     i64.sub
     global.set 0
     i64.const 0
@@ -688,19 +749,33 @@
     local.get 1
     local.get 0
     i64.store align=1
+    global.get 0
+    i64.const 80
+    i64.add
+    local.tee 1
+    i32.const 0
+    i32x4.splat
+    local.tee 8
+    v128.store align=1
     i64.const 2
     f64.const +1.5
     i64.const 4
     call $scale
-    local.set 6
+    local.set 7
+    local.set 0
     i64.const 16
-    local.set 5
+    local.set 6
+    local.get 1
+    local.get 0
+    i64.store align=1
+    local.get 1
+    local.get 7
+    f64.store offset=8 align=1
     global.get 0
     i64.const 56
     i64.add
     local.tee 2
-    i32.const 0
-    i32x4.splat
+    local.get 8
     v128.store align=1
     local.get 2
     local.get 3
@@ -729,10 +804,16 @@
     call 4
     global.get 0
     i64.load32_s align=1
-    local.set 4
+    local.set 5
     global.get 0
     i64.load32_s offset=4 align=1
+    local.set 4
+    global.get 0
+    i64.load offset=80 align=1
     local.set 3
+    global.get 0
+    f64.load offset=88 align=1
+    local.set 7
     global.get 0
     i64.load offset=56 align=1
     local.set 2
@@ -742,12 +823,15 @@
     global.get 0
     i64.load offset=72 align=1
     local.set 0
-    local.get 4
     local.get 5
+    local.get 6
     i64.mul
+    local.get 4
+    i64.add
     local.get 3
     i64.add
-    local.get 6
+    local.get 7
+    i64.trunc_f64_s
     i64.add
     local.get 2
     i64.add
@@ -756,7 +840,7 @@
     local.get 0
     i64.add
     global.get 0
-    i64.const 80
+    i64.const 96
     i64.add
     global.set 0
     return
@@ -777,7 +861,7 @@
 =========== OPT LEVEL: all ===========
 (module
   (type (;0;) (func (param i64) (result i64)))
-  (type (;1;) (func (param i64 f64 i64) (result i64)))
+  (type (;1;) (func (param i64 f64 i64) (result i64 f64)))
   (type (;2;) (func (param i64 i64)))
   (type (;3;) (func (result i64)))
   (func $swap (type 0) (param i64) (result i64)
@@ -820,7 +904,7 @@
     return
     end
   )
-  (func $scale (type 1) (param i64 f64 i64) (result i64)
+  (func $scale (type 1) (param i64 f64 i64) (result i64 f64)
     local.get 0
     local.get 2
     i64.mul
@@ -828,8 +912,6 @@
     local.get 2
     f64.convert_i64_s
     f64.mul
-    i64.trunc_f64_s
-    i64.add
     return
     end
   )
@@ -863,7 +945,7 @@
     end
   )
   (func $main (type 3) (result i64)
-    (local i64 i64 i64 i64 i64 i64 i64)
+    (local i64 i64 i64 i64 i64 i64 i64 f64)
     global.get 0
     i64.const 80
     i64.sub
@@ -875,9 +957,10 @@
     f64.const +1.5
     i64.const 4
     call $scale
+    local.set 7
     local.set 6
     global.get 0
-    i64.const 56
+    i64.const 32
     i64.add
     local.tee 2
     i32.const 0
@@ -901,7 +984,7 @@
     i64.const 48
     i64.store offset=16 align=1
     global.get 0
-    i64.const 32
+    i64.const 56
     i64.add
     local.tee 0
     local.get 1
@@ -922,13 +1005,13 @@
     i64.const 24
     call 4
     global.get 0
-    i64.load offset=64 align=1
+    i64.load offset=40 align=1
     local.set 2
     global.get 0
-    i64.load offset=72 align=1
+    i64.load offset=48 align=1
     local.set 1
     global.get 0
-    i64.load offset=56 align=1
+    i64.load offset=32 align=1
     local.set 0
     local.get 4
     local.get 5
@@ -936,6 +1019,9 @@
     local.get 3
     i64.add
     local.get 6
+    i64.add
+    local.get 7
+    i64.trunc_f64_s
     i64.add
     local.get 0
     i64.add
@@ -972,7 +1058,7 @@
     i64.sub
     global.set 0
     global.get 0
-    i64.const 24
+    i64.const 16
     i64.add
     local.tee 0
     i32.const 0
@@ -988,13 +1074,13 @@
     i64.const 51
     i64.store offset=16 align=1
     global.get 0
-    i64.load offset=24 align=1
+    i64.load offset=32 align=1
     local.set 4
     global.get 0
-    i64.load offset=32 align=1
+    i64.load offset=24 align=1
     local.set 3
     global.get 0
-    i64.load offset=40 align=1
+    i64.load offset=16 align=1
     local.set 2
     global.get 0
     i64.const 8
@@ -1008,7 +1094,7 @@
     i32.load offset=8 align=1
     local.set 5
     global.get 0
-    i64.const 16
+    i64.const 40
     i64.add
     local.tee 0
     i64.const 0
@@ -1020,7 +1106,7 @@
     local.get 5
     i32.store offset=4 align=1
     global.get 0
-    i64.load offset=16 align=1
+    i64.load offset=40 align=1
     local.set 0
     global.get 0
     i64.const 0
@@ -1040,11 +1126,11 @@
     i64.add
     i64.const 14
     i64.add
-    local.get 4
+    local.get 2
     i64.add
     local.get 3
     i64.add
-    local.get 2
+    local.get 4
     i64.add
     global.get 0
     i64.const 48

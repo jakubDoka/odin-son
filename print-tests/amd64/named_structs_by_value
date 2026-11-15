@@ -13,8 +13,6 @@ scale:
     imul rax, rsi
     cvtsi2sd xmm1, rsi
     mulsd xmm0, xmm1
-    cvttsd2si rcx, xmm0
-    add rax, rcx
     ret
 grow:
     mov.q rax, [rsi]
@@ -30,16 +28,19 @@ grow:
 main:
     push rbx
     push rbp
-    sub rsp, 0x58
+    sub rsp, 0x68
     mov.q [rsp], 0
     movabs rdi, 0x500000003
     call swap
     mov rdi, 2
     mov.q [rsp], rax
-    movsd.q xmm0, [rip + 0xea4]
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x50], xmm0
+    movsd.q xmm0, [rip + 0xea1]
     mov rsi, 4
     call scale
-    mov rbx, rax
+    mov.q [rsp + 0x50], rax
+    movsd.q [rsp + 0x58], xmm0
     pxor xmm0, xmm0
     movups.x [rsp + 0x38], xmm0
     mov.q [rsp + 0x48], 0
@@ -52,19 +53,22 @@ main:
     lea rdi, [rsp + 0x38]
     mov rdx, 0x18
     lea rsi, [rsp + 0x20]
-    call -0x1bf
+    call -0x1cb
     movsxd.d rax, [rsp]
+    movsd.q xmm0, [rsp + 0x58]
     mov.q rcx, [rsp + 0x38]
     mov.q rdx, [rsp + 0x40]
-    mov.q rbp, [rsp + 0x48]
-    movsxd.d rsi, [rsp + 0x4]
+    mov.q rbx, [rsp + 0x48]
+    movsxd.d rbp, [rsp + 0x4]
     imul rax, rax, 0x10
-    add rax, rsi
-    add rax, rbx
+    add rax, rbp
+    add.q rax, [rsp + 0x50]
+    cvttsd2si rbp, xmm0
+    add rax, rbp
     add rax, rcx
     add rax, rdx
-    add rax, rbp
-    add rsp, 0x58
+    add rax, rbx
+    add rsp, 0x68
     pop rbp
     pop rbx
     ret
@@ -83,8 +87,6 @@ scale:
     imul rax, rsi
     cvtsi2sd xmm1, rsi
     mulsd xmm0, xmm1
-    cvttsd2si rcx, xmm0
-    add rax, rcx
     ret
 grow:
     mov.q rax, [rsi]
@@ -98,17 +100,19 @@ grow:
     mov.q [rdi + 0x10], rax
     ret
 main:
-    push rbx
-    sub rsp, 0x50
+    sub rsp, 0x68
     mov.q [rsp], 0
     movabs rdi, 0x500000003
     call swap
     mov rdi, 2
     mov.q [rsp], rax
-    movsd.q xmm0, [rip + 0xec3]
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x50], xmm0
+    movsd.q xmm0, [rip + 0xec2]
     mov rsi, 4
     call scale
-    mov rbx, rax
+    mov.q [rsp + 0x50], rax
+    movsd.q [rsp + 0x58], xmm0
     pxor xmm0, xmm0
     movups.x [rsp + 0x38], xmm0
     mov.q [rsp + 0x48], 0
@@ -121,20 +125,22 @@ main:
     lea rdi, [rsp + 0x38]
     mov rdx, 0x18
     lea rsi, [rsp + 0x20]
-    call -0x1a0
+    call -0x1aa
     movsxd.d rax, [rsp]
+    movsd.q xmm0, [rsp + 0x58]
     mov.q rdi, [rsp + 0x38]
     mov.q rsi, [rsp + 0x40]
     mov.q rdx, [rsp + 0x48]
     movsxd.d rcx, [rsp + 0x4]
     imul rax, rax, 0x10
     add rax, rcx
-    add rax, rbx
+    add.q rax, [rsp + 0x50]
+    cvttsd2si rcx, xmm0
+    add rax, rcx
     add rax, rdi
     add rax, rsi
     add rax, rdx
-    add rsp, 0x50
-    pop rbx
+    add rsp, 0x68
     ret
 =========== OPT LEVEL: moderate-quick ===========
 swap:
@@ -151,8 +157,6 @@ scale:
     imul rax, rsi
     cvtsi2sd xmm1, rsi
     mulsd xmm0, xmm1
-    cvttsd2si rcx, xmm0
-    add rax, rcx
     ret
 grow:
     mov.q rax, [rsi]
@@ -168,16 +172,19 @@ grow:
 main:
     push rbx
     push rbp
-    sub rsp, 0x58
+    sub rsp, 0x68
     mov.q [rsp], 0
     movabs rdi, 0x500000003
     call swap
     mov rdi, 2
     mov.q [rsp], rax
-    movsd.q xmm0, [rip + 0xea4]
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x50], xmm0
+    movsd.q xmm0, [rip + 0xea1]
     mov rsi, 4
     call scale
-    mov rbx, rax
+    mov.q [rsp + 0x50], rax
+    movsd.q [rsp + 0x58], xmm0
     pxor xmm0, xmm0
     movups.x [rsp + 0x38], xmm0
     mov.q [rsp + 0x48], 0
@@ -190,19 +197,22 @@ main:
     lea rdi, [rsp + 0x38]
     mov rdx, 0x18
     lea rsi, [rsp + 0x20]
-    call -0x1bf
+    call -0x1cb
     movsxd.d rax, [rsp]
+    movsd.q xmm0, [rsp + 0x58]
     mov.q rcx, [rsp + 0x38]
     mov.q rdx, [rsp + 0x40]
-    mov.q rbp, [rsp + 0x48]
-    movsxd.d rsi, [rsp + 0x4]
+    mov.q rbx, [rsp + 0x48]
+    movsxd.d rbp, [rsp + 0x4]
     imul rax, rax, 0x10
-    add rax, rsi
-    add rax, rbx
+    add rax, rbp
+    add.q rax, [rsp + 0x50]
+    cvttsd2si rbp, xmm0
+    add rax, rbp
     add rax, rcx
     add rax, rdx
-    add rax, rbp
-    add rsp, 0x58
+    add rax, rbx
+    add rsp, 0x68
     pop rbp
     pop rbx
     ret
@@ -221,8 +231,6 @@ scale:
     imul rax, rsi
     cvtsi2sd xmm1, rsi
     mulsd xmm0, xmm1
-    cvttsd2si rcx, xmm0
-    add rax, rcx
     ret
 grow:
     mov.q rax, [rsi]
@@ -236,17 +244,19 @@ grow:
     mov.q [rdi + 0x10], rax
     ret
 main:
-    push rbx
-    sub rsp, 0x50
+    sub rsp, 0x68
     mov.q [rsp], 0
     movabs rdi, 0x500000003
     call swap
     mov rdi, 2
     mov.q [rsp], rax
-    movsd.q xmm0, [rip + 0xec3]
+    pxor xmm0, xmm0
+    movups.x [rsp + 0x50], xmm0
+    movsd.q xmm0, [rip + 0xec2]
     mov rsi, 4
     call scale
-    mov rbx, rax
+    mov.q [rsp + 0x50], rax
+    movsd.q [rsp + 0x58], xmm0
     pxor xmm0, xmm0
     movups.x [rsp + 0x38], xmm0
     mov.q [rsp + 0x48], 0
@@ -259,20 +269,22 @@ main:
     lea rdi, [rsp + 0x38]
     mov rdx, 0x18
     lea rsi, [rsp + 0x20]
-    call -0x1a0
+    call -0x1aa
     movsxd.d rax, [rsp]
+    movsd.q xmm0, [rsp + 0x58]
     mov.q rdi, [rsp + 0x38]
     mov.q rsi, [rsp + 0x40]
     mov.q rdx, [rsp + 0x48]
     movsxd.d rcx, [rsp + 0x4]
     imul rax, rax, 0x10
     add rax, rcx
-    add rax, rbx
+    add.q rax, [rsp + 0x50]
+    cvttsd2si rcx, xmm0
+    add rax, rcx
     add rax, rdi
     add rax, rsi
     add rax, rdx
-    add rsp, 0x50
-    pop rbx
+    add rsp, 0x68
     ret
 =========== OPT LEVEL: all ===========
 swap:
@@ -289,8 +301,6 @@ scale:
     imul rax, rsi
     cvtsi2sd xmm1, rsi
     mulsd xmm0, xmm1
-    cvttsd2si rcx, xmm0
-    add rax, rcx
     ret
 grow:
     mov.q rax, [rsi]
@@ -306,62 +316,66 @@ grow:
 main:
     push rbx
     push rbp
-    sub rsp, 0x58
+    sub rsp, 0x68
     movabs rdi, 0x500000003
     call swap
     mov rbx, rax
     mov rdi, 2
-    movsd.q xmm0, [rip + 0xeca]
+    movsd.q xmm0, [rip + 0xed2]
     mov rsi, 4
     call scale
     mov rbp, rax
+    movsd.q [rsp + 0x50], xmm0
     pxor xmm0, xmm0
-    movups.x [rsp + 0x38], xmm0
-    mov.q [rsp + 0x48], 0
+    movups.x [rsp + 0x20], xmm0
+    mov.q [rsp + 0x30], 0
     mov.q [rsp + 0x8], 0x10
     mov.q [rsp + 0x10], 0x20
     mov.q [rsp + 0x18], 0x30
     lea rsi, [rsp + 0x8]
-    lea rdi, [rsp + 0x20]
+    lea rdi, [rsp + 0x38]
     call grow
     mov.q [rsp], rbx
     movsxd.d rbx, [rsp]
-    lea rdi, [rsp + 0x38]
+    lea rdi, [rsp + 0x20]
     mov rdx, 0x18
-    lea rsi, [rsp + 0x20]
-    call -0x1a1
-    mov.q rdi, [rsp + 0x40]
-    mov.q rsi, [rsp + 0x48]
+    lea rsi, [rsp + 0x38]
+    call -0x1a0
+    mov.q rdi, [rsp + 0x28]
+    mov.q rsi, [rsp + 0x30]
     movsxd.d rcx, [rsp + 0x4]
-    mov.q rdx, [rsp + 0x38]
+    mov.q rdx, [rsp + 0x20]
     imul rax, rbx, 0x10
     add rax, rcx
     add rax, rbp
+    movsd.q xmm0, [rsp + 0x50]
+    cvttsd2si rcx, xmm0
+    add rax, rcx
     add rax, rdx
     add rax, rdi
     add rax, rsi
-    add rsp, 0x58
+    add rsp, 0x68
     pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
     pxor xmm0, xmm0
-    movups.x [rsp - 0x20], xmm0
-    mov.q [rsp - 0x20], 0x11
-    mov.q [rsp - 0x18], 0x22
-    mov.q [rsp - 0x10], 0x33
-    mov.q rdi, [rsp - 0x20]
-    mov.q rsi, [rsp - 0x18]
-    mov.q rdx, [rsp - 0x10]
+    movups.x [rsp - 0x28], xmm0
+    mov.q [rsp - 0x28], 0x11
+    mov.q [rsp - 0x20], 0x22
+    mov.q [rsp - 0x18], 0x33
+    mov.q rdi, [rsp - 0x28]
+    mov.q rsi, [rsp - 0x20]
+    mov.q rdx, [rsp - 0x18]
     movabs rax, 0x500000003
     mov.q [rsp - 0x30], rax
     mov.d ecx, [rsp - 0x2c]
     mov.d eax, [rsp - 0x30]
-    mov.q [rsp - 0x28], 0
-    mov.d [rsp - 0x28], ecx
-    mov.d [rsp - 0x24], eax
-    mov.q rax, [rsp - 0x28]
+    mov.q [rsp - 0x10], 0
+    mov.d [rsp - 0x10], ecx
+    mov.d [rsp - 0xc], eax
+    mov.q rax, [rsp - 0x10]
     mov.q [rsp - 0x38], rax
     movsxd.d rax, [rsp - 0x38]
     movsxd.d rcx, [rsp - 0x34]

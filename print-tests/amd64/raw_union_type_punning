@@ -1,327 +1,436 @@
 =========== OPT LEVEL: none-quick ===========
-halves:
-    mov.d eax, [rdi]
-    mov.d [rsi], eax
-    mov.d eax, [rdi + 0x4]
+to_bits:
+    movss.d [rsp - 0x8], xmm0
+    mov.d eax, [rsp - 0x8]
     ret
-set_low:
-    mov.d [rdi], esi
+from_bits:
+    mov.d [rsp - 0x8], edi
+    movss.d xmm0, [rsp - 0x8]
     ret
 main:
     push rbx
-    sub rsp, 0x10
-    movsd.q xmm0, [rip + 0xf27]
-    movsd.q [rsp + 0x4], xmm0
-    mov.q rbx, [rsp + 0x4]
-    lea rsi, [rsp]
-    lea rdi, [rsp + 0x4]
-    call halves
-    cmp eax, 0x3ff00000
-    sete al
-    movzx eax, al
-    test al, al
-    jne 3
-    jmp 4
-3:
-    cmp.d [rsp], 0
-    sete al
-    movzx eax, al
-4:
-    mov rcx, 0xc
-    movabs rdx, 0x3ff0000000000000
-    cmp rbx, rdx
-    mov rdx, 4
+    push rbp
+    sub rsp, 8
+    movss.d xmm0, [rip + 0xf1a]
+    call to_bits
+    mov rbx, rax
+    movss.d xmm0, [rip + 0xf0d]
+    call to_bits
+    mov rbp, rax
+    mov rdi, 0x40400000
+    call from_bits
+    movsd.q xmm1, [rip + 0xef4]
+    movsd.q [rsp], xmm1
+    mov.q rax, [rsp]
+    mov rcx, 1
+    cmp ebx, 0x3f800000
+    sete dl
+    movzx edx, dl
+    xor ebx, ebx
+    test dl, dl
+    cmovne rbx, rcx
+    mov rcx, rbx
+    add rcx, 2
+    movabs rdx, 0xc0000000
+    cmp ebp, edx
+    mov rdx, rbx
     cmove rdx, rcx
     mov rcx, rdx
-    test al, al
-    jne 5
-    mov rax, rcx
-    jmp 6
+    add rcx, 4
+    ucomiss.d xmm0, [rip + 0xea2]
+    jp 3
+    cmove rdx, rcx
+3:
+    movabs rcx, 0x3ff0000000000000
+    cmp rax, rcx
+    je 4
+    add rdx, 4
+    mov rax, rdx
+    jmp 5
+4:
+    add rdx, 0xc
+    mov rax, rdx
 5:
-    add rcx, 0x10
-    mov rax, rcx
+    cmp.d [rsp + 0x4], 0x3ff00000
+    sete cl
+    movzx ecx, cl
+    test cl, cl
+    jne 6
+    jmp 7
 6:
+    cmp.d [rsp], 0
+    sete cl
+    movzx ecx, cl
+7:
+    mov.d [rsp], 1
+    mov.q rdx, [rsp]
+    movabs rbx, -0x4000000000000000
+    mov.q [rsp], rbx
+    movsd.q xmm0, [rsp]
     mov rbx, rax
-    mov rsi, 1
-    lea rdi, [rsp + 0x4]
-    call set_low
-    mov rax, rbx
-    add rax, 0x20
-    mov.q rcx, [rsp + 0x4]
-    movabs rdx, -0x4000000000000000
-    mov.q [rsp + 0x4], rdx
-    movsd.q xmm0, [rsp + 0x4]
-    movabs rdx, 0x3ff0000000000001
-    cmp rcx, rdx
-    mov rcx, rbx
-    cmove rcx, rax
-    mov rax, rcx
+    add rbx, 0x10
+    test cl, cl
+    cmovne rax, rbx
+    mov rcx, rax
+    add rcx, 0x20
+    movabs rbx, 0x3ff0000000000001
+    cmp rdx, rbx
+    cmove rax, rcx
     mov rcx, rax
     add rcx, 0x40
-    ucomisd.q xmm0, [rip + 0xe48]
-    jp 7
+    ucomisd.q xmm0, [rip + 0xdea]
+    jp 8
     cmove rax, rcx
-7:
-    add rsp, 0x10
+8:
+    add rsp, 8
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
-halves:
-    mov.d eax, [rdi]
-    mov.d [rsi], eax
-    mov.d eax, [rdi + 0x4]
+to_bits:
+    movss.d [rsp - 0x8], xmm0
+    mov.d eax, [rsp - 0x8]
     ret
-set_low:
-    mov.d [rdi], esi
+from_bits:
+    mov.d [rsp - 0x8], edi
+    movss.d xmm0, [rsp - 0x8]
     ret
 main:
     push rbx
-    sub rsp, 0x10
-    movsd.q xmm0, [rip + 0xf44]
-    movsd.q [rsp + 0x4], xmm0
-    mov.q rbx, [rsp + 0x4]
-    lea rsi, [rsp]
-    lea rdi, [rsp + 0x4]
-    call halves
-    cmp eax, 0x3ff00000
+    push rbp
+    sub rsp, 8
+    movss.d xmm0, [rip + 0xf37]
+    call to_bits
+    mov rbx, rax
+    movss.d xmm0, [rip + 0xf2a]
+    call to_bits
+    mov rbp, rax
+    mov rdi, 0x40400000
+    call from_bits
+    movsd.q xmm1, [rip + 0xf11]
+    movsd.q [rsp], xmm1
+    mov.q rdi, [rsp]
+    mov rdx, 1
+    cmp ebx, 0x3f800000
+    sete al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne rcx, rdx
+    mov rsi, rcx
+    add rsi, 2
+    movabs rdx, 0xc0000000
+    cmp ebp, edx
+    cmove rcx, rsi
+    mov rax, rcx
+    add rax, 4
+    ucomiss.d xmm0, [rip + 0xec2]
+    jp 3
+    cmove rcx, rax
+3:
+    movabs rax, 0x3ff0000000000000
+    cmp rdi, rax
+    je 4
+    add rcx, 4
+    mov rax, rcx
+    jmp 5
+4:
+    add rcx, 0xc
+    mov rax, rcx
+5:
+    cmp.d [rsp + 0x4], 0x3ff00000
     sete dl
     movzx edx, dl
     test dl, dl
-    jne 3
-    jmp 4
-3:
+    jne 6
+    jmp 7
+6:
     cmp.d [rsp], 0
     sete dl
     movzx edx, dl
-4:
-    mov rcx, 0xc
-    movabs rax, 0x3ff0000000000000
-    cmp rbx, rax
-    mov rax, 4
-    cmove rax, rcx
-    test dl, dl
-    jne 5
-    jmp 6
-5:
-    add rax, 0x10
-6:
-    mov rbx, rax
-    mov rsi, 1
-    lea rdi, [rsp + 0x4]
-    call set_low
-    mov rax, rbx
-    add rax, 0x20
-    mov.q rdx, [rsp + 0x4]
-    movabs rcx, -0x4000000000000000
-    mov.q [rsp + 0x4], rcx
-    movsd.q xmm0, [rsp + 0x4]
-    movabs rcx, 0x3ff0000000000001
-    cmp rdx, rcx
-    mov rcx, rbx
-    cmove rcx, rax
-    mov rax, rcx
-    add rax, 0x40
-    ucomisd.q xmm0, [rip + 0xe71]
-    jp 7
-    cmove rcx, rax
 7:
-    mov rax, rcx
-    add rsp, 0x10
+    mov.d [rsp], 1
+    mov.q rsi, [rsp]
+    movabs rcx, -0x4000000000000000
+    mov.q [rsp], rcx
+    movsd.q xmm0, [rsp]
+    mov rcx, rax
+    add rcx, 0x10
+    test dl, dl
+    cmovne rax, rcx
+    mov rdx, rax
+    add rdx, 0x20
+    movabs rcx, 0x3ff0000000000001
+    cmp rsi, rcx
+    cmove rax, rdx
+    mov rcx, rax
+    add rcx, 0x40
+    ucomisd.q xmm0, [rip + 0xe0a]
+    jp 8
+    cmove rax, rcx
+8:
+    add rsp, 8
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate-quick ===========
-halves:
-    mov.d eax, [rdi]
-    mov.d [rsi], eax
-    mov.d eax, [rdi + 0x4]
+to_bits:
+    movss.d [rsp - 0x8], xmm0
+    mov.d eax, [rsp - 0x8]
     ret
-set_low:
-    mov.d [rdi], esi
+from_bits:
+    mov.d [rsp - 0x8], edi
+    movss.d xmm0, [rsp - 0x8]
     ret
 main:
     push rbx
-    sub rsp, 0x10
-    movsd.q xmm0, [rip + 0xf27]
-    movsd.q [rsp + 0x4], xmm0
-    mov.q rbx, [rsp + 0x4]
-    lea rsi, [rsp]
-    lea rdi, [rsp + 0x4]
-    call halves
-    cmp eax, 0x3ff00000
-    sete al
-    movzx eax, al
-    test al, al
-    jne 3
-    jmp 4
-3:
-    cmp.d [rsp], 0
-    sete al
-    movzx eax, al
-4:
-    mov rcx, 0xc
-    movabs rdx, 0x3ff0000000000000
-    cmp rbx, rdx
-    mov rdx, 4
+    push rbp
+    sub rsp, 8
+    movss.d xmm0, [rip + 0xf1a]
+    call to_bits
+    mov rbx, rax
+    movss.d xmm0, [rip + 0xf0d]
+    call to_bits
+    mov rbp, rax
+    mov rdi, 0x40400000
+    call from_bits
+    movsd.q xmm1, [rip + 0xef4]
+    movsd.q [rsp], xmm1
+    mov.q rax, [rsp]
+    mov rcx, 1
+    cmp ebx, 0x3f800000
+    sete dl
+    movzx edx, dl
+    xor ebx, ebx
+    test dl, dl
+    cmovne rbx, rcx
+    mov rcx, rbx
+    add rcx, 2
+    movabs rdx, 0xc0000000
+    cmp ebp, edx
+    mov rdx, rbx
     cmove rdx, rcx
     mov rcx, rdx
-    test al, al
-    jne 5
-    mov rax, rcx
-    jmp 6
+    add rcx, 4
+    ucomiss.d xmm0, [rip + 0xea2]
+    jp 3
+    cmove rdx, rcx
+3:
+    movabs rcx, 0x3ff0000000000000
+    cmp rax, rcx
+    je 4
+    add rdx, 4
+    mov rax, rdx
+    jmp 5
+4:
+    add rdx, 0xc
+    mov rax, rdx
 5:
-    add rcx, 0x10
-    mov rax, rcx
+    cmp.d [rsp + 0x4], 0x3ff00000
+    sete cl
+    movzx ecx, cl
+    test cl, cl
+    jne 6
+    jmp 7
 6:
+    cmp.d [rsp], 0
+    sete cl
+    movzx ecx, cl
+7:
+    mov.d [rsp], 1
+    mov.q rdx, [rsp]
+    movabs rbx, -0x4000000000000000
+    mov.q [rsp], rbx
+    movsd.q xmm0, [rsp]
     mov rbx, rax
-    mov rsi, 1
-    lea rdi, [rsp + 0x4]
-    call set_low
-    mov rax, rbx
-    add rax, 0x20
-    mov.q rcx, [rsp + 0x4]
-    movabs rdx, -0x4000000000000000
-    mov.q [rsp + 0x4], rdx
-    movsd.q xmm0, [rsp + 0x4]
-    movabs rdx, 0x3ff0000000000001
-    cmp rcx, rdx
-    mov rcx, rbx
-    cmove rcx, rax
-    mov rax, rcx
+    add rbx, 0x10
+    test cl, cl
+    cmovne rax, rbx
+    mov rcx, rax
+    add rcx, 0x20
+    movabs rbx, 0x3ff0000000000001
+    cmp rdx, rbx
+    cmove rax, rcx
     mov rcx, rax
     add rcx, 0x40
-    ucomisd.q xmm0, [rip + 0xe48]
-    jp 7
+    ucomisd.q xmm0, [rip + 0xdea]
+    jp 8
     cmove rax, rcx
-7:
-    add rsp, 0x10
+8:
+    add rsp, 8
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
-halves:
-    mov.d eax, [rdi]
-    mov.d [rsi], eax
-    mov.d eax, [rdi + 0x4]
+to_bits:
+    movss.d [rsp - 0x8], xmm0
+    mov.d eax, [rsp - 0x8]
     ret
-set_low:
-    mov.d [rdi], esi
+from_bits:
+    mov.d [rsp - 0x8], edi
+    movss.d xmm0, [rsp - 0x8]
     ret
 main:
     push rbx
-    sub rsp, 0x10
-    movsd.q xmm0, [rip + 0xf44]
-    movsd.q [rsp + 0x4], xmm0
-    mov.q rbx, [rsp + 0x4]
-    lea rsi, [rsp]
-    lea rdi, [rsp + 0x4]
-    call halves
-    cmp eax, 0x3ff00000
+    push rbp
+    sub rsp, 8
+    movss.d xmm0, [rip + 0xf37]
+    call to_bits
+    mov rbx, rax
+    movss.d xmm0, [rip + 0xf2a]
+    call to_bits
+    mov rbp, rax
+    mov rdi, 0x40400000
+    call from_bits
+    movsd.q xmm1, [rip + 0xf11]
+    movsd.q [rsp], xmm1
+    mov.q rdi, [rsp]
+    mov rdx, 1
+    cmp ebx, 0x3f800000
+    sete al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne rcx, rdx
+    mov rsi, rcx
+    add rsi, 2
+    movabs rdx, 0xc0000000
+    cmp ebp, edx
+    cmove rcx, rsi
+    mov rax, rcx
+    add rax, 4
+    ucomiss.d xmm0, [rip + 0xec2]
+    jp 3
+    cmove rcx, rax
+3:
+    movabs rax, 0x3ff0000000000000
+    cmp rdi, rax
+    je 4
+    add rcx, 4
+    mov rax, rcx
+    jmp 5
+4:
+    add rcx, 0xc
+    mov rax, rcx
+5:
+    cmp.d [rsp + 0x4], 0x3ff00000
     sete dl
     movzx edx, dl
     test dl, dl
-    jne 3
-    jmp 4
-3:
+    jne 6
+    jmp 7
+6:
     cmp.d [rsp], 0
     sete dl
     movzx edx, dl
-4:
-    mov rcx, 0xc
-    movabs rax, 0x3ff0000000000000
-    cmp rbx, rax
-    mov rax, 4
-    cmove rax, rcx
-    test dl, dl
-    jne 5
-    jmp 6
-5:
-    add rax, 0x10
-6:
-    mov rbx, rax
-    mov rsi, 1
-    lea rdi, [rsp + 0x4]
-    call set_low
-    mov rax, rbx
-    add rax, 0x20
-    mov.q rdx, [rsp + 0x4]
-    movabs rcx, -0x4000000000000000
-    mov.q [rsp + 0x4], rcx
-    movsd.q xmm0, [rsp + 0x4]
-    movabs rcx, 0x3ff0000000000001
-    cmp rdx, rcx
-    mov rcx, rbx
-    cmove rcx, rax
-    mov rax, rcx
-    add rax, 0x40
-    ucomisd.q xmm0, [rip + 0xe71]
-    jp 7
-    cmove rcx, rax
 7:
-    mov rax, rcx
-    add rsp, 0x10
+    mov.d [rsp], 1
+    mov.q rsi, [rsp]
+    movabs rcx, -0x4000000000000000
+    mov.q [rsp], rcx
+    movsd.q xmm0, [rsp]
+    mov rcx, rax
+    add rcx, 0x10
+    test dl, dl
+    cmovne rax, rcx
+    mov rdx, rax
+    add rdx, 0x20
+    movabs rcx, 0x3ff0000000000001
+    cmp rsi, rcx
+    cmove rax, rdx
+    mov rcx, rax
+    add rcx, 0x40
+    ucomisd.q xmm0, [rip + 0xe0a]
+    jp 8
+    cmove rax, rcx
+8:
+    add rsp, 8
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: all ===========
-halves:
-    mov.d eax, [rdi]
-    mov.d [rsi], eax
-    mov.d eax, [rdi + 0x4]
+to_bits:
+    movd eax, xmm0
     ret
-set_low:
-    mov.d [rdi], esi
+from_bits:
+    movd xmm0, edi
     ret
 main:
     push rbx
-    sub rsp, 0x10
-    movsd.q xmm0, [rip + 0xf44]
-    movsd.q [rsp + 0x4], xmm0
-    mov.q rbx, [rsp + 0x4]
-    lea rsi, [rsp]
-    lea rdi, [rsp + 0x4]
-    call halves
-    cmp eax, 0x3ff00000
+    push rbp
+    sub rsp, 8
+    movss.d xmm0, [rip + 0xf45]
+    call to_bits
+    mov rbx, rax
+    movss.d xmm0, [rip + 0xf38]
+    call to_bits
+    mov rbp, rax
+    mov rdi, 0x40400000
+    call from_bits
+    movsd.q xmm1, [rip + 0xf1f]
+    movsd.q [rsp], xmm1
+    mov.q rdi, [rsp]
+    mov rdx, 1
+    cmp ebx, 0x3f800000
+    sete al
+    movzx eax, al
+    xor ecx, ecx
+    test al, al
+    cmovne rcx, rdx
+    mov rsi, rcx
+    add rsi, 2
+    movabs rdx, 0xc0000000
+    cmp ebp, edx
+    cmove rcx, rsi
+    mov rax, rcx
+    add rax, 4
+    ucomiss.d xmm0, [rip + 0xed0]
+    jp 3
+    cmove rcx, rax
+3:
+    movabs rax, 0x3ff0000000000000
+    cmp rdi, rax
+    je 4
+    add rcx, 4
+    mov rax, rcx
+    jmp 5
+4:
+    add rcx, 0xc
+    mov rax, rcx
+5:
+    cmp.d [rsp + 0x4], 0x3ff00000
     sete dl
     movzx edx, dl
     test dl, dl
-    jne 3
-    jmp 4
-3:
+    jne 6
+    jmp 7
+6:
     cmp.d [rsp], 0
     sete dl
     movzx edx, dl
-4:
-    mov rcx, 0xc
-    movabs rax, 0x3ff0000000000000
-    cmp rbx, rax
-    mov rax, 4
-    cmove rax, rcx
-    test dl, dl
-    jne 5
-    jmp 6
-5:
-    add rax, 0x10
-6:
-    mov rbx, rax
-    mov rsi, 1
-    lea rdi, [rsp + 0x4]
-    call set_low
-    mov rax, rbx
-    add rax, 0x20
-    mov.q rdx, [rsp + 0x4]
-    movabs rcx, -0x4000000000000000
-    mov.q [rsp + 0x4], rcx
-    movsd.q xmm0, [rsp + 0x4]
-    movabs rcx, 0x3ff0000000000001
-    cmp rdx, rcx
-    mov rcx, rbx
-    cmove rcx, rax
-    mov rax, rcx
-    add rax, 0x40
-    ucomisd.q xmm0, [rip + 0xe71]
-    jp 7
-    cmove rcx, rax
 7:
-    mov rax, rcx
-    add rsp, 0x10
+    mov.d [rsp], 1
+    mov.q rsi, [rsp]
+    movabs rcx, -0x4000000000000000
+    mov.q [rsp], rcx
+    movsd.q xmm0, [rsp]
+    mov rcx, rax
+    add rcx, 0x10
+    test dl, dl
+    cmovne rax, rcx
+    mov rdx, rax
+    add rdx, 0x20
+    movabs rcx, 0x3ff0000000000001
+    cmp rsi, rcx
+    cmove rax, rdx
+    mov rcx, rax
+    add rcx, 0x40
+    ucomisd.q xmm0, [rip + 0xe18]
+    jp 8
+    cmove rax, rcx
+8:
+    add rsp, 8
+    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
@@ -340,32 +449,29 @@ main:
     movzx edi, dil
 2:
     mov.q rdx, [rsp - 0x8]
-    mov rcx, 0xc
-    mov rsi, 4
-    movabs rax, 0x3ff0000000000000
-    cmp rdx, rax
-    cmove rsi, rcx
-    test dil, dil
-    jne 3
-    jmp 4
-3:
-    add rsi, 0x10
-4:
+    mov rcx, 0x13
     mov.d [rsp - 0x8], 1
-    mov rdx, rsi
-    add rdx, 0x20
-    mov.q rcx, [rsp - 0x8]
+    mov.q rsi, [rsp - 0x8]
     movabs rax, -0x4000000000000000
     mov.q [rsp - 0x8], rax
     movsd.q xmm0, [rsp - 0x8]
-    movabs rax, 0x3ff0000000000001
-    cmp rcx, rax
-    cmove rsi, rdx
-    mov rcx, rsi
-    add rcx, 0x40
-    ucomisd.q xmm0, [rip + 0xe9f]
-    mov rax, rsi
-    jp 5
+    movabs rax, 0x3ff0000000000000
+    cmp rdx, rax
+    mov rax, 0xb
     cmove rax, rcx
-5:
+    mov rcx, rax
+    add rcx, 0x10
+    test dil, dil
+    cmovne rax, rcx
+    mov rdx, rax
+    add rdx, 0x20
+    movabs rcx, 0x3ff0000000000001
+    cmp rsi, rcx
+    cmove rax, rdx
+    mov rcx, rax
+    add rcx, 0x40
+    ucomisd.q xmm0, [rip + 0xea3]
+    jp 3
+    cmove rax, rcx
+3:
     ret

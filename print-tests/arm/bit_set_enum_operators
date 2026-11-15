@@ -34,7 +34,6 @@ compare:
     cmp w0, w1
     cset w4, ne
     movz x5, #0
-    uxtb w5, w5
     bic w6, w1, w0
     uxtb w6, w6
     uxtb w6, w6
@@ -83,23 +82,20 @@ membership:
     uxtb w0, w0
     lsr w0, w0, w1
     movz x4, #0
-    movz x5, #0
-    uxtb w5, w5
-    movz x6, #32
-    cmp w1, w6
+    movz x5, #32
+    cmp w1, w5
     csel w0, w0, w4, cc
     uxtb w0, w0
     uxtb w0, w0
     movz x1, #1
-    uxtb w1, w1
     and w0, w0, w1
     uxtb w0, w0
     uxtb w0, w0
-    cmp w0, w5
+    cmp w0, w4
     csel x1, x2, x3, ne
     movz x2, #2
     orr x2, x2, x1
-    cmp w0, w5
+    cmp w0, w4
     csel x0, x2, x1, eq
     ret
 invert:
@@ -108,7 +104,6 @@ invert:
     uxtb w0, w0
     uxtb w0, w0
     movz x1, #153
-    uxtb w1, w1
     and w0, w0, w1
     uxtb w0, w0
     ret
@@ -127,48 +122,48 @@ main:
     stp x29, x30, [xzr, #80]
     movz x1, #144
     movz x0, #17
-    bl 0xfffffe4c
+    bl 0xfffffe60
     mov x19, x0
     movz x1, #8
     movz x0, #0
-    bl 0xfffffe4c
+    bl 0xfffffe60
     mov x20, x0
     movz x1, #17
     movz x0, #1
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x21, x0
     movz x0, #17
     movz x1, #1
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x22, x0
     movz x1, #16
     movz x0, #16
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x23, x0
     movz x0, #8
     movz x1, #16
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x24, x0
     movz x1, #7
     movz x0, #136
-    bl 0xffffff74
+    bl 0xffffff84
     mov x25, x0
     movz x1, #0
     movz x0, #136
-    bl 0xffffff74
+    bl 0xffffff84
     mov x26, x0
     movz x1, #3
     movz x0, #0
-    bl 0xffffff74
+    bl 0xffffff84
     mov x27, x0
     movz x0, #16
-    bl 0xffffffdc
+    bl 0xffffffe0
     mov x28, x0
     movz x0, #0
-    bl 0xffffffdc
+    bl 0xffffffe0
     mov x29, x0
     movz x0, #16
-    bl 0xffffffdc
+    bl 0xffffffe0
     movz x1, #64
     movz x2, #4
     movz x3, #16
@@ -257,8 +252,7 @@ compare:
     movz x1, #0
     cmp w7, w6
     cset w2, ne
-    movz x0, #0
-    uxtb w5, w0
+    movz x5, #0
     bic w0, w6, w7
     uxtb w0, w0
     uxtb w0, w0
@@ -300,27 +294,24 @@ compare:
     csel x0, x1, x2, ne
     ret
 membership:
-    movz x6, #1
+    movz x5, #1
     uxtb w1, w1
-    uxtb w5, w1
+    uxtb w2, w1
     movz x4, #0
     uxtb w0, w0
-    lsr w2, w0, w5
-    movz x1, #0
-    movz x0, #0
-    uxtb w3, w0
+    lsr w1, w0, w2
+    movz x3, #0
     movz x0, #32
-    cmp w5, w0
-    csel w0, w2, w1, cc
+    cmp w2, w0
+    csel w0, w1, w3, cc
     uxtb w0, w0
     uxtb w1, w0
     movz x0, #1
-    uxtb w0, w0
     and w0, w1, w0
     uxtb w0, w0
     uxtb w2, w0
     cmp w2, w3
-    csel x1, x6, x4, ne
+    csel x1, x5, x4, ne
     movz x0, #2
     orr x0, x0, x1
     cmp w2, w3
@@ -332,7 +323,6 @@ invert:
     uxtb w0, w0
     uxtb w1, w0
     movz x0, #153
-    uxtb w0, w0
     and w0, w1, w0
     uxtb w0, w0
     ret
@@ -351,48 +341,48 @@ main:
     stp x29, x30, [xzr, #80]
     movz x1, #144
     movz x0, #17
-    bl 0xfffffe4c
+    bl 0xfffffe60
     mov x29, x0
     movz x1, #8
     movz x0, #0
-    bl 0xfffffe4c
+    bl 0xfffffe60
     mov x28, x0
     movz x1, #17
     movz x0, #1
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x27, x0
     movz x0, #17
     movz x1, #1
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x26, x0
     movz x1, #16
     movz x0, #16
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x25, x0
     movz x0, #8
     movz x1, #16
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x24, x0
     movz x1, #7
     movz x0, #136
-    bl 0xffffff74
+    bl 0xffffff84
     mov x23, x0
     movz x1, #0
     movz x0, #136
-    bl 0xffffff74
+    bl 0xffffff84
     mov x22, x0
     movz x1, #3
     movz x0, #0
-    bl 0xffffff74
+    bl 0xffffff84
     mov x21, x0
     movz x0, #16
-    bl 0xffffffdc
+    bl 0xffffffe0
     mov x20, x0
     movz x0, #0
-    bl 0xffffffdc
+    bl 0xffffffe0
     mov x19, x0
     movz x0, #16
-    bl 0xffffffdc
+    bl 0xffffffe0
     movz x4, #64
     movz x1, #4
     movz x2, #16
@@ -482,7 +472,6 @@ compare:
     cmp w0, w1
     cset w4, ne
     movz x5, #0
-    uxtb w5, w5
     bic w6, w1, w0
     uxtb w6, w6
     uxtb w6, w6
@@ -531,23 +520,20 @@ membership:
     uxtb w0, w0
     lsr w0, w0, w1
     movz x4, #0
-    movz x5, #0
-    uxtb w5, w5
-    movz x6, #32
-    cmp w1, w6
+    movz x5, #32
+    cmp w1, w5
     csel w0, w0, w4, cc
     uxtb w0, w0
     uxtb w0, w0
     movz x1, #1
-    uxtb w1, w1
     and w0, w0, w1
     uxtb w0, w0
     uxtb w0, w0
-    cmp w0, w5
+    cmp w0, w4
     csel x1, x2, x3, ne
     movz x2, #2
     orr x2, x2, x1
-    cmp w0, w5
+    cmp w0, w4
     csel x0, x2, x1, eq
     ret
 invert:
@@ -556,7 +542,6 @@ invert:
     uxtb w0, w0
     uxtb w0, w0
     movz x1, #153
-    uxtb w1, w1
     and w0, w0, w1
     uxtb w0, w0
     ret
@@ -575,48 +560,48 @@ main:
     stp x29, x30, [xzr, #80]
     movz x1, #144
     movz x0, #17
-    bl 0xfffffe4c
+    bl 0xfffffe60
     mov x19, x0
     movz x1, #8
     movz x0, #0
-    bl 0xfffffe4c
+    bl 0xfffffe60
     mov x20, x0
     movz x1, #17
     movz x0, #1
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x21, x0
     movz x0, #17
     movz x1, #1
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x22, x0
     movz x1, #16
     movz x0, #16
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x23, x0
     movz x0, #8
     movz x1, #16
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x24, x0
     movz x1, #7
     movz x0, #136
-    bl 0xffffff74
+    bl 0xffffff84
     mov x25, x0
     movz x1, #0
     movz x0, #136
-    bl 0xffffff74
+    bl 0xffffff84
     mov x26, x0
     movz x1, #3
     movz x0, #0
-    bl 0xffffff74
+    bl 0xffffff84
     mov x27, x0
     movz x0, #16
-    bl 0xffffffdc
+    bl 0xffffffe0
     mov x28, x0
     movz x0, #0
-    bl 0xffffffdc
+    bl 0xffffffe0
     mov x29, x0
     movz x0, #16
-    bl 0xffffffdc
+    bl 0xffffffe0
     movz x1, #64
     movz x2, #4
     movz x3, #16
@@ -705,8 +690,7 @@ compare:
     movz x1, #0
     cmp w7, w6
     cset w2, ne
-    movz x0, #0
-    uxtb w5, w0
+    movz x5, #0
     bic w0, w6, w7
     uxtb w0, w0
     uxtb w0, w0
@@ -748,27 +732,24 @@ compare:
     csel x0, x1, x2, ne
     ret
 membership:
-    movz x6, #1
+    movz x5, #1
     uxtb w1, w1
-    uxtb w5, w1
+    uxtb w2, w1
     movz x4, #0
     uxtb w0, w0
-    lsr w2, w0, w5
-    movz x1, #0
-    movz x0, #0
-    uxtb w3, w0
+    lsr w1, w0, w2
+    movz x3, #0
     movz x0, #32
-    cmp w5, w0
-    csel w0, w2, w1, cc
+    cmp w2, w0
+    csel w0, w1, w3, cc
     uxtb w0, w0
     uxtb w1, w0
     movz x0, #1
-    uxtb w0, w0
     and w0, w1, w0
     uxtb w0, w0
     uxtb w2, w0
     cmp w2, w3
-    csel x1, x6, x4, ne
+    csel x1, x5, x4, ne
     movz x0, #2
     orr x0, x0, x1
     cmp w2, w3
@@ -780,7 +761,6 @@ invert:
     uxtb w0, w0
     uxtb w1, w0
     movz x0, #153
-    uxtb w0, w0
     and w0, w1, w0
     uxtb w0, w0
     ret
@@ -799,48 +779,48 @@ main:
     stp x29, x30, [xzr, #80]
     movz x1, #144
     movz x0, #17
-    bl 0xfffffe4c
+    bl 0xfffffe60
     mov x29, x0
     movz x1, #8
     movz x0, #0
-    bl 0xfffffe4c
+    bl 0xfffffe60
     mov x28, x0
     movz x1, #17
     movz x0, #1
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x27, x0
     movz x0, #17
     movz x1, #1
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x26, x0
     movz x1, #16
     movz x0, #16
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x25, x0
     movz x0, #8
     movz x1, #16
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x24, x0
     movz x1, #7
     movz x0, #136
-    bl 0xffffff74
+    bl 0xffffff84
     mov x23, x0
     movz x1, #0
     movz x0, #136
-    bl 0xffffff74
+    bl 0xffffff84
     mov x22, x0
     movz x1, #3
     movz x0, #0
-    bl 0xffffff74
+    bl 0xffffff84
     mov x21, x0
     movz x0, #16
-    bl 0xffffffdc
+    bl 0xffffffe0
     mov x20, x0
     movz x0, #0
-    bl 0xffffffdc
+    bl 0xffffffe0
     mov x19, x0
     movz x0, #16
-    bl 0xffffffdc
+    bl 0xffffffe0
     movz x4, #64
     movz x1, #4
     movz x2, #16
@@ -929,8 +909,7 @@ compare:
     movz x1, #0
     cmp w7, w6
     cset w2, ne
-    movz x0, #0
-    uxtb w5, w0
+    movz x5, #0
     bic w0, w6, w7
     uxtb w0, w0
     uxtb w0, w0
@@ -972,27 +951,24 @@ compare:
     csel x0, x1, x2, ne
     ret
 membership:
-    movz x6, #1
+    movz x5, #1
     uxtb w1, w1
-    uxtb w5, w1
+    uxtb w2, w1
     movz x4, #0
     uxtb w0, w0
-    lsr w2, w0, w5
-    movz x1, #0
-    movz x0, #0
-    uxtb w3, w0
+    lsr w1, w0, w2
+    movz x3, #0
     movz x0, #32
-    cmp w5, w0
-    csel w0, w2, w1, cc
+    cmp w2, w0
+    csel w0, w1, w3, cc
     uxtb w0, w0
     uxtb w1, w0
     movz x0, #1
-    uxtb w0, w0
     and w0, w1, w0
     uxtb w0, w0
     uxtb w2, w0
     cmp w2, w3
-    csel x1, x6, x4, ne
+    csel x1, x5, x4, ne
     movz x0, #2
     orr x0, x0, x1
     cmp w2, w3
@@ -1004,7 +980,6 @@ invert:
     uxtb w0, w0
     uxtb w1, w0
     movz x0, #153
-    uxtb w0, w0
     and w0, w1, w0
     uxtb w0, w0
     ret
@@ -1023,48 +998,48 @@ main:
     stp x29, x30, [xzr, #80]
     movz x1, #144
     movz x0, #17
-    bl 0xfffffe4c
+    bl 0xfffffe60
     mov x29, x0
     movz x1, #8
     movz x0, #0
-    bl 0xfffffe4c
+    bl 0xfffffe60
     mov x28, x0
     movz x1, #17
     movz x0, #1
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x27, x0
     movz x0, #17
     movz x1, #1
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x26, x0
     movz x1, #16
     movz x0, #16
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x25, x0
     movz x0, #8
     movz x1, #16
-    bl 0xfffffeb4
+    bl 0xfffffec8
     mov x24, x0
     movz x1, #7
     movz x0, #136
-    bl 0xffffff74
+    bl 0xffffff84
     mov x23, x0
     movz x1, #0
     movz x0, #136
-    bl 0xffffff74
+    bl 0xffffff84
     mov x22, x0
     movz x1, #3
     movz x0, #0
-    bl 0xffffff74
+    bl 0xffffff84
     mov x21, x0
     movz x0, #16
-    bl 0xffffffdc
+    bl 0xffffffe0
     mov x20, x0
     movz x0, #0
-    bl 0xffffffdc
+    bl 0xffffffe0
     mov x19, x0
     movz x0, #16
-    bl 0xffffffdc
+    bl 0xffffffe0
     movz x4, #64
     movz x1, #4
     movz x2, #16
@@ -1153,8 +1128,7 @@ compare:
     movz x1, #0
     cmp w7, w6
     cset w2, ne
-    movz x0, #0
-    uxtb w5, w0
+    movz x5, #0
     bic w0, w6, w7
     uxtb w0, w0
     uxtb w0, w0
@@ -1196,27 +1170,24 @@ compare:
     csel x0, x1, x2, ne
     ret
 membership:
-    movz x6, #1
+    movz x5, #1
     uxtb w1, w1
-    uxtb w5, w1
+    uxtb w2, w1
     movz x4, #0
     uxtb w0, w0
-    lsr w2, w0, w5
-    movz x1, #0
-    movz x0, #0
-    uxtb w3, w0
+    lsr w1, w0, w2
+    movz x3, #0
     movz x0, #32
-    cmp w5, w0
-    csel w0, w2, w1, cc
+    cmp w2, w0
+    csel w0, w1, w3, cc
     uxtb w0, w0
     uxtb w1, w0
     movz x0, #1
-    uxtb w0, w0
     and w0, w1, w0
     uxtb w0, w0
     uxtb w2, w0
     cmp w2, w3
-    csel x1, x6, x4, ne
+    csel x1, x5, x4, ne
     movz x0, #2
     orr x0, x0, x1
     cmp w2, w3
@@ -1235,39 +1206,39 @@ main:
     stp x29, x30, [xzr, #64]
     movz x1, #144
     movz x0, #17
-    bl 0xfffffe70
+    bl 0xfffffe80
     mov x26, x0
     movz x1, #8
     movz x0, #0
-    bl 0xfffffe70
+    bl 0xfffffe80
     mov x25, x0
     movz x1, #17
     movz x0, #1
-    bl 0xfffffed8
+    bl 0xfffffee8
     mov x24, x0
     movz x0, #17
     movz x1, #1
-    bl 0xfffffed8
+    bl 0xfffffee8
     mov x23, x0
     movz x1, #16
     movz x0, #16
-    bl 0xfffffed8
+    bl 0xfffffee8
     mov x22, x0
     movz x0, #8
     movz x1, #16
-    bl 0xfffffed8
+    bl 0xfffffee8
     mov x21, x0
     movz x1, #7
     movz x0, #136
-    bl 0xffffff98
+    bl 0xffffffa4
     mov x20, x0
     movz x1, #0
     movz x0, #136
-    bl 0xffffff98
+    bl 0xffffffa4
     mov x19, x0
     movz x1, #3
     movz x0, #0
-    bl 0xffffff98
+    bl 0xffffffa4
     movz x6, #64
     movz x1, #16
     movz x3, #4

@@ -1,56 +1,54 @@
 =========== OPT LEVEL: none-quick ===========
 digits:
-    movz x2, #3
-    movz x3, #1
-    uxtb w3, w3
-    sub x0, x0, x2
+    movz x2, #1
+    movz x3, #3
+    sub x0, x0, x3
     uxtb w0, w0
     uxtb w0, w0
     movz x4, #0
-    lsl w5, w3, w0
-    sub x1, x1, x2
-    uxtb w1, w1
-    uxtb w1, w1
-    lsl w2, w3, w1
+    lsl w5, w2, w0
     movz x6, #32
+    sub x1, x1, x3
+    uxtb w1, w1
+    uxtb w1, w1
+    lsl w3, w2, w1
     cmp w0, w6
     csel w0, w5, w4, cc
     uxtb w0, w0
     uxtb w0, w0
     cmp w1, w6
-    csel w1, w2, w4, cc
+    csel w1, w3, w4, cc
     uxtb w1, w1
     uxtb w1, w1
     orr w0, w0, w1
-    orr w0, w0, w3
+    orr w0, w0, w2
     uxtb w0, w0
     ret
 around:
-    movn x1, #1
-    movz x2, #1
-    uxtb w2, w2
-    sub x3, x0, x1
+    movz x1, #1
+    movn x2, #1
+    sub x3, x0, x2
     uxtb w3, w3
     uxtb w3, w3
     movz x4, #0
-    lsl w5, w2, w3
-    movz x6, #1
-    add x0, x6, x0
-    sub x0, x0, x1
+    lsl w5, w1, w3
+    movz x6, #32
+    movz x7, #1
+    add x0, x7, x0
+    sub x0, x0, x2
     uxtb w0, w0
     uxtb w0, w0
-    movz x1, #32
-    lsl w6, w2, w0
-    cmp w3, w1
+    lsl w2, w1, w0
+    cmp w3, w6
     csel w3, w5, w4, cc
     uxtb w3, w3
     uxtb w3, w3
-    cmp w0, w1
-    csel w0, w6, w4, cc
+    cmp w0, w6
+    csel w0, w2, w4, cc
     uxtb w0, w0
     uxtb w0, w0
     orr w0, w3, w0
-    orr w0, w0, w2
+    orr w0, w0, w1
     uxtb w0, w0
     ret
 late:
@@ -58,17 +56,15 @@ late:
     sub x0, x0, x1
     uxth w0, w0
     uxth w0, w0
-    movz x1, #1
-    uxth w1, w1
-    lsl w1, w1, w0
-    movz x2, #0
+    movz x1, #0
+    movz x2, #1
+    lsl w2, w2, w0
     movz x3, #32
     cmp w0, w3
-    csel w0, w1, w2, cc
+    csel w0, w2, w1, cc
     uxth w0, w0
     uxth w0, w0
     movz x1, #512
-    uxth w1, w1
     orr w0, w0, w1
     uxth w0, w0
     ret
@@ -87,52 +83,48 @@ huge:
 tests:
     movz x2, #1
     uxtb w0, w0
-    movz x3, #0
-    movz x4, #1
-    uxtb w4, w4
+    movz x3, #1
+    movz x4, #0
     movz x5, #3
     sub x1, x1, x5
     uxtb w1, w1
     uxtb w1, w1
     movz x5, #0
-    uxtb w5, w5
     lsr w6, w0, w1
-    movz x7, #0
-    bic w8, w4, w0
-    uxtb w8, w8
-    uxtb w8, w8
-    cmp w8, w5
-    cset w8, eq
-    uxtb w8, w8
-    movz x9, #32
-    cmp w1, w9
-    csel w1, w6, w7, cc
+    bic w7, w3, w0
+    uxtb w7, w7
+    uxtb w7, w7
+    cmp w7, w5
+    cset w7, eq
+    uxtb w7, w7
+    movz x8, #32
+    cmp w1, w8
+    csel w1, w6, w5, cc
     uxtb w1, w1
     uxtb w1, w1
-    and w1, w1, w4
+    and w1, w1, w3
     uxtb w1, w1
     uxtb w1, w1
     cmp w1, w5
-    csel x2, x2, x3, ne
-    movz x3, #2
-    orr x3, x3, x2
+    csel x2, x2, x4, ne
+    movz x4, #2
+    orr x4, x4, x2
     cmp w1, w5
-    csel x1, x3, x2, eq
+    csel x1, x4, x2, eq
     movz x2, #4
     orr x2, x2, x1
-    movz x3, #69
-    uxtb w3, w3
-    bic w3, w0, w3
-    uxtb w3, w3
-    uxtb w3, w3
-    cmp w3, w5
+    movz x4, #69
+    bic w4, w0, w4
+    uxtb w4, w4
+    uxtb w4, w4
+    cmp w4, w5
     csel x1, x2, x1, eq
     movz x2, #8
     orr x2, x2, x1
-    cmp w0, w4
+    cmp w0, w3
     cset w0, ne
     uxtb w0, w0
-    and w0, w8, w0
+    and w0, w7, w0
     uxtb w0, w0
     cmp w0, #0
     csel x0, x2, x1, ne
@@ -152,52 +144,52 @@ main:
     stp x29, x30, [xzr, #80]
     movz x0, #5
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x19, x0
     movz x0, #0
-    bl 0xfffffe50
+    bl 0xfffffe6c
     mov x20, x0
     movz x0, #4
-    bl 0xfffffe50
+    bl 0xfffffe6c
     mov x21, x0
     movz x0, #61
-    bl 0xfffffebc
+    bl 0xfffffed4
     mov x22, x0
     movz x0, #63
     movz x1, #0
-    bl 0xffffff04
+    bl 0xffffff14
     mov x23, x0
     movz x0, #32
     movz x1, #7
-    bl 0xffffff04
+    bl 0xffffff14
     mov x24, x0
     movz x0, #5
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     movz x1, #5
-    bl 0xffffff30
+    bl 0xffffff40
     mov x25, x0
     movz x0, #4
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     movz x1, #6
-    bl 0xffffff30
+    bl 0xffffff40
     mov x26, x0
     movz x0, #1
     movz x1, #3
-    bl 0xffffff30
+    bl 0xffffff40
     mov x27, x0
     movz x1, #4
     movz x0, #4
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x28, x0
     movz x0, #6
     movz x1, #7
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x29, x0
     movz x1, #1
     movz x0, #1
-    bl 0xffffff04
+    bl 0xffffff14
     uxtb w1, w19
     movz x2, #256
     movz x3, #16384
@@ -231,7 +223,6 @@ main:
     uxtb w4, w4
     uxtb w4, w4
     movz x5, #127
-    uxtb w5, w5
     and w4, w4, w5
     uxtb w4, w4
     uxtb w4, w4
@@ -266,25 +257,24 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 digits:
-    movz x3, #3
-    movz x2, #1
-    uxtb w8, w2
-    sub x0, x0, x3
+    movz x8, #1
+    movz x2, #3
+    sub x0, x0, x2
     uxtb w0, w0
     uxtb w7, w0
     movz x6, #0
     lsl w5, w8, w7
-    sub x0, x1, x3
+    movz x4, #32
+    sub x0, x1, x2
     uxtb w0, w0
-    uxtb w4, w0
-    lsl w3, w8, w4
-    movz x2, #32
-    cmp w7, w2
+    uxtb w3, w0
+    lsl w2, w8, w3
+    cmp w7, w4
     csel w0, w5, w6, cc
     uxtb w0, w0
     uxtb w1, w0
-    cmp w4, w2
-    csel w0, w3, w6, cc
+    cmp w3, w4
+    csel w0, w2, w6, cc
     uxtb w0, w0
     uxtb w0, w0
     orr w0, w1, w0
@@ -292,26 +282,25 @@ digits:
     uxtb w0, w0
     ret
 around:
+    movz x8, #1
     movn x2, #1
-    movz x1, #1
-    uxtb w8, w1
     sub x1, x0, x2
     uxtb w1, w1
     uxtb w7, w1
     movz x6, #0
     lsl w5, w8, w7
+    movz x4, #32
     movz x1, #1
     add x0, x1, x0
     sub x0, x0, x2
     uxtb w0, w0
-    uxtb w4, w0
-    movz x3, #32
-    lsl w2, w8, w4
-    cmp w7, w3
+    uxtb w3, w0
+    lsl w2, w8, w3
+    cmp w7, w4
     csel w0, w5, w6, cc
     uxtb w0, w0
     uxtb w1, w0
-    cmp w4, w3
+    cmp w3, w4
     csel w0, w2, w6, cc
     uxtb w0, w0
     uxtb w0, w0
@@ -324,17 +313,15 @@ late:
     sub x0, x0, x1
     uxth w0, w0
     uxth w3, w0
+    movz x2, #0
     movz x0, #1
-    uxth w0, w0
-    lsl w2, w0, w3
-    movz x1, #0
+    lsl w1, w0, w3
     movz x0, #32
     cmp w3, w0
-    csel w0, w2, w1, cc
+    csel w0, w1, w2, cc
     uxth w0, w0
     uxth w1, w0
     movz x0, #512
-    uxth w0, w0
     orr w0, w1, w0
     uxth w0, w0
     ret
@@ -351,57 +338,53 @@ huge:
     orr x0, x2, x0
     ret
 tests:
-    movz x9, #1
-    uxtb w0, w0
-    movz x8, #0
-    movz x2, #1
-    uxtb w2, w2
+    movz x8, #1
+    uxtb w2, w0
+    movz x0, #1
+    movz x7, #0
     movz x3, #3
     sub x1, x1, x3
     uxtb w1, w1
-    uxtb w7, w1
-    movz x1, #0
-    uxtb w3, w1
-    lsr w6, w0, w7
-    movz x5, #0
-    bic w1, w2, w0
+    uxtb w4, w1
+    movz x6, #0
+    lsr w3, w2, w4
+    bic w1, w0, w2
     uxtb w1, w1
     uxtb w1, w1
-    cmp w1, w3
+    cmp w1, w6
     cset w1, eq
+    uxtb w5, w1
+    movz x1, #32
+    cmp w4, w1
+    csel w1, w3, w6, cc
     uxtb w1, w1
-    movz x4, #32
-    cmp w7, w4
-    csel w4, w6, w5, cc
-    uxtb w4, w4
-    uxtb w4, w4
-    and w4, w4, w2
-    uxtb w4, w4
-    uxtb w6, w4
-    cmp w6, w3
-    csel x5, x9, x8, ne
-    movz x4, #2
-    orr x4, x4, x5
-    cmp w6, w3
-    csel x6, x4, x5, eq
-    movz x4, #4
-    orr x5, x4, x6
-    movz x4, #69
-    uxtb w4, w4
-    bic w4, w0, w4
-    uxtb w4, w4
-    uxtb w4, w4
-    cmp w4, w3
-    csel x4, x5, x6, eq
-    movz x3, #8
-    orr x3, x3, x4
-    cmp w0, w2
+    uxtb w1, w1
+    and w1, w1, w0
+    uxtb w1, w1
+    uxtb w4, w1
+    cmp w4, w6
+    csel x3, x8, x7, ne
+    movz x1, #2
+    orr x1, x1, x3
+    cmp w4, w6
+    csel x4, x1, x3, eq
+    movz x1, #4
+    orr x3, x1, x4
+    movz x1, #69
+    bic w1, w2, w1
+    uxtb w1, w1
+    uxtb w1, w1
+    cmp w1, w6
+    csel x3, x3, x4, eq
+    movz x1, #8
+    orr x1, x1, x3
+    cmp w2, w0
     cset w0, ne
     uxtb w0, w0
-    and w0, w1, w0
+    and w0, w5, w0
     uxtb w0, w0
     cmp w0, #0
-    csel x0, x3, x4, ne
+    csel x0, x1, x3, ne
     ret
 main:
     sub sp, sp, #96
@@ -418,52 +401,52 @@ main:
     stp x29, x30, [xzr, #80]
     movz x0, #5
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x29, x0
     movz x0, #0
-    bl 0xfffffe50
+    bl 0xfffffe6c
     mov x28, x0
     movz x0, #4
-    bl 0xfffffe50
+    bl 0xfffffe6c
     mov x27, x0
     movz x0, #61
-    bl 0xfffffebc
+    bl 0xfffffed4
     mov x26, x0
     movz x0, #63
     movz x1, #0
-    bl 0xffffff04
+    bl 0xffffff14
     mov x25, x0
     movz x0, #32
     movz x1, #7
-    bl 0xffffff04
+    bl 0xffffff14
     mov x24, x0
     movz x0, #5
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     movz x1, #5
-    bl 0xffffff30
+    bl 0xffffff40
     mov x23, x0
     movz x0, #4
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     movz x1, #6
-    bl 0xffffff30
+    bl 0xffffff40
     mov x22, x0
     movz x0, #1
     movz x1, #3
-    bl 0xffffff30
+    bl 0xffffff40
     mov x21, x0
     movz x1, #4
     movz x0, #4
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x20, x0
     movz x0, #6
     movz x1, #7
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x19, x0
     movz x1, #1
     movz x0, #1
-    bl 0xffffff04
+    bl 0xffffff14
     uxtb w3, w29
     movz x2, #256
     movz x1, #16384
@@ -497,7 +480,6 @@ main:
     uxtb w3, w3
     uxtb w4, w3
     movz x3, #127
-    uxtb w3, w3
     and w3, w4, w3
     uxtb w3, w3
     uxtb w3, w3
@@ -532,57 +514,55 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 digits:
-    movz x2, #3
-    movz x3, #1
-    uxtb w3, w3
-    sub x0, x0, x2
+    movz x2, #1
+    movz x3, #3
+    sub x0, x0, x3
     uxtb w0, w0
     uxtb w0, w0
     movz x4, #0
-    lsl w5, w3, w0
-    sub x1, x1, x2
-    uxtb w1, w1
-    uxtb w1, w1
-    lsl w2, w3, w1
+    lsl w5, w2, w0
     movz x6, #32
+    sub x1, x1, x3
+    uxtb w1, w1
+    uxtb w1, w1
+    lsl w3, w2, w1
     cmp w0, w6
     csel w0, w5, w4, cc
     uxtb w0, w0
     uxtb w0, w0
     cmp w1, w6
-    csel w1, w2, w4, cc
+    csel w1, w3, w4, cc
     uxtb w1, w1
     uxtb w1, w1
     orr w0, w0, w1
-    orr w0, w0, w3
+    orr w0, w0, w2
     uxtb w0, w0
     ret
 around:
-    movn x1, #1
-    movz x2, #1
-    uxtb w2, w2
-    sub x3, x0, x1
+    movz x1, #1
+    movn x2, #1
+    sub x3, x0, x2
     uxtb w3, w3
     uxtb w3, w3
     movz x4, #0
-    lsl w5, w2, w3
-    movz x6, #1
-    add x0, x6, x0
-    sub x0, x0, x1
+    lsl w5, w1, w3
+    movz x6, #32
+    movz x7, #1
+    add x0, x7, x0
+    sub x0, x0, x2
     uxtb w0, w0
     uxtb w0, w0
-    movz x1, #32
-    lsl w6, w2, w0
-    cmp w3, w1
+    lsl w2, w1, w0
+    cmp w3, w6
     csel w3, w5, w4, cc
     uxtb w3, w3
     uxtb w3, w3
-    cmp w0, w1
-    csel w0, w6, w4, cc
+    cmp w0, w6
+    csel w0, w2, w4, cc
     uxtb w0, w0
     uxtb w0, w0
     orr w0, w3, w0
-    orr w0, w0, w2
+    orr w0, w0, w1
     uxtb w0, w0
     ret
 late:
@@ -590,17 +570,15 @@ late:
     sub x0, x0, x1
     uxth w0, w0
     uxth w0, w0
-    movz x1, #1
-    uxth w1, w1
-    lsl w1, w1, w0
-    movz x2, #0
+    movz x1, #0
+    movz x2, #1
+    lsl w2, w2, w0
     movz x3, #32
     cmp w0, w3
-    csel w0, w1, w2, cc
+    csel w0, w2, w1, cc
     uxth w0, w0
     uxth w0, w0
     movz x1, #512
-    uxth w1, w1
     orr w0, w0, w1
     uxth w0, w0
     ret
@@ -619,52 +597,48 @@ huge:
 tests:
     movz x2, #1
     uxtb w0, w0
-    movz x3, #0
-    movz x4, #1
-    uxtb w4, w4
+    movz x3, #1
+    movz x4, #0
     movz x5, #3
     sub x1, x1, x5
     uxtb w1, w1
     uxtb w1, w1
     movz x5, #0
-    uxtb w5, w5
     lsr w6, w0, w1
-    movz x7, #0
-    bic w8, w4, w0
-    uxtb w8, w8
-    uxtb w8, w8
-    cmp w8, w5
-    cset w8, eq
-    uxtb w8, w8
-    movz x9, #32
-    cmp w1, w9
-    csel w1, w6, w7, cc
+    bic w7, w3, w0
+    uxtb w7, w7
+    uxtb w7, w7
+    cmp w7, w5
+    cset w7, eq
+    uxtb w7, w7
+    movz x8, #32
+    cmp w1, w8
+    csel w1, w6, w5, cc
     uxtb w1, w1
     uxtb w1, w1
-    and w1, w1, w4
+    and w1, w1, w3
     uxtb w1, w1
     uxtb w1, w1
     cmp w1, w5
-    csel x2, x2, x3, ne
-    movz x3, #2
-    orr x3, x3, x2
+    csel x2, x2, x4, ne
+    movz x4, #2
+    orr x4, x4, x2
     cmp w1, w5
-    csel x1, x3, x2, eq
+    csel x1, x4, x2, eq
     movz x2, #4
     orr x2, x2, x1
-    movz x3, #69
-    uxtb w3, w3
-    bic w3, w0, w3
-    uxtb w3, w3
-    uxtb w3, w3
-    cmp w3, w5
+    movz x4, #69
+    bic w4, w0, w4
+    uxtb w4, w4
+    uxtb w4, w4
+    cmp w4, w5
     csel x1, x2, x1, eq
     movz x2, #8
     orr x2, x2, x1
-    cmp w0, w4
+    cmp w0, w3
     cset w0, ne
     uxtb w0, w0
-    and w0, w8, w0
+    and w0, w7, w0
     uxtb w0, w0
     cmp w0, #0
     csel x0, x2, x1, ne
@@ -684,52 +658,52 @@ main:
     stp x29, x30, [xzr, #80]
     movz x0, #5
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x19, x0
     movz x0, #0
-    bl 0xfffffe50
+    bl 0xfffffe6c
     mov x20, x0
     movz x0, #4
-    bl 0xfffffe50
+    bl 0xfffffe6c
     mov x21, x0
     movz x0, #61
-    bl 0xfffffebc
+    bl 0xfffffed4
     mov x22, x0
     movz x0, #63
     movz x1, #0
-    bl 0xffffff04
+    bl 0xffffff14
     mov x23, x0
     movz x0, #32
     movz x1, #7
-    bl 0xffffff04
+    bl 0xffffff14
     mov x24, x0
     movz x0, #5
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     movz x1, #5
-    bl 0xffffff30
+    bl 0xffffff40
     mov x25, x0
     movz x0, #4
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     movz x1, #6
-    bl 0xffffff30
+    bl 0xffffff40
     mov x26, x0
     movz x0, #1
     movz x1, #3
-    bl 0xffffff30
+    bl 0xffffff40
     mov x27, x0
     movz x1, #4
     movz x0, #4
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x28, x0
     movz x0, #6
     movz x1, #7
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x29, x0
     movz x1, #1
     movz x0, #1
-    bl 0xffffff04
+    bl 0xffffff14
     uxtb w1, w19
     movz x2, #256
     movz x3, #16384
@@ -763,7 +737,6 @@ main:
     uxtb w4, w4
     uxtb w4, w4
     movz x5, #127
-    uxtb w5, w5
     and w4, w4, w5
     uxtb w4, w4
     uxtb w4, w4
@@ -798,25 +771,24 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 digits:
-    movz x3, #3
-    movz x2, #1
-    uxtb w8, w2
-    sub x0, x0, x3
+    movz x8, #1
+    movz x2, #3
+    sub x0, x0, x2
     uxtb w0, w0
     uxtb w7, w0
     movz x6, #0
     lsl w5, w8, w7
-    sub x0, x1, x3
+    movz x4, #32
+    sub x0, x1, x2
     uxtb w0, w0
-    uxtb w4, w0
-    lsl w3, w8, w4
-    movz x2, #32
-    cmp w7, w2
+    uxtb w3, w0
+    lsl w2, w8, w3
+    cmp w7, w4
     csel w0, w5, w6, cc
     uxtb w0, w0
     uxtb w1, w0
-    cmp w4, w2
-    csel w0, w3, w6, cc
+    cmp w3, w4
+    csel w0, w2, w6, cc
     uxtb w0, w0
     uxtb w0, w0
     orr w0, w1, w0
@@ -824,26 +796,25 @@ digits:
     uxtb w0, w0
     ret
 around:
+    movz x8, #1
     movn x2, #1
-    movz x1, #1
-    uxtb w8, w1
     sub x1, x0, x2
     uxtb w1, w1
     uxtb w7, w1
     movz x6, #0
     lsl w5, w8, w7
+    movz x4, #32
     movz x1, #1
     add x0, x1, x0
     sub x0, x0, x2
     uxtb w0, w0
-    uxtb w4, w0
-    movz x3, #32
-    lsl w2, w8, w4
-    cmp w7, w3
+    uxtb w3, w0
+    lsl w2, w8, w3
+    cmp w7, w4
     csel w0, w5, w6, cc
     uxtb w0, w0
     uxtb w1, w0
-    cmp w4, w3
+    cmp w3, w4
     csel w0, w2, w6, cc
     uxtb w0, w0
     uxtb w0, w0
@@ -856,17 +827,15 @@ late:
     sub x0, x0, x1
     uxth w0, w0
     uxth w3, w0
+    movz x2, #0
     movz x0, #1
-    uxth w0, w0
-    lsl w2, w0, w3
-    movz x1, #0
+    lsl w1, w0, w3
     movz x0, #32
     cmp w3, w0
-    csel w0, w2, w1, cc
+    csel w0, w1, w2, cc
     uxth w0, w0
     uxth w1, w0
     movz x0, #512
-    uxth w0, w0
     orr w0, w1, w0
     uxth w0, w0
     ret
@@ -883,57 +852,53 @@ huge:
     orr x0, x2, x0
     ret
 tests:
-    movz x9, #1
-    uxtb w0, w0
-    movz x8, #0
-    movz x2, #1
-    uxtb w2, w2
+    movz x8, #1
+    uxtb w2, w0
+    movz x0, #1
+    movz x7, #0
     movz x3, #3
     sub x1, x1, x3
     uxtb w1, w1
-    uxtb w7, w1
-    movz x1, #0
-    uxtb w3, w1
-    lsr w6, w0, w7
-    movz x5, #0
-    bic w1, w2, w0
+    uxtb w4, w1
+    movz x6, #0
+    lsr w3, w2, w4
+    bic w1, w0, w2
     uxtb w1, w1
     uxtb w1, w1
-    cmp w1, w3
+    cmp w1, w6
     cset w1, eq
+    uxtb w5, w1
+    movz x1, #32
+    cmp w4, w1
+    csel w1, w3, w6, cc
     uxtb w1, w1
-    movz x4, #32
-    cmp w7, w4
-    csel w4, w6, w5, cc
-    uxtb w4, w4
-    uxtb w4, w4
-    and w4, w4, w2
-    uxtb w4, w4
-    uxtb w6, w4
-    cmp w6, w3
-    csel x5, x9, x8, ne
-    movz x4, #2
-    orr x4, x4, x5
-    cmp w6, w3
-    csel x6, x4, x5, eq
-    movz x4, #4
-    orr x5, x4, x6
-    movz x4, #69
-    uxtb w4, w4
-    bic w4, w0, w4
-    uxtb w4, w4
-    uxtb w4, w4
-    cmp w4, w3
-    csel x4, x5, x6, eq
-    movz x3, #8
-    orr x3, x3, x4
-    cmp w0, w2
+    uxtb w1, w1
+    and w1, w1, w0
+    uxtb w1, w1
+    uxtb w4, w1
+    cmp w4, w6
+    csel x3, x8, x7, ne
+    movz x1, #2
+    orr x1, x1, x3
+    cmp w4, w6
+    csel x4, x1, x3, eq
+    movz x1, #4
+    orr x3, x1, x4
+    movz x1, #69
+    bic w1, w2, w1
+    uxtb w1, w1
+    uxtb w1, w1
+    cmp w1, w6
+    csel x3, x3, x4, eq
+    movz x1, #8
+    orr x1, x1, x3
+    cmp w2, w0
     cset w0, ne
     uxtb w0, w0
-    and w0, w1, w0
+    and w0, w5, w0
     uxtb w0, w0
     cmp w0, #0
-    csel x0, x3, x4, ne
+    csel x0, x1, x3, ne
     ret
 main:
     sub sp, sp, #96
@@ -950,52 +915,52 @@ main:
     stp x29, x30, [xzr, #80]
     movz x0, #5
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x29, x0
     movz x0, #0
-    bl 0xfffffe50
+    bl 0xfffffe6c
     mov x28, x0
     movz x0, #4
-    bl 0xfffffe50
+    bl 0xfffffe6c
     mov x27, x0
     movz x0, #61
-    bl 0xfffffebc
+    bl 0xfffffed4
     mov x26, x0
     movz x0, #63
     movz x1, #0
-    bl 0xffffff04
+    bl 0xffffff14
     mov x25, x0
     movz x0, #32
     movz x1, #7
-    bl 0xffffff04
+    bl 0xffffff14
     mov x24, x0
     movz x0, #5
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     movz x1, #5
-    bl 0xffffff30
+    bl 0xffffff40
     mov x23, x0
     movz x0, #4
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     movz x1, #6
-    bl 0xffffff30
+    bl 0xffffff40
     mov x22, x0
     movz x0, #1
     movz x1, #3
-    bl 0xffffff30
+    bl 0xffffff40
     mov x21, x0
     movz x1, #4
     movz x0, #4
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x20, x0
     movz x0, #6
     movz x1, #7
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x19, x0
     movz x1, #1
     movz x0, #1
-    bl 0xffffff04
+    bl 0xffffff14
     uxtb w3, w29
     movz x2, #256
     movz x1, #16384
@@ -1029,7 +994,6 @@ main:
     uxtb w3, w3
     uxtb w4, w3
     movz x3, #127
-    uxtb w3, w3
     and w3, w4, w3
     uxtb w3, w3
     uxtb w3, w3
@@ -1064,25 +1028,24 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 digits:
-    movz x3, #3
-    movz x2, #1
-    uxtb w8, w2
-    sub x0, x0, x3
+    movz x8, #1
+    movz x2, #3
+    sub x0, x0, x2
     uxtb w0, w0
     uxtb w7, w0
     movz x6, #0
     lsl w5, w8, w7
-    sub x0, x1, x3
+    movz x4, #32
+    sub x0, x1, x2
     uxtb w0, w0
-    uxtb w4, w0
-    lsl w3, w8, w4
-    movz x2, #32
-    cmp w7, w2
+    uxtb w3, w0
+    lsl w2, w8, w3
+    cmp w7, w4
     csel w0, w5, w6, cc
     uxtb w0, w0
     uxtb w1, w0
-    cmp w4, w2
-    csel w0, w3, w6, cc
+    cmp w3, w4
+    csel w0, w2, w6, cc
     uxtb w0, w0
     uxtb w0, w0
     orr w0, w1, w0
@@ -1090,26 +1053,25 @@ digits:
     uxtb w0, w0
     ret
 around:
+    movz x8, #1
     movn x2, #1
-    movz x1, #1
-    uxtb w8, w1
     sub x1, x0, x2
     uxtb w1, w1
     uxtb w7, w1
     movz x6, #0
     lsl w5, w8, w7
+    movz x4, #32
     movz x1, #1
     add x0, x1, x0
     sub x0, x0, x2
     uxtb w0, w0
-    uxtb w4, w0
-    movz x3, #32
-    lsl w2, w8, w4
-    cmp w7, w3
+    uxtb w3, w0
+    lsl w2, w8, w3
+    cmp w7, w4
     csel w0, w5, w6, cc
     uxtb w0, w0
     uxtb w1, w0
-    cmp w4, w3
+    cmp w3, w4
     csel w0, w2, w6, cc
     uxtb w0, w0
     uxtb w0, w0
@@ -1122,17 +1084,15 @@ late:
     sub x0, x0, x1
     uxth w0, w0
     uxth w3, w0
+    movz x2, #0
     movz x0, #1
-    uxth w0, w0
-    lsl w2, w0, w3
-    movz x1, #0
+    lsl w1, w0, w3
     movz x0, #32
     cmp w3, w0
-    csel w0, w2, w1, cc
+    csel w0, w1, w2, cc
     uxth w0, w0
     uxth w1, w0
     movz x0, #512
-    uxth w0, w0
     orr w0, w1, w0
     uxth w0, w0
     ret
@@ -1149,57 +1109,53 @@ huge:
     orr x0, x2, x0
     ret
 tests:
-    movz x9, #1
-    uxtb w0, w0
-    movz x8, #0
-    movz x2, #1
-    uxtb w2, w2
+    movz x8, #1
+    uxtb w2, w0
+    movz x0, #1
+    movz x7, #0
     movz x3, #3
     sub x1, x1, x3
     uxtb w1, w1
-    uxtb w7, w1
-    movz x1, #0
-    uxtb w3, w1
-    lsr w6, w0, w7
-    movz x5, #0
-    bic w1, w2, w0
+    uxtb w4, w1
+    movz x6, #0
+    lsr w3, w2, w4
+    bic w1, w0, w2
     uxtb w1, w1
     uxtb w1, w1
-    cmp w1, w3
+    cmp w1, w6
     cset w1, eq
+    uxtb w5, w1
+    movz x1, #32
+    cmp w4, w1
+    csel w1, w3, w6, cc
     uxtb w1, w1
-    movz x4, #32
-    cmp w7, w4
-    csel w4, w6, w5, cc
-    uxtb w4, w4
-    uxtb w4, w4
-    and w4, w4, w2
-    uxtb w4, w4
-    uxtb w6, w4
-    cmp w6, w3
-    csel x5, x9, x8, ne
-    movz x4, #2
-    orr x4, x4, x5
-    cmp w6, w3
-    csel x6, x4, x5, eq
-    movz x4, #4
-    orr x5, x4, x6
-    movz x4, #69
-    uxtb w4, w4
-    bic w4, w0, w4
-    uxtb w4, w4
-    uxtb w4, w4
-    cmp w4, w3
-    csel x4, x5, x6, eq
-    movz x3, #8
-    orr x3, x3, x4
-    cmp w0, w2
+    uxtb w1, w1
+    and w1, w1, w0
+    uxtb w1, w1
+    uxtb w4, w1
+    cmp w4, w6
+    csel x3, x8, x7, ne
+    movz x1, #2
+    orr x1, x1, x3
+    cmp w4, w6
+    csel x4, x1, x3, eq
+    movz x1, #4
+    orr x3, x1, x4
+    movz x1, #69
+    bic w1, w2, w1
+    uxtb w1, w1
+    uxtb w1, w1
+    cmp w1, w6
+    csel x3, x3, x4, eq
+    movz x1, #8
+    orr x1, x1, x3
+    cmp w2, w0
     cset w0, ne
     uxtb w0, w0
-    and w0, w1, w0
+    and w0, w5, w0
     uxtb w0, w0
     cmp w0, #0
-    csel x0, x3, x4, ne
+    csel x0, x1, x3, ne
     ret
 main:
     sub sp, sp, #96
@@ -1216,52 +1172,52 @@ main:
     stp x29, x30, [xzr, #80]
     movz x0, #5
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x29, x0
     movz x0, #0
-    bl 0xfffffe50
+    bl 0xfffffe6c
     mov x28, x0
     movz x0, #4
-    bl 0xfffffe50
+    bl 0xfffffe6c
     mov x27, x0
     movz x0, #61
-    bl 0xfffffebc
+    bl 0xfffffed4
     mov x26, x0
     movz x0, #63
     movz x1, #0
-    bl 0xffffff04
+    bl 0xffffff14
     mov x25, x0
     movz x0, #32
     movz x1, #7
-    bl 0xffffff04
+    bl 0xffffff14
     mov x24, x0
     movz x0, #5
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     movz x1, #5
-    bl 0xffffff30
+    bl 0xffffff40
     mov x23, x0
     movz x0, #4
     movz x1, #9
-    bl 0xfffffdec
+    bl 0xfffffe0c
     movz x1, #6
-    bl 0xffffff30
+    bl 0xffffff40
     mov x22, x0
     movz x0, #1
     movz x1, #3
-    bl 0xffffff30
+    bl 0xffffff40
     mov x21, x0
     movz x1, #4
     movz x0, #4
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x20, x0
     movz x0, #6
     movz x1, #7
-    bl 0xfffffdec
+    bl 0xfffffe0c
     mov x19, x0
     movz x1, #1
     movz x0, #1
-    bl 0xffffff04
+    bl 0xffffff14
     uxtb w3, w29
     movz x2, #256
     movz x1, #16384
@@ -1295,7 +1251,6 @@ main:
     uxtb w3, w3
     uxtb w4, w3
     movz x3, #127
-    uxtb w3, w3
     and w3, w4, w3
     uxtb w3, w3
     uxtb w3, w3
@@ -1330,25 +1285,51 @@ main:
     ret
 =========== OPT LEVEL: aggresive ===========
 digits:
-    movz x3, #3
-    movz x2, #1
-    uxtb w8, w2
-    sub x0, x0, x3
+    movz x8, #1
+    movz x2, #3
+    sub x0, x0, x2
     uxtb w0, w0
     uxtb w7, w0
     movz x6, #0
     lsl w5, w8, w7
-    sub x0, x1, x3
+    movz x4, #32
+    sub x0, x1, x2
     uxtb w0, w0
-    uxtb w4, w0
-    lsl w3, w8, w4
-    movz x2, #32
-    cmp w7, w2
+    uxtb w3, w0
+    lsl w2, w8, w3
+    cmp w7, w4
     csel w0, w5, w6, cc
     uxtb w0, w0
     uxtb w1, w0
-    cmp w4, w2
-    csel w0, w3, w6, cc
+    cmp w3, w4
+    csel w0, w2, w6, cc
+    uxtb w0, w0
+    uxtb w0, w0
+    orr w0, w1, w0
+    orr w0, w0, w8
+    uxtb w0, w0
+    ret
+around:
+    movz x8, #1
+    movn x2, #1
+    sub x1, x0, x2
+    uxtb w1, w1
+    uxtb w7, w1
+    movz x6, #0
+    lsl w5, w8, w7
+    movz x4, #32
+    movz x1, #1
+    add x0, x1, x0
+    sub x0, x0, x2
+    uxtb w0, w0
+    uxtb w3, w0
+    lsl w2, w8, w3
+    cmp w7, w4
+    csel w0, w5, w6, cc
+    uxtb w0, w0
+    uxtb w1, w0
+    cmp w3, w4
+    csel w0, w2, w6, cc
     uxtb w0, w0
     uxtb w0, w0
     orr w0, w1, w0
@@ -1356,105 +1337,109 @@ digits:
     uxtb w0, w0
     ret
 tests:
-    movz x9, #1
-    uxtb w0, w0
-    movz x8, #0
-    movz x2, #1
-    uxtb w2, w2
+    movz x8, #1
+    uxtb w2, w0
+    movz x0, #1
+    movz x7, #0
     movz x3, #3
     sub x1, x1, x3
     uxtb w1, w1
-    uxtb w7, w1
-    movz x1, #0
-    uxtb w3, w1
-    lsr w6, w0, w7
-    movz x5, #0
-    bic w1, w2, w0
+    uxtb w4, w1
+    movz x6, #0
+    lsr w3, w2, w4
+    bic w1, w0, w2
     uxtb w1, w1
     uxtb w1, w1
-    cmp w1, w3
+    cmp w1, w6
     cset w1, eq
+    uxtb w5, w1
+    movz x1, #32
+    cmp w4, w1
+    csel w1, w3, w6, cc
     uxtb w1, w1
-    movz x4, #32
-    cmp w7, w4
-    csel w4, w6, w5, cc
-    uxtb w4, w4
-    uxtb w4, w4
-    and w4, w4, w2
-    uxtb w4, w4
-    uxtb w6, w4
-    cmp w6, w3
-    csel x5, x9, x8, ne
-    movz x4, #2
-    orr x4, x4, x5
-    cmp w6, w3
-    csel x6, x4, x5, eq
-    movz x4, #4
-    orr x5, x4, x6
-    movz x4, #69
-    uxtb w4, w4
-    bic w4, w0, w4
-    uxtb w4, w4
-    uxtb w4, w4
-    cmp w4, w3
-    csel x4, x5, x6, eq
-    movz x3, #8
-    orr x3, x3, x4
-    cmp w0, w2
+    uxtb w1, w1
+    and w1, w1, w0
+    uxtb w1, w1
+    uxtb w4, w1
+    cmp w4, w6
+    csel x3, x8, x7, ne
+    movz x1, #2
+    orr x1, x1, x3
+    cmp w4, w6
+    csel x4, x1, x3, eq
+    movz x1, #4
+    orr x3, x1, x4
+    movz x1, #69
+    bic w1, w2, w1
+    uxtb w1, w1
+    uxtb w1, w1
+    cmp w1, w6
+    csel x3, x3, x4, eq
+    movz x1, #8
+    orr x1, x1, x3
+    cmp w2, w0
     cset w0, ne
     uxtb w0, w0
-    and w0, w1, w0
+    and w0, w5, w0
     uxtb w0, w0
     cmp w0, #0
-    csel x0, x3, x4, ne
+    csel x0, x1, x3, ne
     ret
 main:
-    sub sp, sp, #64
+    sub sp, sp, #80
     str x19, [xzr]
     str x20, [xzr, #8]
     str x21, [xzr, #16]
     str x22, [xzr, #24]
     str x23, [xzr, #32]
-    stp x29, x30, [xzr, #40]
+    str x24, [xzr, #40]
+    str x25, [xzr, #48]
+    stp x29, x30, [xzr, #56]
     movz x0, #5
     movz x1, #9
-    bl 0xfffffecc
+    bl 0xfffffe78
     mov x19, x0
+    movz x0, #0
+    bl 0xfffffed8
+    mov x25, x0
+    movz x0, #4
+    bl 0xfffffed8
+    mov x24, x0
     movz x0, #5
     movz x1, #9
-    bl 0xfffffecc
+    bl 0xfffffe78
     movz x1, #5
-    bl 0xffffff30
+    bl 0xffffff40
     mov x23, x0
     movz x0, #4
     movz x1, #9
-    bl 0xfffffecc
+    bl 0xfffffe78
     movz x1, #6
-    bl 0xffffff30
+    bl 0xffffff40
     mov x22, x0
     movz x0, #1
     movz x1, #3
-    bl 0xffffff30
+    bl 0xffffff40
     mov x21, x0
-    movz x0, #4
     movz x1, #4
-    bl 0xfffffecc
+    movz x0, #4
+    bl 0xfffffe78
     mov x20, x0
     movz x1, #7
     movz x0, #6
-    bl 0xfffffecc
+    bl 0xfffffe78
     uxtb w3, w19
     movz x2, #256
     movz x1, #16384
     movk x1, #7, lsl #16
     add x1, x3, x1
     madd x3, x1, x2, xzr
-    movz x1, #13
+    uxtb w1, w25
     add x1, x3, x1
-    madd x4, x1, x2, xzr
+    madd x3, x1, x2, xzr
+    uxtb w1, w24
+    add x4, x3, x1
     movz x1, #16
-    movz x3, #193
-    add x4, x4, x3
     movz x3, #0
     movk x3, #1, lsl #16
     madd x4, x4, x3, xzr
@@ -1475,7 +1460,6 @@ main:
     add x3, x4, x21
     madd x4, x3, x2, xzr
     movz x3, #127
-    uxtb w3, w3
     and w3, w5, w3
     uxtb w3, w3
     uxtb w3, w3
@@ -1497,6 +1481,8 @@ main:
     ldr x21, [xzr, #16]
     ldr x22, [xzr, #24]
     ldr x23, [xzr, #32]
-    ldp x29, x30, [xzr, #40]
-    add sp, sp, #64
+    ldr x24, [xzr, #40]
+    ldr x25, [xzr, #48]
+    ldp x29, x30, [xzr, #56]
+    add sp, sp, #80
     ret

@@ -513,7 +513,7 @@ Opt_Flag :: enum int {
 
 Peep_Ctx :: struct {
 	using prc:       ^Proc,
-	using opt_hints: Opt_Hints,
+	using opt_hints: Opt_Config,
 }
 
 ensure_spec_pass_match :: #force_inline proc(ctx: ^Proc) {

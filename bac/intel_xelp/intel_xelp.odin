@@ -92,7 +92,7 @@ when SPEC_NOT_PRESENT {
 }
 
 @(tag = "api", rodata, export, link_name = "bac_intel_xelp_OPT_HINTS")
-OPT_HINTS := bac.Opt_Hints{}
+OPT_HINTS := bac.Opt_Config{}
 
 @(tag = "api", rodata, export, link_name = "bac_intel_xelp_CC_TABLE")
 CC_TABLE := [1]bac.Call_Conv {

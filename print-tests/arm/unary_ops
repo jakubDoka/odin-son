@@ -6,7 +6,6 @@ Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 test_not_reg:
     uxtb w0, w0
     movz x1, #0
-    uxtb w1, w1
     cmp w0, w1
     cset w0, eq
     ret
@@ -14,7 +13,6 @@ test_not_i8:
     ldrb w1, [x0]
     uxtb w1, w1
     movz x2, #0
-    uxtb w2, w2
     cmp w1, w2
     cset w1, eq
     strb w1, [x0]
@@ -74,10 +72,10 @@ main:
     add x1, sp, #190
     str x0, [x1]
     movz x0, #0
-    bl 0xffffffa0
+    bl 0xffffffa8
     mov x19, x0
     movz x0, #1
-    bl 0xffffffa0
+    bl 0xffffffa8
     mov x20, x0
     movz x0, #123
     bl 0xffffffdc
@@ -104,10 +102,10 @@ main:
     bl 0x2cc
     mov x28, x0
     add x0, sp, #182
-    bl test_bitnot i16
+    bl 0x2e0
     mov x29, x0
     add x0, sp, #190
-    bl 0x2f4
+    bl test_bitnot u16
     str x0, [xzr, #96]
     movz x0, #7
     bl 0xffffffe4
@@ -116,10 +114,10 @@ main:
     bl 0x308
     str x0, [xzr, #112]
     add x0, sp, #169
-    bl 0x324
+    bl test_bitnot u32
     str x0, [xzr, #120]
     add x0, sp, #170
-    bl test_bitnot i64
+    bl 0x340
     str x0, [xzr, #128]
     add x0, sp, #172
     bl 0x35c
@@ -131,10 +129,10 @@ main:
     bl 0x38c
     str x0, [xzr, #152]
     add x0, sp, #182
-    bl test_neg i16
+    bl 0x3a0
     str x0, [xzr, #160]
     add x0, sp, #190
-    bl 0x3b4
+    bl test_neg u16
     uxtb w1, w19
     uxtb w2, w20
     add x1, x1, x2
@@ -299,7 +297,6 @@ Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 test_not_reg:
     uxtb w1, w0
     movz x0, #0
-    uxtb w0, w0
     cmp w1, w0
     cset w0, eq
     ret
@@ -307,7 +304,6 @@ test_not_i8:
     ldrb w1, [x0]
     uxtb w2, w1
     movz x1, #0
-    uxtb w1, w1
     cmp w2, w1
     cset w2, eq
     strb w2, [x0]
@@ -367,10 +363,10 @@ main:
     add x0, sp, #190
     str x1, [x0]
     movz x0, #0
-    bl 0xffffffa0
+    bl 0xffffffa8
     str x0, [xzr, #160]
     movz x0, #1
-    bl 0xffffffa0
+    bl 0xffffffa8
     str x0, [xzr, #152]
     movz x0, #123
     bl 0xffffffdc
@@ -397,10 +393,10 @@ main:
     bl 0x2cc
     mov x29, x0
     add x0, sp, #182
-    bl test_bitnot i16
+    bl 0x2e0
     mov x28, x0
     add x0, sp, #190
-    bl 0x2f4
+    bl test_bitnot u16
     mov x27, x0
     movz x0, #7
     bl 0xffffffe4
@@ -409,10 +405,10 @@ main:
     bl 0x308
     mov x25, x0
     add x0, sp, #169
-    bl 0x324
+    bl test_bitnot u32
     mov x24, x0
     add x0, sp, #170
-    bl test_bitnot i64
+    bl 0x340
     mov x23, x0
     add x0, sp, #172
     bl 0x35c
@@ -424,10 +420,10 @@ main:
     bl 0x38c
     mov x20, x0
     add x0, sp, #182
-    bl test_neg i16
+    bl 0x3a0
     mov x19, x0
     add x0, sp, #190
-    bl 0x3b4
+    bl test_neg u16
     ldr x1, [xzr, #160]
     uxtb w2, w1
     ldr x1, [xzr, #152]
@@ -592,7 +588,6 @@ Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 test_not_reg:
     uxtb w0, w0
     movz x1, #0
-    uxtb w1, w1
     cmp w0, w1
     cset w0, eq
     ret
@@ -600,7 +595,6 @@ test_not_i8:
     ldrb w1, [x0]
     uxtb w1, w1
     movz x2, #0
-    uxtb w2, w2
     cmp w1, w2
     cset w1, eq
     strb w1, [x0]
@@ -660,10 +654,10 @@ main:
     add x1, sp, #190
     str x0, [x1]
     movz x0, #0
-    bl 0xffffffa0
+    bl 0xffffffa8
     mov x19, x0
     movz x0, #1
-    bl 0xffffffa0
+    bl 0xffffffa8
     mov x20, x0
     movz x0, #123
     bl 0xffffffdc
@@ -690,10 +684,10 @@ main:
     bl 0x2cc
     mov x28, x0
     add x0, sp, #182
-    bl test_bitnot i16
+    bl 0x2e0
     mov x29, x0
     add x0, sp, #190
-    bl 0x2f4
+    bl test_bitnot u16
     str x0, [xzr, #96]
     movz x0, #7
     bl 0xffffffe4
@@ -702,10 +696,10 @@ main:
     bl 0x308
     str x0, [xzr, #112]
     add x0, sp, #169
-    bl 0x324
+    bl test_bitnot u32
     str x0, [xzr, #120]
     add x0, sp, #170
-    bl test_bitnot i64
+    bl 0x340
     str x0, [xzr, #128]
     add x0, sp, #172
     bl 0x35c
@@ -717,10 +711,10 @@ main:
     bl 0x38c
     str x0, [xzr, #152]
     add x0, sp, #182
-    bl test_neg i16
+    bl 0x3a0
     str x0, [xzr, #160]
     add x0, sp, #190
-    bl 0x3b4
+    bl test_neg u16
     uxtb w1, w19
     uxtb w2, w20
     add x1, x1, x2
@@ -885,7 +879,6 @@ Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 test_not_reg:
     uxtb w1, w0
     movz x0, #0
-    uxtb w0, w0
     cmp w1, w0
     cset w0, eq
     ret
@@ -893,7 +886,6 @@ test_not_i8:
     ldrb w1, [x0]
     uxtb w2, w1
     movz x1, #0
-    uxtb w1, w1
     cmp w2, w1
     cset w2, eq
     strb w2, [x0]
@@ -953,10 +945,10 @@ main:
     add x0, sp, #190
     str x1, [x0]
     movz x0, #0
-    bl 0xffffffa0
+    bl 0xffffffa8
     str x0, [xzr, #160]
     movz x0, #1
-    bl 0xffffffa0
+    bl 0xffffffa8
     str x0, [xzr, #152]
     movz x0, #123
     bl 0xffffffdc
@@ -983,10 +975,10 @@ main:
     bl 0x2cc
     mov x29, x0
     add x0, sp, #182
-    bl test_bitnot i16
+    bl 0x2e0
     mov x28, x0
     add x0, sp, #190
-    bl 0x2f4
+    bl test_bitnot u16
     mov x27, x0
     movz x0, #7
     bl 0xffffffe4
@@ -995,10 +987,10 @@ main:
     bl 0x308
     mov x25, x0
     add x0, sp, #169
-    bl 0x324
+    bl test_bitnot u32
     mov x24, x0
     add x0, sp, #170
-    bl test_bitnot i64
+    bl 0x340
     mov x23, x0
     add x0, sp, #172
     bl 0x35c
@@ -1010,10 +1002,10 @@ main:
     bl 0x38c
     mov x20, x0
     add x0, sp, #182
-    bl test_neg i16
+    bl 0x3a0
     mov x19, x0
     add x0, sp, #190
-    bl 0x3b4
+    bl test_neg u16
     ldr x1, [xzr, #160]
     uxtb w2, w1
     ldr x1, [xzr, #152]
@@ -1178,7 +1170,6 @@ Error{inst_idx = 20, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 test_not_reg:
     uxtb w1, w0
     movz x0, #0
-    uxtb w0, w0
     cmp w1, w0
     cset w0, eq
     ret
@@ -1186,7 +1177,6 @@ test_not_i8:
     ldrb w1, [x0]
     uxtb w2, w1
     movz x1, #0
-    uxtb w1, w1
     cmp w2, w1
     cset w2, eq
     strb w2, [x0]
@@ -1246,10 +1236,10 @@ main:
     add x0, sp, #190
     str x1, [x0]
     movz x0, #0
-    bl 0xffffffa0
+    bl 0xffffffa8
     str x0, [xzr, #160]
     movz x0, #1
-    bl 0xffffffa0
+    bl 0xffffffa8
     str x0, [xzr, #152]
     movz x0, #123
     bl 0xffffffdc
@@ -1276,10 +1266,10 @@ main:
     bl 0x2cc
     mov x29, x0
     add x0, sp, #182
-    bl test_bitnot i16
+    bl 0x2e0
     mov x28, x0
     add x0, sp, #190
-    bl 0x2f4
+    bl test_bitnot u16
     mov x27, x0
     movz x0, #7
     bl 0xffffffe4
@@ -1288,10 +1278,10 @@ main:
     bl 0x308
     mov x25, x0
     add x0, sp, #169
-    bl 0x324
+    bl test_bitnot u32
     mov x24, x0
     add x0, sp, #170
-    bl test_bitnot i64
+    bl 0x340
     mov x23, x0
     add x0, sp, #172
     bl 0x35c
@@ -1303,10 +1293,10 @@ main:
     bl 0x38c
     mov x20, x0
     add x0, sp, #182
-    bl test_neg i16
+    bl 0x3a0
     mov x19, x0
     add x0, sp, #190
-    bl 0x3b4
+    bl test_neg u16
     ldr x1, [xzr, #160]
     uxtb w2, w1
     ldr x1, [xzr, #152]
@@ -1468,7 +1458,6 @@ test_not_i8:
     ldrb w1, [x0]
     uxtb w2, w1
     movz x1, #0
-    uxtb w1, w1
     cmp w2, w1
     cset w2, eq
     strb w2, [x0]

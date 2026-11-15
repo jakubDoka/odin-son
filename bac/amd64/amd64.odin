@@ -89,7 +89,7 @@ AMD64_SYSTEMV_CC :: 0
 AMD64_LINUX_SYSCALL_CC :: 1
 
 @(tag = "api", rodata, export, link_name = "bac_amd64_OPT_HINTS")
-OPT_HINTS := bac.Opt_Hints {
+OPT_HINTS := bac.Opt_Config {
 	select_types = {.I8, .I16, .I32, .I64},
 }
 
@@ -221,10 +221,7 @@ BIN_OP_OFFSET :: transmute(u16)(i16(Node_Type.AMD64_Add) -
 UN_OP_OFFSET :: transmute(u16)(i16(Node_Type.AMD64_Neg) -
 	i16(bac.Node_Type.Neg))
 
-peep :: proc(
-	ctx: bac.Peep_Ctx,
-	node: $N/bac.Expanded_Node,
-) -> Maybe(Node_ID) {
+peep :: proc(ctx: bac.Peep_Ctx, node: $N/bac.Expanded_Node) -> Maybe(Node_ID) {
 	node := node
 
 	addr_add_offset :: proc(
@@ -2746,13 +2743,7 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: Node_ID, is_consecutive: bool) {
 	next_sloc(ctx)
 }
 
-condition_for :: proc(
-	ctx: ^$C/Ctx,
-	id: Node_ID,
-) -> (
-	cc: u8,
-	unordered: bool,
-) {
+condition_for :: proc(ctx: ^$C/Ctx, id: Node_ID) -> (cc: u8, unordered: bool) {
 	id := id
 	@(static, rodata)
 	CONDITIONS := #partial [Node_Type][2]u8 {

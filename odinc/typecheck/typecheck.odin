@@ -51,7 +51,7 @@ Target :: struct {
 	name:      string,
 	cc:        ^Call_Conv,
 	spec:      ^bac.Node_Spec,
-	opt_hints: bac.Opt_Hints,
+	opt_hints: bac.Opt_Config,
 	emit:      proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8,
 }
 
@@ -571,7 +571,16 @@ in_set :: proc(ty: Type, set: bit_set[Type]) -> bool {
 	return ty <= .U128 && ty in set
 }
 
-UNSIGNED_TYPES :: bit_set[Type]{.Uint, .U64, .U32, .U16, .U8, .Bool, .Uintptr, .U128}
+UNSIGNED_TYPES :: bit_set[Type] {
+	.Uint,
+	.U64,
+	.U32,
+	.U16,
+	.U8,
+	.Bool,
+	.Uintptr,
+	.U128,
+}
 SIGNED_TYPES :: bit_set[Type]{.Int, .I64, .I32, .I16, .I8, .I128}
 // the 128-bit integers have no backend datatype, they live in memory as a
 // pair of 64-bit halves, low half first
@@ -2296,7 +2305,12 @@ typecheck :: proc(
 		} else {
 			bs.underlying = emit_type(ctx, d.underlying)
 			if is_wide(bs.underlying) {
-				ty = error(ctx, d.underlying, "TODO: bit_sets backed by %v", bs.underlying)
+				ty = error(
+					ctx,
+					d.underlying,
+					"TODO: bit_sets backed by %v",
+					bs.underlying,
+				)
 				break match
 			}
 			if !in_set(bs.underlying, INTEGER_TYPES) ||
@@ -2337,7 +2351,12 @@ typecheck :: proc(
 			break match
 		}
 		if is_wide(bf.backing) {
-			ty = error(ctx, d.backing_type, "TODO: bit_fields backed by %v", bf.backing)
+			ty = error(
+				ctx,
+				d.backing_type,
+				"TODO: bit_fields backed by %v",
+				bf.backing,
+			)
 			break match
 		}
 		if !in_set(bf.backing, INTEGER_TYPES) || strip_named(bf.backing) == .Bool {
@@ -2793,7 +2812,8 @@ typecheck :: proc(
 				}
 				mask |= 1 << u64(i64(res.int) - bs.lower)
 			}
-			ty = known ? tcmeta(ctx, set_ty, {uint = u128(mask)}) : tmeta(ctx, set_ty)
+			ty =
+				known ? tcmeta(ctx, set_ty, {uint = u128(mask)}) : tmeta(ctx, set_ty)
 			break match
 		}
 
@@ -2830,7 +2850,8 @@ typecheck :: proc(
 				}
 				error(ctx, fv.field, "%v has no field %q", set_ty, name)
 			}
-			ty = known ? tcmeta(ctx, set_ty, {uint = u128(packed)}) : tmeta(ctx, set_ty)
+			ty =
+				known ? tcmeta(ctx, set_ty, {uint = u128(packed)}) : tmeta(ctx, set_ty)
 			break match
 		}
 
@@ -2928,7 +2949,11 @@ typecheck :: proc(
 			gi_ensure_stored(ctx, prop, data)
 
 			gi_set_offset(&prop, 8)
-			gi_ensure_stored(ctx, prop, tcmeta(ctx, .Int, {int = i128(len(d.elems))}))
+			gi_ensure_stored(
+				ctx,
+				prop,
+				tcmeta(ctx, .Int, {int = i128(len(d.elems))}),
+			)
 		case:
 			ty = error(
 				ctx,
@@ -3110,7 +3135,11 @@ typecheck :: proc(
 
 				if base.known && (should_be_known || !base.lvalue && !through_ptr) {
 					packed := global_load(ctx, base)
-					ty = tcmeta(ctx, member.ty, bit_field_extract(member, u64(packed.uint)))
+					ty = tcmeta(
+						ctx,
+						member.ty,
+						bit_field_extract(member, u64(packed.uint)),
+					)
 					break match
 				}
 
@@ -3890,7 +3919,11 @@ typecheck :: proc(
 			) or_break match
 			ty = tmeta(ctx, .Int)
 			if set.known {
-				ty = tcmeta(ctx, .Int, {int = i128(intrinsics.count_ones(u64(set.uint)))})
+				ty = tcmeta(
+					ctx,
+					.Int,
+					{int = i128(intrinsics.count_ones(u64(set.uint)))},
+				)
 			}
 			break match
 		}
@@ -3954,7 +3987,13 @@ typecheck :: proc(
 					break match
 				}
 				if is_wide(a.type) {
-					ty = error(ctx, args[0], "TODO: %v of %v", callee.lit.intrinsic, a.type)
+					ty = error(
+						ctx,
+						args[0],
+						"TODO: %v of %v",
+						callee.lit.intrinsic,
+						a.type,
+					)
 					break match
 				}
 				ty = tmeta(ctx, a.type)

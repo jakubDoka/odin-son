@@ -54,8 +54,9 @@ V30, V31 :: Reg(V_BANK | 30), Reg(V_BANK | 31)
 ARM_SYSTEMV_CC :: 0
 
 @(tag = "api", rodata, export, link_name = "bac_arm_OPT_HINTS")
-OPT_HINTS := bac.Opt_Hints {
-	select_types = {.I8, .I16, .I32, .I64, .F32, .F64},
+OPT_HINTS := bac.Opt_Config {
+	select_types  = {.I8, .I16, .I32, .I64, .F32, .F64},
+	smallest_type = .I32,
 }
 
 @(tag = "api", rodata, export, link_name = "bac_arm_CC_TABLE")
@@ -162,38 +163,6 @@ peep :: proc(
 ) -> Maybe(bac.Node_ID) {
 	id := bac.get_node_id(ctx, node)
 	kind := atype(node)
-
-	#partial switch kind {
-	case .Add ..= .U_Rem, .And_Not, .Neg, .Not:
-		NARROW_DTS :: bit_set[bac.Node_Datatype]{.I8, .I16}
-		if node.dt in bac.VECTOR_DTS ||
-		   bac.operation_datatype(ctx, node) not_in NARROW_DTS {
-			break
-		}
-
-		signed := kind in bit_set[Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
-		ext: bac.Un_Op = signed ? .Conv : .U_Conv
-		inps: [2]bac.Node_ID
-		for inp, i in node.inps {
-			inps[i] = inp
-			inp_dt := get_node(ctx, inp).dt
-			if inp_dt in NARROW_DTS {
-				inp_ext := ext
-				if .Shl <= kind && kind <= .U_Shr && i == 1 do inp_ext = .U_Conv
-				inps[i] = bac.add_un_op(ctx, "iext", inp_ext, .I32, inp)
-				bac.worklist_add(ctx, ctx.worklist, inps[i])
-			}
-		}
-
-		comparison := .Eq <= kind && kind <= .U_Ge
-		dt := comparison ? node.dt : bac.Node_Datatype.I32
-		wide := bac.add_raw(ctx, "iwide", node.rtype, dt, inps[:len(node.inps)])
-		bac.worklist_add(ctx, ctx.worklist, wide)
-		if comparison do return wide
-
-		// Consumers must still observe overflow at the original width, including stores.
-		return bac.add_un_op(ctx, "inar", .U_Conv, node.dt, wide)
-	}
 
 	#partial switch kind {
 	case .Shl ..= .U_Shr:
@@ -419,11 +388,7 @@ meta_of :: #force_inline proc(
 		unreachable()
 	case:
 		fallthrough
-	case .Nil ..=
-	     .Dbg_Scope,
-	     .Simd_Extract_Lsbs,
-	     .Simd_Extract_Msbs,
-	     .Popcnt:
+	case .Nil ..= .Dbg_Scope, .Simd_Extract_Lsbs, .Simd_Extract_Msbs, .Popcnt:
 		fmt.panicf("should not reach this: %v", node)
 	case .Poison ..= .Global, .Jump, .Always, .Trap:
 		return {out = IOUT}
@@ -648,11 +613,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 }
 
 @(disabled = SPEC_NOT_PRESENT)
-emit_instr :: proc(
-	ctx: ^$C/Ctx,
-	instr: bac.Node_ID,
-	is_consecutive: bool,
-) {
+emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, is_consecutive: bool) {
 	Cond :: enum u8 {
 		EQ,
 		NE,

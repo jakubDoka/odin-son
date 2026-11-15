@@ -28,8 +28,9 @@ SPEC_NOT_PRESENT :: (#load("node_specs.odin", string) or_else "") == ""
 WASM_SYSTEMV_CC :: 0
 
 @(tag = "api", rodata, export, link_name = "bac_wasm_OPT_HINTS")
-OPT_HINTS := bac.Opt_Hints {
-	select_types = ~{.Mem, .Void},
+OPT_HINTS := bac.Opt_Config {
+	select_types  = ~{.Mem, .Void},
+	smallest_type = .I32,
 }
 
 @(tag = "api", rodata, export, link_name = "bac_wasm_CC_TABLE")
@@ -99,6 +100,7 @@ peep :: proc(
 		inp = expand_node(ctx, node.inps[0])
 	}
 	kind := wtype(node)
+
 	#partial switch kind {
 	case .Simd_Extract_Lsbs:
 		assert(node.itype == .Simd_Extract_Lsbs)
@@ -126,38 +128,6 @@ peep :: proc(
 			lsbssh,
 			lane = node.lane,
 		)
-	case .Add ..= .U_Rem, .And_Not, .Neg, .Not:
-		NARROW_DTS :: bit_set[bac.Node_Datatype]{.I8, .I16}
-		if node.dt in bac.VECTOR_DTS ||
-		   bac.operation_datatype(ctx, node) not_in NARROW_DTS {
-			break
-		}
-
-		signed := kind in bit_set[Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
-		ext: bac.Un_Op = signed ? .Conv : .U_Conv
-		inps: [2]bac.Node_ID
-		for inp, i in node.inps {
-			inps[i] = inp
-			inp_dt := get_node(ctx, inp).dt
-			if inp_dt in NARROW_DTS {
-				inp_ext := ext
-				if .Shl <= kind && kind <= .U_Shr && i == 1 do inp_ext = .U_Conv
-				inps[i] = bac.add_un_op(ctx, "iext", inp_ext, .I32, inp)
-				bac.worklist_add(ctx, ctx.worklist, inps[i])
-			}
-		}
-
-		comparison := .Eq <= kind && kind <= .U_Ge
-		dt := comparison ? node.dt : bac.Node_Datatype.I32
-		wide := bac.add_raw(ctx, "iwide", node.rtype, dt, inps[:len(node.inps)])
-		bac.worklist_add(ctx, ctx.worklist, wide)
-		if comparison do return wide
-
-		// Consumers must still observe overflow at the original width, including stores.
-		return bac.add_un_op(ctx, "inar", .U_Conv, node.dt, wide)
-	}
-
-	#partial switch kind {
 	case .Shl ..= .U_Shr:
 		if node.dt not_in bac.INT_DTS do break
 
@@ -243,7 +213,11 @@ peep :: proc(
 		high := bin(ctx, .Add, bin(ctx, .Mul, ah, bh), bin(ctx, .U_Shr, u, half))
 		return bin(ctx, .Add, high, bin(ctx, .U_Shr, v, half))
 
-		bin :: proc(ctx: bac.Peep_Ctx, kind: bac.Bin_Op, lhs, rhs: bac.Node_ID) -> bac.Node_ID {
+		bin :: proc(
+			ctx: bac.Peep_Ctx,
+			kind: bac.Bin_Op,
+			lhs, rhs: bac.Node_ID,
+		) -> bac.Node_ID {
 			res := bac.add_bin_op(ctx, "umh", kind, .I64, lhs, rhs)
 			bac.worklist_add(ctx, ctx.worklist, res)
 			return res

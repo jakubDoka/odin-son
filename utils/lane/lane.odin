@@ -2,14 +2,19 @@ package lane
 
 import "base:intrinsics"
 import "base:runtime"
+import "core:os"
 import psync "core:sync"
 import "core:thread"
 
 Group :: struct {
-	idx:     int,
-	count:   int,
-	barrier: ^psync.Barrier,
-	slot:    ^u64,
+	idx:          int,
+	count:        int,
+	using shared: ^Shared,
+}
+
+Shared :: struct {
+	barrier: psync.Barrier,
+	slot:    u64,
 }
 
 Queue :: struct {
@@ -37,7 +42,7 @@ count :: proc "contextless" () -> int {
 
 sync :: proc "contextless" () {
 	if count() == 1 do return
-	psync.barrier_wait(group.barrier)
+	psync.barrier_wait(&group.barrier)
 }
 
 range :: proc "contextless" (#any_int item_count: int) -> (lo, hi: int) {
@@ -106,16 +111,18 @@ run_with_data :: proc(
 	data: $T,
 	entry: proc(data: T),
 ) {
-	assert(lane_count >= 1)
-
-	Shared :: struct {
-		barrier: psync.Barrier,
-		slot:    u64,
-		data:    T,
-		entry:   proc(data: T),
+	lane_count := lane_count
+	if lane_count == 0 {
+		lane_count = max(os.get_processor_core_count(), 1)
 	}
 
-	shared := Shared {
+	Ctx :: struct {
+		using inner: Shared,
+		data:        T,
+		entry:       proc(data: T),
+	}
+
+	shared := Ctx {
 		data  = data,
 		entry = entry,
 	}
@@ -138,10 +145,10 @@ run_with_data :: proc(
 	thread.join_multiple(..threads)
 	for t in threads do thread.destroy(t)
 
-	lane_main :: proc(shared: ^Shared, i: int) {
+	lane_main :: proc(shared: ^Ctx, i: int) {
 		prev := group
 		defer group = prev
-		group = {i, shared.barrier.thread_count, &shared.barrier, &shared.slot}
+		group = {i, shared.barrier.thread_count, shared}
 
 		shared.entry(shared.data)
 

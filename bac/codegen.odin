@@ -92,8 +92,9 @@ Codegen_Spec :: struct {
 	pre_regalloc_hook:  Pre_Regalloc_Hook,
 }
 
-Opt_Hints :: struct {
-	select_types: bit_set[Node_Datatype],
+Opt_Config :: struct {
+	select_types:  bit_set[Node_Datatype],
+	smallest_type: Node_Datatype,
 }
 
 // The fixed part of a DWARF CIE: everything the unwinder needs before the

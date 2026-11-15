@@ -13,10 +13,7 @@ import "core:sync"
 TEMP_DIR :: ".tmp/build"
 
 main :: proc() {
-	lane.run_no_data(
-		max(nenv("JOBS") or_else os.get_processor_core_count() / 2, 1),
-		main_lane,
-	)
+	lane.run_no_data(0, main_lane)
 }
 
 main_lane :: proc() {

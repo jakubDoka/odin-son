@@ -248,6 +248,40 @@ peep :: proc(
 		}
 	}
 
+	kind := node.itype
+
+	#partial switch kind {
+	case .Add ..= .U_Rem, .And_Not, .Neg, .Not:
+		if bac.operation_datatype(ctx, node) >= ctx.opt_hints.smallest_type ||
+		   node.dt in bac.VECTOR_DTS {
+			break
+		}
+
+		signed :=
+			kind in bit_set[bac.Node_Type]{.Le, .Lt, .Gt, .Ge, .Div, .Rem, .Shr}
+		ext: bac.Un_Op = signed ? .Conv : .U_Conv
+		inps: [2]bac.Node_ID
+		for inp, i in node.inps {
+			inps[i] = inp
+			inp_dt := get_node(ctx, inp).dt
+			if .Mem < inp_dt && inp_dt < ctx.opt_hints.smallest_type {
+				inp_ext := ext
+				if .Shl <= kind && kind <= .U_Shr && i == 1 do inp_ext = .U_Conv
+				inps[i] = bac.add_un_op(ctx, "iext", inp_ext, .I32, inp)
+				bac.worklist_add(ctx, ctx.worklist, inps[i])
+			}
+		}
+
+		comparison := .Eq <= kind && kind <= .U_Ge
+		dt := comparison ? node.dt : bac.Node_Datatype.I32
+		wide := bac.add_raw(ctx, "iwide", node.rtype, dt, inps[:len(node.inps)])
+		bac.worklist_add(ctx, ctx.worklist, wide)
+		if comparison do return wide
+
+		// Consumers must still observe overflow at the original width, including stores.
+		return bac.add_un_op(ctx, "inar", .U_Conv, node.dt, wide)
+	}
+
 	#partial match: switch node.itype {
 	case .Dbg_Scope:
 		// NOTE: this also covers nil node

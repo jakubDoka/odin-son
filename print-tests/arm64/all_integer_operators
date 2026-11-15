@@ -7,10 +7,10 @@ Error{inst_idx = 92, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 108, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 140, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 156, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 172, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 188, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 204, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 168, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 200, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
@@ -19,10 +19,10 @@ Error{inst_idx = 92, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 108, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 140, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 156, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 172, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 188, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 204, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 168, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 200, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #64
     str x19, [xzr]
@@ -171,7 +171,10 @@ batch u8:
     uxtb w5, w5
     uxtb w5, w5
     add x3, x3, x5
-    bic w5, w0, w1
+    mvn w5, w1
+    uxtb w5, w5
+    uxtb w5, w5
+    and w5, w5, w0
     uxtb w5, w5
     uxtb w5, w5
     add x3, x3, x5
@@ -188,12 +191,11 @@ batch u8:
     uxtb w5, w5
     add x3, x3, x5
     cmp w0, w1
-    b.hi 0xd8
-    b 0xe0
-5:
+    b.hi batch int
+    b 0xec
     movz x5, #1
     add x3, x5, x3
-6:
+5:
     add x4, x3, x4
     cmp w1, w0
     csel x3, x4, x3, cc
@@ -252,7 +254,10 @@ batch u16:
     uxth w5, w5
     uxth w5, w5
     add x3, x3, x5
-    bic w5, w0, w1
+    mvn w5, w1
+    uxth w5, w5
+    uxth w5, w5
+    and w5, w5, w0
     uxth w5, w5
     uxth w5, w5
     add x3, x3, x5
@@ -269,12 +274,11 @@ batch u16:
     uxth w5, w5
     add x3, x3, x5
     cmp w0, w1
-    b.hi 0xd8
-    b 0xe0
-8:
+    b.hi batch int
+    b 0xec
     movz x5, #1
     add x3, x5, x3
-9:
+7:
     add x4, x3, x4
     cmp w1, w0
     csel x3, x4, x3, cc
@@ -337,10 +341,10 @@ batch u32:
     cmp w0, w1
     b.hi 0x9c
     b 0xa4
-11:
+9:
     movz x5, #1
     add x3, x5, x3
-12:
+10:
     add x4, x3, x4
     cmp w1, w0
     csel x3, x4, x3, cc
@@ -401,7 +405,10 @@ batch i8:
     uxtb w7, w7
     invalid
     add x6, x6, x7
-    bic w7, w0, w1
+    mvn w7, w1
+    uxtb w7, w7
+    uxtb w7, w7
+    and w7, w7, w0
     uxtb w7, w7
     invalid
     add x6, x6, x7
@@ -418,12 +425,12 @@ batch i8:
     invalid
     add x6, x6, x7
     cmp w3, w4
-    b.gt 0xe0
-    b 0xe8
-14:
+    b.gt 0xec
+    b 0xf4
+12:
     movz x7, #1
     add x6, x7, x6
-15:
+13:
     add x5, x6, x5
     cmp w4, w3
     csel x5, x5, x6, lt
@@ -484,7 +491,10 @@ batch i16:
     uxth w7, w7
     invalid
     add x6, x6, x7
-    bic w7, w0, w1
+    mvn w7, w1
+    uxth w7, w7
+    uxth w7, w7
+    and w7, w7, w0
     uxth w7, w7
     invalid
     add x6, x6, x7
@@ -501,12 +511,12 @@ batch i16:
     invalid
     add x6, x6, x7
     cmp w3, w4
-    b.gt 0xe0
-    b 0xe8
-17:
+    b.gt 0xec
+    b 0xf4
+15:
     movz x7, #1
     add x6, x7, x6
-18:
+16:
     add x5, x6, x5
     cmp w4, w3
     csel x5, x5, x6, lt
@@ -569,10 +579,10 @@ batch i32:
     cmp w0, w1
     b.gt 0x9c
     b 0xa4
-20:
+18:
     movz x5, #1
     add x3, x5, x3
-21:
+19:
     add x4, x3, x4
     cmp w1, w0
     csel x3, x4, x3, lt
@@ -604,10 +614,10 @@ Error{inst_idx = 92, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 108, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 140, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 156, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 172, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 188, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 204, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 168, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 200, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 40, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 48, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 64, code = "INVALID_OPCODE", _ = [0, 0, 0]}
@@ -616,10 +626,10 @@ Error{inst_idx = 92, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 108, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 124, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 140, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 156, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 172, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 188, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 204, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 168, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 184, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 200, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #64
     str x19, [xzr]
@@ -768,7 +778,10 @@ batch u8:
     uxtb w4, w4
     uxtb w4, w4
     add x5, x5, x4
-    bic w4, w3, w0
+    mvn w4, w0
+    uxtb w4, w4
+    uxtb w4, w4
+    and w4, w4, w3
     uxtb w4, w4
     uxtb w4, w4
     add x5, x5, x4
@@ -785,12 +798,11 @@ batch u8:
     uxtb w4, w4
     add x4, x5, x4
     cmp w3, w0
-    b.hi 0xd8
-    b 0xe0
-5:
+    b.hi batch int
+    b 0xec
     movz x5, #1
     add x4, x5, x4
-6:
+5:
     add x2, x4, x2
     cmp w0, w3
     csel x4, x2, x4, cc
@@ -849,7 +861,10 @@ batch u16:
     uxth w4, w4
     uxth w4, w4
     add x5, x5, x4
-    bic w4, w3, w0
+    mvn w4, w0
+    uxth w4, w4
+    uxth w4, w4
+    and w4, w4, w3
     uxth w4, w4
     uxth w4, w4
     add x5, x5, x4
@@ -866,12 +881,11 @@ batch u16:
     uxth w4, w4
     add x4, x5, x4
     cmp w3, w0
-    b.hi 0xd8
-    b 0xe0
-8:
+    b.hi batch int
+    b 0xec
     movz x5, #1
     add x4, x5, x4
-9:
+7:
     add x2, x4, x2
     cmp w0, w3
     csel x4, x2, x4, cc
@@ -934,10 +948,10 @@ batch u32:
     cmp w0, w1
     b.hi 0x9c
     b 0xa4
-11:
+9:
     movz x5, #1
     add x4, x5, x4
-12:
+10:
     add x3, x4, x3
     cmp w1, w0
     csel x4, x3, x4, cc
@@ -998,7 +1012,10 @@ batch i8:
     uxtb w6, w6
     invalid
     add x7, x7, x6
-    bic w6, w3, w4
+    mvn w6, w4
+    uxtb w6, w6
+    uxtb w6, w6
+    and w6, w6, w3
     uxtb w6, w6
     invalid
     add x7, x7, x6
@@ -1015,12 +1032,12 @@ batch i8:
     invalid
     add x6, x7, x6
     cmp w5, w0
-    b.gt 0xe0
-    b 0xe8
-14:
+    b.gt 0xec
+    b 0xf4
+12:
     movz x7, #1
     add x6, x7, x6
-15:
+13:
     add x2, x6, x2
     cmp w0, w5
     csel x6, x2, x6, lt
@@ -1081,7 +1098,10 @@ batch i16:
     uxth w6, w6
     invalid
     add x7, x7, x6
-    bic w6, w3, w4
+    mvn w6, w4
+    uxth w6, w6
+    uxth w6, w6
+    and w6, w6, w3
     uxth w6, w6
     invalid
     add x7, x7, x6
@@ -1098,12 +1118,12 @@ batch i16:
     invalid
     add x6, x7, x6
     cmp w5, w0
-    b.gt 0xe0
-    b 0xe8
-17:
+    b.gt 0xec
+    b 0xf4
+15:
     movz x7, #1
     add x6, x7, x6
-18:
+16:
     add x2, x6, x2
     cmp w0, w5
     csel x6, x2, x6, lt
@@ -1166,10 +1186,10 @@ batch i32:
     cmp w0, w1
     b.gt 0x9c
     b 0xa4
-20:
+18:
     movz x5, #1
     add x4, x5, x4
-21:
+19:
     add x3, x4, x3
     cmp w1, w0
     csel x4, x3, x4, lt

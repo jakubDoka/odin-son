@@ -1,7 +1,7 @@
 =========== OPT LEVEL: none-quick ===========
 Error{inst_idx = 192, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 448, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 456, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 make_packet:
     uxtb w0, w0
     sxth w1, w1
@@ -25,22 +25,30 @@ swap:
     uxtb w0, w0
     movz x1, #4
     movz x2, #15
-    lsr w3, w0, w1
-    uxtb w3, w3
+    uxtb w3, w0
     uxtb w3, w3
     and w3, w3, w2
-    and w3, w3, w2
+    uxtb w3, w3
+    uxtb w3, w3
+    lsl w3, w3, w1
+    uxtb w3, w3
+    uxtb w3, w3
+    lsr w0, w0, w1
     uxtb w0, w0
     uxtb w0, w0
     and w0, w0, w2
     uxtb w0, w0
     uxtb w0, w0
-    lsl w0, w0, w1
+    uxtb w0, w0
+    uxtb w0, w0
+    and w0, w0, w2
     uxtb w0, w0
     uxtb w0, w0
     movz x1, #240
-    and w0, w0, w1
-    orr w0, w3, w0
+    and w1, w3, w1
+    uxtb w1, w1
+    uxtb w1, w1
+    orr w0, w0, w1
     uxtb w0, w0
     ret
 main:
@@ -52,15 +60,15 @@ main:
     movn x1, #152
     movz x2, #65535
     movk x2, #7, lsl #16
-    bl 0xffffff64
+    bl 0xffffff44
     mov x19, x0
     movz x0, #3
     movn x1, #1
     movz x2, #16
-    bl 0xffffff64
+    bl 0xffffff44
     mov x20, x0
     movz x0, #181
-    bl 0xffffffac
+    bl 0xffffff8c
     add x1, sp, #32
     movz x2, #29673
     movk x2, #43763, lsl #16
@@ -128,6 +136,8 @@ main:
     uxtb w3, w0
     add x2, x2, x3
     uxtb w0, w0
+    uxtb w0, w0
+    uxtb w0, w0
     and w0, w0, w10
     uxtb w0, w0
     uxtb w0, w0
@@ -145,7 +155,7 @@ main:
     add x0, x0, x2
 3:
     cmp x3, x6
-    b.ge 0x1e8
+    b.ge 0x1f0
     madd x2, x7, x0, xzr
     madd x9, x3, x4, xzr
     add x9, x9, x1
@@ -166,7 +176,7 @@ main:
     uxtb w9, w9
     add x3, x3, x13
     add x0, x2, x9
-    b 0x18c
+    b 0x194
 4:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -176,7 +186,7 @@ main:
 =========== OPT LEVEL: none ===========
 Error{inst_idx = 192, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 Error{inst_idx = 216, code = "INVALID_OPCODE", _ = [0, 0, 0]}
-Error{inst_idx = 448, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 456, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 make_packet:
     uxtb w3, w0
     sxth w1, w1
@@ -200,11 +210,6 @@ swap:
     uxtb w4, w0
     movz x3, #4
     movz x1, #15
-    lsr w0, w4, w3
-    uxtb w0, w0
-    uxtb w0, w0
-    and w0, w0, w1
-    and w2, w0, w1
     uxtb w0, w4
     uxtb w0, w0
     and w0, w0, w1
@@ -212,10 +217,23 @@ swap:
     uxtb w0, w0
     lsl w0, w0, w3
     uxtb w0, w0
+    uxtb w2, w0
+    lsr w0, w4, w3
+    uxtb w0, w0
+    uxtb w0, w0
+    and w0, w0, w1
+    uxtb w0, w0
+    uxtb w0, w0
+    uxtb w0, w0
+    uxtb w0, w0
+    and w0, w0, w1
+    uxtb w0, w0
     uxtb w1, w0
     movz x0, #240
-    and w0, w1, w0
-    orr w0, w2, w0
+    and w0, w2, w0
+    uxtb w0, w0
+    uxtb w0, w0
+    orr w0, w1, w0
     uxtb w0, w0
     ret
 main:
@@ -227,15 +245,15 @@ main:
     movn x1, #152
     movz x2, #65535
     movk x2, #7, lsl #16
-    bl 0xffffff64
+    bl 0xffffff44
     mov x19, x0
     movz x0, #3
     movn x1, #1
     movz x2, #16
-    bl 0xffffff64
+    bl 0xffffff44
     mov x20, x0
     movz x0, #181
-    bl 0xffffffac
+    bl 0xffffff8c
     add x9, sp, #32
     movz x12, #29673
     movk x12, #43763, lsl #16
@@ -303,6 +321,8 @@ main:
     uxtb w12, w0
     add x12, x13, x12
     uxtb w0, w0
+    uxtb w0, w0
+    uxtb w0, w0
     and w0, w0, w3
     uxtb w0, w0
     uxtb w0, w0
@@ -320,7 +340,7 @@ main:
     add x0, x13, x0
 3:
     cmp x12, x5
-    b.ge 0x1e8
+    b.ge 0x1f0
     madd x13, x6, x0, xzr
     madd x0, x12, x8, xzr
     add x0, x0, x9
@@ -341,7 +361,7 @@ main:
     uxtb w0, w0
     add x12, x12, x1
     add x0, x13, x0
-    b 0x18c
+    b 0x194
 4:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
@@ -379,7 +399,6 @@ swap:
     uxtb w3, w3
     uxtb w3, w3
     and w3, w3, w2
-    and w3, w3, w2
     uxtb w0, w0
     uxtb w0, w0
     and w0, w0, w2
@@ -402,15 +421,15 @@ main:
     movn x1, #152
     movz x2, #65535
     movk x2, #7, lsl #16
-    bl 0xffffff64
+    bl 0xffffff68
     mov x19, x0
     movz x0, #3
     movn x1, #1
     movz x2, #16
-    bl 0xffffff64
+    bl 0xffffff68
     mov x20, x0
     movz x0, #181
-    bl 0xffffffac
+    bl 0xffffffb0
     add x1, sp, #32
     movz x2, #29673
     movk x2, #43763, lsl #16
@@ -553,7 +572,6 @@ swap:
     lsr w0, w4, w3
     uxtb w0, w0
     uxtb w0, w0
-    and w0, w0, w1
     and w2, w0, w1
     uxtb w0, w4
     uxtb w0, w0
@@ -577,15 +595,15 @@ main:
     movn x1, #152
     movz x2, #65535
     movk x2, #7, lsl #16
-    bl 0xffffff64
+    bl 0xffffff68
     mov x19, x0
     movz x0, #3
     movn x1, #1
     movz x2, #16
-    bl 0xffffff64
+    bl 0xffffff68
     mov x20, x0
     movz x0, #181
-    bl 0xffffffac
+    bl 0xffffffb0
     add x9, sp, #32
     movz x12, #29673
     movk x12, #43763, lsl #16
@@ -728,7 +746,6 @@ swap:
     lsr w0, w4, w3
     uxtb w0, w0
     uxtb w0, w0
-    and w0, w0, w1
     and w2, w0, w1
     uxtb w0, w4
     uxtb w0, w0
@@ -752,15 +769,15 @@ main:
     movn x1, #152
     movz x2, #65535
     movk x2, #7, lsl #16
-    bl 0xffffff64
+    bl 0xffffff68
     mov x19, x0
     movz x0, #3
     movn x1, #1
     movz x2, #16
-    bl 0xffffff64
+    bl 0xffffff68
     mov x20, x0
     movz x0, #181
-    bl 0xffffffac
+    bl 0xffffffb0
     add x10, sp, #32
     movz x12, #29673
     movk x12, #43763, lsl #16

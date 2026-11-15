@@ -498,6 +498,7 @@ Pass :: enum int {
 	Sccp,
 	Mem,
 	Loop,
+	Widen,
 }
 
 Opt_Flags :: bit_set[Opt_Flag]
@@ -507,6 +508,7 @@ Opt_Flag :: enum int {
 	Local_Peeps,
 	Mem_Opt,
 	Loop_Opt,
+	Widen,
 	Inline,
 }
 
@@ -1358,7 +1360,10 @@ collect_nodes :: proc(prc: ^Proc, worklist: ^Worklist, renumber := true) {
 	return
 }
 
-widen_elim :: proc(prc: ^Proc) -> (opted: bool) {
+widen :: proc(prc: ^Proc) -> (opted: bool) {
+	if .Widen not_in prc.opt_flags do return
+	pass_quard(prc, .Widen, &opted) or_return
+
 	context.allocator, _ = arna.scrath(prc.temps)
 
 	worklist: Worklist

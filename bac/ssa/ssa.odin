@@ -33,6 +33,8 @@ opt :: proc(ctx: bac.Peep_Ctx) {
 		dirty = false
 		dirty_peep := bac.apply_peeps(ctx)
 		when DEBUG_OPT do fmt.println("peeps:", dirty_lat)
+		dirty_widen := bac.widen(ctx)
+		when DEBUG_OPT do fmt.println("widen:", dirty_widen)
 		dirty_mem := memopt(ctx)
 		when DEBUG_OPT do fmt.println("mem:", dirty_lat)
 
@@ -52,6 +54,8 @@ opt :: proc(ctx: bac.Peep_Ctx) {
 		when DEBUG_OPT do fmt.println("lat:", dirty_lat)
 		dirty_peep := bac.apply_peeps(ctx)
 		when DEBUG_OPT do fmt.println("peeps:", dirty_peep)
+		dirty_widen := bac.widen(ctx)
+		when DEBUG_OPT do fmt.println("widen:", dirty_widen)
 		dirty_mem := memopt(ctx)
 		when DEBUG_OPT do fmt.println("mem:", dirty_mem)
 		dirty = dirty_lat | dirty_peep | dirty_mem | dirty_loop

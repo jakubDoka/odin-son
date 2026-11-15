@@ -39,10 +39,10 @@ Opt_Level :: struct {
 OPT_LEVELS :: [?]Opt_Level {
 	{"none-quick", {}, .with_scan},
 	{"none", {}, .with_coloring},
-	{"moderate-quick", {.Local_Peeps}, .with_scan},
-	{"moderate", {.Local_Peeps}, .with_coloring},
-	{"all", {.Local_Peeps, .Mem_Opt, .Loop_Opt}, .with_coloring},
-	{"aggresive", {.Local_Peeps, .Mem_Opt, .Inline, .Loop_Opt}, .with_coloring},
+	{"moderate-quick", {.Widen, .Local_Peeps}, .with_scan},
+	{"moderate", {.Widen, .Local_Peeps}, .with_coloring},
+	{"all", {.Widen, .Local_Peeps, .Mem_Opt, .Loop_Opt}, .with_coloring},
+	{"aggresive", ~{}, .with_coloring},
 }
 
 Target_ID :: enum {
@@ -957,7 +957,6 @@ emit_proc_code :: proc(
 
 	// We are doing this with different spec now
 	bac.apply_peeps(peep_ctx)
-	bac.widen_elim(ctx)
 
 	bac.compact(ctx)
 

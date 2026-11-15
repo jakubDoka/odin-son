@@ -246,10 +246,10 @@ unsafe extern "C" {
     pub fn bac_sloc_scope(r#prc: *mut Proc, r#sloc: Sloc, out0: *mut *mut Proc) -> Sloc;
     pub fn bac_unpin(r#prc: *mut Proc, r#id: Node_ID, r#no_delete: bool);
     pub static bac_amd64_CC_TABLE: [Call_Conv; 2];
-    pub static bac_arm_CC_TABLE: [Call_Conv; 1];
+    pub static bac_arm64_CC_TABLE: [Call_Conv; 1];
     pub static bac_amd64_SPEC: Node_Spec;
-    pub static bac_arm_SPEC: Node_Spec;
-    pub static bac_arm_OPT_HINTS: Opt_Config;
+    pub static bac_arm64_SPEC: Node_Spec;
+    pub static bac_arm64_OPT_HINTS: Opt_Config;
     pub static bac_intel_xelp_CC_TABLE: [Call_Conv; 1];
     pub static bac_intel_xelp_SPEC: Node_Spec;
     pub static bac_intel_xelp_OPT_HINTS: Opt_Config;
@@ -946,6 +946,8 @@ crate::abi_struct! {
     pub struct Opt_Config {
         #[abi(offset = 0)] pub r#select_types: Opt_Config_select_types,
         #[abi(offset = 2)] pub r#smallest_type: Node_Datatype,
+        #[abi(offset = 3)] pub r#min_popcnt_type: Node_Datatype,
+        #[abi(offset = 4)] pub r#min_ctz_type: Node_Datatype,
         #[abi(offset = 8)] pub r#flags: Opt_Config_flags,
     }
 }

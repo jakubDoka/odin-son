@@ -3,7 +3,7 @@ package bac_bindgen
 
 import pkg_0 ".."
 import pkg_1 "../amd64"
-import pkg_2 "../arm"
+import pkg_2 "../arm64"
 import pkg_3 "../intel_xelp"
 import pkg_4 "../regalloc"
 import pkg_5 "../ssa"
@@ -84,10 +84,10 @@ API := [?]API_Proc{
 	{"..", "sloc_scope", type_of(pkg_0.sloc_scope), ""},
 	{"..", "unpin", type_of(pkg_0.unpin), ""},
 	{"../amd64", "CC_TABLE", type_of(pkg_1.CC_TABLE), ""},
-	{"../arm", "CC_TABLE", type_of(pkg_2.CC_TABLE), ""},
+	{"../arm64", "CC_TABLE", type_of(pkg_2.CC_TABLE), ""},
 	{"../amd64", "SPEC", type_of(pkg_1.SPEC), ""},
-	{"../arm", "SPEC", type_of(pkg_2.SPEC), ""},
-	{"../arm", "OPT_HINTS", type_of(pkg_2.OPT_HINTS), ""},
+	{"../arm64", "SPEC", type_of(pkg_2.SPEC), ""},
+	{"../arm64", "OPT_HINTS", type_of(pkg_2.OPT_HINTS), ""},
 	{"../intel_xelp", "CC_TABLE", type_of(pkg_3.CC_TABLE), ""},
 	{"../intel_xelp", "SPEC", type_of(pkg_3.SPEC), ""},
 	{"../intel_xelp", "OPT_HINTS", type_of(pkg_3.OPT_HINTS), ""},

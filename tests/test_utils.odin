@@ -309,7 +309,7 @@ run_test :: proc(
 	Test_Vm :: enum {
 		Native,
 		Wasm,
-		Arm,
+		Arm64,
 		Check,
 	}
 
@@ -333,7 +333,7 @@ run_test :: proc(
 		append(&confs, Test_Conf{level = level, vm = .Wasm})
 	}
 	for level in levels[:] {
-		append(&confs, Test_Conf{level = level, vm = .Arm})
+		append(&confs, Test_Conf{level = level, vm = .Arm64})
 	}
 
 	// foreign symbols only resolve natively, the arm emulator and the wasm
@@ -418,7 +418,7 @@ run_test :: proc(
 		}
 
 		switch level.vm {
-		case .Native, .Arm:
+		case .Native, .Arm64:
 			// the got relocations name the imported procedure by its id
 			imported_offsets := make(
 				[]uintptr,
@@ -477,7 +477,7 @@ run_test :: proc(
 						value = global_addrs[rel.to] + uintptr(rel.to_offset)
 					}
 
-					if level.vm == .Arm {
+					if level.vm == .Arm64 {
 						value =
 							value -
 							uintptr(ctx.mems.code.ptr) +
@@ -523,7 +523,7 @@ run_test :: proc(
 					jump := i32(target_off - source)
 
 					jump = jump / (1 << rel.scale_pow)
-					if level.vm == .Arm {
+					if level.vm == .Arm64 {
 						rel.offset += 4
 					}
 
@@ -550,7 +550,7 @@ run_test :: proc(
 				if level.vm == .Native {
 					disasm(dsb, ctx, AMD64_DS)
 				} else {
-					disasm(dsb, ctx, ARM_DS)
+					disasm(dsb, ctx, ARM64_DS)
 				}
 			}
 
@@ -651,7 +651,7 @@ run_test :: proc(
 	vm_names := [Test_Vm]string {
 		.Check  = "check",
 		.Native = "amd64",
-		.Arm    = "arm",
+		.Arm64  = "arm64",
 		.Wasm   = "wasm",
 	}
 
@@ -893,7 +893,7 @@ AMD64_DS :: Disasm_Scope(
 	x86.Mode,
 ){x86.decode, x86.sbprint}
 
-ARM_DS :: Disasm_Scope(
+ARM64_DS :: Disasm_Scope(
 	arm64.Instruction,
 	arm64.Instruction_Info,
 	arm64.Relocation,

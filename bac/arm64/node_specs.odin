@@ -1,4 +1,4 @@
-package bac_arm
+package bac_arm64
 import bac ".."
 
 Reg_Kind :: bac.Reg_Kind
@@ -7,7 +7,7 @@ Class_Flag :: bac.Class_Flag
 
 import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta2/meta2.odin(211:3)
 
-@(tag = "api", rodata, export, link_name = "bac_arm_SPEC")SPEC := bac.Node_Spec{
+@(tag = "api", rodata, export, link_name = "bac_arm64_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
 		{4295491583, 4294902015},
 	},
@@ -33,10 +33,10 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 	node_extra_sizes = intrinsics.concatenate(bac.NODE_EXTRA_SIZES, []u8{
 		0, // Msub -> No_Extra
 		0, // Cmlt -> No_Extra
-		1, // Ext -> Arm_Op
+		1, // Ext -> Arm64_Op
 		0, // Zip1 -> No_Extra
 		0, // Addv128 -> No_Extra
-		1, // Umov -> Arm_Op
+		1, // Umov -> Arm64_Op
 		0, // Cnt -> No_Extra
 		0, // Lslv -> No_Extra
 		0, // Asrv -> No_Extra
@@ -59,10 +59,10 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 	node_extra_types = ({}) when #config(NO_FMT, false) else (intrinsics.concatenate(bac.NODE_EXTRA_TYPES, []typeid{
 		bac.No_Extra,
 		bac.No_Extra,
-		Arm_Op,
+		Arm64_Op,
 		bac.No_Extra,
 		bac.No_Extra,
-		Arm_Op,
+		Arm64_Op,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -173,7 +173,7 @@ add_cmlt :: #force_inline proc(prc: ^bac.Proc, name: string, lhs: bac.Node_ID, l
 	return bac.add_raw(prc, name, u16(Node_Type.Cmlt), .V128, {lhs}, meta = {lane = lane,})
 }
 add_ext :: #force_inline proc(prc: ^bac.Proc, name: string, lhs: bac.Node_ID, rhs: bac.Node_ID, aux: u32, lane: bac.Lane_Type = {}) -> (_id: bac.Node_ID) {
-	return bac.add_raw(prc, name, u16(Node_Type.Ext), .V128, {lhs, rhs}, extra = &Arm_Op{
+	return bac.add_raw(prc, name, u16(Node_Type.Ext), .V128, {lhs, rhs}, extra = &Arm64_Op{
 		aux = aux,
 	}, meta = {lane = lane,})
 }
@@ -184,7 +184,7 @@ add_addv128 :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Dat
 	return bac.add_raw(prc, name, u16(Node_Type.Addv128), dt, {vec}, meta = {lane = lane,})
 }
 add_umov :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatype, vec: bac.Node_ID, aux: u32) -> (_id: bac.Node_ID) {
-	return bac.add_raw(prc, name, u16(Node_Type.Umov), dt, {vec}, extra = &Arm_Op{
+	return bac.add_raw(prc, name, u16(Node_Type.Umov), dt, {vec}, extra = &Arm64_Op{
 		aux = aux,
 	})
 }
@@ -197,7 +197,7 @@ add_bic :: #force_inline proc(prc: ^bac.Proc, name: string, dt: bac.Node_Datatyp
 
 inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	when false {}
-	else when T == Arm_Op {return 7}
+	else when T == Arm64_Op {return 7}
 	else when T == bac.CInt {return 6}
 	else when T == bac.Call {return 3}
 	else when T == bac.Cfg {return 0}
@@ -207,7 +207,7 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 	else when T == bac.Tup {return 5}
 	else {#panic(`the passed type is not subclass of anything`)}
 }
-#assert(size_of(Arm_Op) % bac.PRECISION == 0)
+#assert(size_of(Arm64_Op) % bac.PRECISION == 0)
 #assert(size_of(bac.CInt) % bac.PRECISION == 0)
 #assert(size_of(bac.Call) % bac.PRECISION == 0)
 #assert(size_of(bac.Cfg) % bac.PRECISION == 0)

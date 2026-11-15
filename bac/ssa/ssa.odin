@@ -4,7 +4,7 @@ import bac ".."
 import "../../utils/arna"
 import "../../utils/fmt"
 import "../amd64"
-import "../arm"
+import "../arm64"
 import "../regalloc"
 import "../wasm"
 import "core:mem"
@@ -76,7 +76,7 @@ compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
 			when ODIN_ARCH == .amd64 {
 				ctx.prc.node_spec = &amd64.SPEC
 			} else when ODIN_ARCH == .arm64 {
-				ctx.prc.node_spec = &arm.SPEC
+				ctx.prc.node_spec = &arm64.SPEC
 			} else when ODIN_ARCH == .wasm32 {
 				ctx.prc.node_spec = &wasm.SPEC
 			}

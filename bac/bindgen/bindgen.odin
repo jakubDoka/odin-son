@@ -10,7 +10,7 @@ import "core:strings"
 EXPORTED_SUBMODS := [?]string {
 	"bac",
 	"bac_ssa",
-	"bac_arm",
+	"bac_arm64",
 	"bac_amd64",
 	"bac_intel_xelp",
 	"bac_wasm",
@@ -20,7 +20,7 @@ EXPORTED_SUBMODS := [?]string {
 EXPORTED_SUBMODS_PATH := [?]string {
 	"..",
 	"../ssa",
-	"../arm",
+	"../arm64",
 	"../amd64",
 	"../intel_xelp/",
 	"../wasm",

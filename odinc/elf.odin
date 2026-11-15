@@ -2,7 +2,7 @@ package odin_son
 
 import "../bac"
 import "../bac/amd64"
-import "../bac/arm"
+import "../bac/arm64"
 import "../utils/arna"
 import "core:fmt"
 import "core:mem"
@@ -16,8 +16,8 @@ MEMSET_ID :: LIBCALL_BASE + 1
 emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	context.allocator, _ = arna.scrath(allocator)
 
-	is_arm := ctx.target.spec == &arm.SPEC
-	assert(is_arm || ctx.target.spec == &amd64.SPEC)
+	is_arm64 := ctx.target.spec == &arm64.SPEC
+	assert(is_arm64 || ctx.target.spec == &amd64.SPEC)
 
 	// --- .text : concatenate procedure code, 16 byte aligned ------------
 	text: [dynamic]u8
@@ -179,7 +179,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 	for &prc, i in ctx.procs {
 		for rel in prc.out.relocs {
 			slot := proc_off[i] + int(rel.offset)
-			if !is_arm do slot -= int(bac.RELOC_SIZE[rel.size])
+			if !is_arm64 do slot -= int(bac.RELOC_SIZE[rel.size])
 
 			is_libcall :=
 				LIBCALL_BASE <= rel.id && rel.id < bac.RELOC_BIG_CONSTANT_BASE
@@ -205,7 +205,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 				}
 			}
 
-			if is_arm {
+			if is_arm64 {
 				switch rel.kind {
 				case .Text:
 					if rel.size == .r26 {
@@ -263,7 +263,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 					r_offset = u64(global_off[i]) + u64(rel.in_offset),
 					r_info = {
 						sym = is_proc ? proc_sym[rel.to] : data_sym[rel.to],
-						type = is_arm ? .AArch64_Abs64 : .X86_64_Abs64,
+						type = is_arm64 ? .AArch64_Abs64 : .X86_64_Abs64,
 					},
 					r_addend = is_proc ? 0 : i64(rel.to_offset),
 				},
@@ -390,7 +390,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 				r_offset = u64(len(dbg_line)),
 				r_info = {
 					sym = proc_sym[i],
-					type = is_arm ? .AArch64_Abs64 : .X86_64_Abs64,
+					type = is_arm64 ? .AArch64_Abs64 : .X86_64_Abs64,
 				},
 			},
 		)
@@ -447,7 +447,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			r_offset = u64(len(dbg_info)),
 			r_info = {
 				sym = sec_abbrev_sym,
-				type = is_arm ? .AArch64_Abs32 : .X86_64_Abs32,
+				type = is_arm64 ? .AArch64_Abs32 : .X86_64_Abs32,
 			},
 		},
 	)
@@ -469,7 +469,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			r_offset = u64(len(dbg_info)),
 			r_info = {
 				sym = sec_text_sym,
-				type = is_arm ? .AArch64_Abs64 : .X86_64_Abs64,
+				type = is_arm64 ? .AArch64_Abs64 : .X86_64_Abs64,
 			},
 		},
 	)
@@ -482,7 +482,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			r_offset = u64(len(dbg_info)),
 			r_info = {
 				sym = sec_line_sym,
-				type = is_arm ? .AArch64_Abs32 : .X86_64_Abs32,
+				type = is_arm64 ? .AArch64_Abs32 : .X86_64_Abs32,
 			},
 		},
 	)
@@ -587,7 +587,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 				r_offset = u64(len(dbg_info)),
 				r_info = {
 					sym = proc_sym[i],
-					type = is_arm ? .AArch64_Abs64 : .X86_64_Abs64,
+					type = is_arm64 ? .AArch64_Abs64 : .X86_64_Abs64,
 				},
 			},
 		)
@@ -644,7 +644,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 					r_offset = u64(len(dbg_loc)),
 					r_info = {
 						sym = proc_sym[i],
-						type = is_arm ? .AArch64_Abs64 : .X86_64_Abs64,
+						type = is_arm64 ? .AArch64_Abs64 : .X86_64_Abs64,
 					},
 				},
 			)
@@ -692,7 +692,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 					r_offset = u64(len(dbg_info)),
 					r_info = {
 						sym = sec_loc_sym,
-						type = is_arm ? .AArch64_Abs32 : .X86_64_Abs32,
+						type = is_arm64 ? .AArch64_Abs32 : .X86_64_Abs32,
 					},
 					r_addend = i64(loc_off),
 				},
@@ -752,7 +752,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 					r_offset = u64(len(eh_frame)),
 					r_info = {
 						sym = proc_sym[i],
-						type = is_arm ? .AArch64_Prel32 : .X86_64_Pc32,
+						type = is_arm64 ? .AArch64_Prel32 : .X86_64_Pc32,
 					},
 				},
 			)
@@ -1051,7 +1051,7 @@ emit_elf :: proc(ctx: ^Gen_Ctx, allocator := context.allocator) -> []u8 {
 			version = u8(Elf_Version.Current),
 		},
 		e_type = .Rel,
-		e_machine = is_arm ? .AArch64 : .X86_64,
+		e_machine = is_arm64 ? .AArch64 : .X86_64,
 		e_version = .Current,
 		e_shoff = u64(sh_off),
 		e_ehsize = size_of(Elf64_Ehdr),

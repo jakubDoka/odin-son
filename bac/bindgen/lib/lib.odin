@@ -7,7 +7,7 @@ Proc :: bac.Proc
 Node_ID :: bac.Node_ID
 import bac "../.."
 import bac_ssa "../../ssa"
-import bac_arm "../../arm"
+import bac_arm64 "../../arm64"
 import bac_amd64 "../../amd64"
 import bac_intel_xelp "../../intel_xelp/"
 import bac_wasm "../../wasm"
@@ -16,7 +16,7 @@ import arna "../../../utils/arna/"
 
 _ :: bac
 _ :: bac_ssa
-_ :: bac_arm
+_ :: bac_arm64
 _ :: bac_amd64
 _ :: bac_intel_xelp
 _ :: bac_wasm

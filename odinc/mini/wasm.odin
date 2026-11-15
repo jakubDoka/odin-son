@@ -116,7 +116,7 @@ set_output :: proc(out: ^[]u8, bytes: []u8) {
 Target :: enum int {
 	AMD64,
 	Wasm,
-	Arm,
+	Arm64,
 }
 
 @(export)

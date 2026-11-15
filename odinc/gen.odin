@@ -2,7 +2,7 @@ package odin_son
 
 import "../bac"
 import "../bac/amd64"
-import "../bac/arm"
+import "../bac/arm64"
 import "../bac/intel_xelp"
 import "../bac/regalloc"
 import "../bac/ssa"
@@ -69,9 +69,9 @@ TARGETS := [Target_ID]typecheck.Target {
 	},
 	.Arm64      = {
 		"arm64",
-		&arm.CC_TABLE[arm.ARM_SYSTEMV_CC],
-		&arm.SPEC,
-		arm.OPT_HINTS,
+		&arm64.CC_TABLE[arm64.ARM64_SYSTEMV_CC],
+		&arm64.SPEC,
+		arm64.OPT_HINTS,
 		emit_elf,
 	},
 	.Intel_Xelp = {

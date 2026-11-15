@@ -1,4 +1,4 @@
-package bac_arm
+package bac_arm64
 
 import bac ".."
 import "../../utils/arna"
@@ -51,18 +51,18 @@ V24, V25, V26 :: Reg(V_BANK | 24), Reg(V_BANK | 25), Reg(V_BANK | 26)
 V27, V28, V29 :: Reg(V_BANK | 27), Reg(V_BANK | 28), Reg(V_BANK | 29)
 V30, V31 :: Reg(V_BANK | 30), Reg(V_BANK | 31)
 
-ARM_SYSTEMV_CC :: 0
+ARM64_SYSTEMV_CC :: 0
 
-@(tag = "api", rodata, export, link_name = "bac_arm_OPT_HINTS")
+@(tag = "api", rodata, export, link_name = "bac_arm64_OPT_HINTS")
 OPT_HINTS := bac.Opt_Config {
 	select_types    = {.I8, .I16, .I32, .I64, .F32, .F64},
 	smallest_type   = .I32,
 	min_popcnt_type = .I64,
 }
 
-@(tag = "api", rodata, export, link_name = "bac_arm_CC_TABLE")
+@(tag = "api", rodata, export, link_name = "bac_arm64_CC_TABLE")
 CC_TABLE := [?]bac.Call_Conv {
-	ARM_SYSTEMV_CC = {
+	ARM64_SYSTEMV_CC = {
 		caller_saved = {
 			{
 				X0,
@@ -148,7 +148,7 @@ when SPEC_NOT_PRESENT {
 	}
 }
 
-Arm_Op :: struct #align (4) {
+Arm64_Op :: struct #align (4) {
 	aux: u32,
 }
 
@@ -356,7 +356,7 @@ meta_of :: #force_inline proc(
 
 	if node.gvn == 1 {
 		if ra.cc == nil {
-			ra.cc = &CC_TABLE[ARM_SYSTEMV_CC]
+			ra.cc = &CC_TABLE[ARM64_SYSTEMV_CC]
 		}
 
 		seed_rm_interner(ra)
@@ -487,7 +487,7 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	ctx.spill_slot_size = SPILL_SLOT_SIZE[:]
 
 	if ctx.abi == nil {
-		ctx.abi = &CC_TABLE[ARM_SYSTEMV_CC]
+		ctx.abi = &CC_TABLE[ARM64_SYSTEMV_CC]
 	}
 
 	arna.alloc(ctx.code, 0, 4)
@@ -729,9 +729,9 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, is_consecutive: bool) {
 	sz_pow := intrinsics.count_trailing_zeros(u32(bac.DT_SIZE[node.dt]))
 	lsz_pow := intrinsics.count_trailing_zeros(u32(bac.LANE_SIZE[node.lane]))
 
-	arm_op: Arm_Op
-	arm_op_ptr := aextra(ctx, node, Arm_Op)
-	if arm_op_ptr != nil do arm_op = arm_op_ptr^
+	arm64_op: Arm64_Op
+	arm64_op_ptr := aextra(ctx, node, Arm64_Op)
+	if arm64_op_ptr != nil do arm64_op = arm64_op_ptr^
 
 	inp: bac.Expanded_Node
 	is_f64: bool
@@ -769,7 +769,7 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, is_consecutive: bool) {
 		dst := reg_of(ctx, instr)
 		src := reg_of(ctx, node.inps[0])
 
-		imm := ((arm_op.aux << 1) | 1) << sz_pow
+		imm := ((arm64_op.aux << 1) | 1) << sz_pow
 
 		emit_op(
 			ctx.code,
@@ -786,7 +786,7 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, is_consecutive: bool) {
 			ctx.code,
 			op |
 			u32(rhs.index) << 16 |
-			arm_op.aux << 11 |
+			arm64_op.aux << 11 |
 			u32(lhs.index) << 5 |
 			u32(dst.index),
 		)

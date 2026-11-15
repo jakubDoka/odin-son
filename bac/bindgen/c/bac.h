@@ -665,6 +665,8 @@ struct bac_Reloc {
 struct bac_Opt_Config {
 	bac_Bs_Node_Datatype select_types;
 	bac_Node_Datatype smallest_type;
+	bac_Node_Datatype min_popcnt_type;
+	bac_Node_Datatype min_ctz_type;
 	bac_Bs_Opt_Config_Flags flags;
 };
 struct bac_Lattice {
@@ -1158,10 +1160,10 @@ extern _Bool bac_sym_iter_next(bac_Proc *prc, bac_Node_ID sym, bac_int *iter, ba
 extern bac_Sloc bac_sloc_scope(bac_Proc *prc, bac_Sloc sloc, bac_Proc **out_prc);
 extern void bac_unpin(bac_Proc *prc, bac_Node_ID id, _Bool no_delete);
 extern bac_Call_Conv bac_amd64_CC_TABLE[2];
-extern bac_Call_Conv bac_arm_CC_TABLE[1];
+extern bac_Call_Conv bac_arm64_CC_TABLE[1];
 extern bac_Node_Spec bac_amd64_SPEC;
-extern bac_Node_Spec bac_arm_SPEC;
-extern bac_Opt_Config bac_arm_OPT_HINTS;
+extern bac_Node_Spec bac_arm64_SPEC;
+extern bac_Opt_Config bac_arm64_OPT_HINTS;
 extern bac_Call_Conv bac_intel_xelp_CC_TABLE[1];
 extern bac_Node_Spec bac_intel_xelp_SPEC;
 extern bac_Opt_Config bac_intel_xelp_OPT_HINTS;

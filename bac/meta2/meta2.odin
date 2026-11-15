@@ -2,7 +2,7 @@ package bac_meta2
 
 import ".."
 import "../amd64"
-import "../arm"
+import "../arm64"
 import "../intel_xelp"
 import "../meta"
 import "../ssa"
@@ -189,12 +189,12 @@ main :: proc() {
 		)
 	}
 
-	when arm.SPEC_NOT_PRESENT {
-		ARM_CLASSES := [arm.Node_Type]meta.Class_Spec {
+	when arm64.SPEC_NOT_PRESENT {
+		ARM64_CLASSES := [arm64.Node_Type]meta.Class_Spec {
 			.Msub = {args = {"multiplicant", "multiplier", "subtractant"}},
 			.Cmlt = {args = {"lhs"}, pass_lane = true, default_type = .V128},
 			.Ext = {
-				id = arm.Arm_Op,
+				id = arm64.Arm64_Op,
 				default_type = .V128,
 				args = {"lhs", "rhs"},
 				extra_args = {"aux"},
@@ -202,7 +202,7 @@ main :: proc() {
 			},
 			.Zip1 = {default_type = .V128, args = {"lsh", "rhs"}, pass_lane = true},
 			.Addv128 = {args = {"vec"}, pass_lane = true},
-			.Umov = {id = arm.Arm_Op, args = {"vec"}, extra_args = {"aux"}},
+			.Umov = {id = arm64.Arm64_Op, args = {"vec"}, extra_args = {"aux"}},
 			.Cnt = {args = {"vec"}},
 			.Lslv ..= .Lsrv = {no_ctor = true},
 			.Bic = {args = {"lhs", "rhs"}},
@@ -217,27 +217,27 @@ main :: proc() {
 				},
 				classes = {
 					meta.class_array(&meta.IDEAL_CLASSES, gen_ctors = false),
-					meta.class_array(&ARM_CLASSES),
+					meta.class_array(&ARM64_CLASSES),
 				},
 				datatype_to_reg_kind = #partial{
-					.I8 ..= .I64 = arm.RK_GENERAL,
-					.F32 ..= .V512 = arm.RK_VECTOR,
+					.I8 ..= .I64 = arm64.RK_GENERAL,
+					.F32 ..= .V512 = arm64.RK_VECTOR,
 				},
-				spill_boundary = {int(arm.FLAGS) + 1, 32},
-				cc_table = arm.CC_TABLE[:],
+				spill_boundary = {int(arm64.FLAGS) + 1, 32},
+				cc_table = arm64.CC_TABLE[:],
 				common_reg_specs = {
-					{"GPA", arm.RK_GENERAL, {0x3FFFFFFF}},
+					{"GPA", arm64.RK_GENERAL, {0x3FFFFFFF}},
 					{
 						"GPA_SPILL",
-						arm.RK_GENERAL,
-						{~i64(1 << uint(arm.SP) | 1 << 30 | 1 << uint(arm.FLAGS))},
+						arm64.RK_GENERAL,
+						{~i64(1 << uint(arm64.SP) | 1 << 30 | 1 << uint(arm64.FLAGS))},
 					},
-					{"GPA_SPLIT", arm.RK_GENERAL, {~i64(1 << uint(arm.SP) | 1 << 30)}},
-					{"VEC", arm.RK_VECTOR, {0xFFFFFFFF}},
-					{"VEC_SPILL", arm.RK_VECTOR, {~i64(0)}},
+					{"GPA_SPLIT", arm64.RK_GENERAL, {~i64(1 << uint(arm64.SP) | 1 << 30)}},
+					{"VEC", arm64.RK_VECTOR, {0xFFFFFFFF}},
+					{"VEC_SPILL", arm64.RK_VECTOR, {~i64(0)}},
 				},
 			},
-			"bac/arm",
+			"bac/arm64",
 		)
 	}
 }

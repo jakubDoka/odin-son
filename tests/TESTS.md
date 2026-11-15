@@ -9085,7 +9085,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/arm/arm.odin emit_instr (.CInt): MOVN initializes the upper halfwords
+<!-- bac/arm64/arm64.odin emit_instr (.CInt): MOVN initializes the upper halfwords
 to ones, but the MOVK loop skips zero halfwords that must overwrite those ones.
 -4294967296 is materialized as -65536. Expected 1, got 0 on ARM64 at none-quick,
 none, moderate-quick, moderate, and all. -->
@@ -9202,7 +9202,7 @@ main :: proc() -> int {
 }
 ```
 
-<!-- bac/amd64/amd64.odin and bac/arm/arm.odin emit_instr (.Ctz), and the Ctz
+<!-- bac/amd64/amd64.odin and bac/arm64/arm64.odin emit_instr (.Ctz), and the Ctz
 opcode table in bac/wasm/isa.odin, use 32-bit operations for narrow inputs
 without adjusting the zero case to the original width. Expected 8, got 32
 on every target at every optimization level. -->
@@ -9306,7 +9306,7 @@ main :: proc() -> int {
 
 <!-- bac/amd64/amd64.odin emit_instr (.Simd_Extract_Lsbs) extracts one bit per
 byte instead of one per word, returning 51 instead of 85. On ARM64 the same
-input reaches the .Ext assertion node.lane == .I8 in bac/arm/arm.odin because
+input reaches the .Ext assertion node.lane == .I8 in bac/arm64/arm64.odin because
 the mask-lowering peep propagates the I16 lane type to a byte-only operation. -->
 
 #### simd word mask extracts one bit per lane

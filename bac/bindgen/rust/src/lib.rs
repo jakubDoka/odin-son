@@ -612,8 +612,8 @@ pub fn ssa_spec() -> &'static NodeSpec {
 pub fn amd64_spec() -> &'static NodeSpec {
     unsafe { &*ptr::addr_of!(sys::bac_amd64_SPEC).cast() }
 }
-pub fn arm_spec() -> &'static NodeSpec {
-    unsafe { &*ptr::addr_of!(sys::bac_arm_SPEC).cast() }
+pub fn arm64_spec() -> &'static NodeSpec {
+    unsafe { &*ptr::addr_of!(sys::bac_arm64_SPEC).cast() }
 }
 pub fn wasm_spec() -> &'static NodeSpec {
     unsafe { &*ptr::addr_of!(sys::bac_wasm_SPEC).cast() }
@@ -621,8 +621,8 @@ pub fn wasm_spec() -> &'static NodeSpec {
 pub fn amd64_call_conventions() -> &'static [CallConv] {
     CallConv::from_raw_slice(unsafe { &sys::bac_amd64_CC_TABLE })
 }
-pub fn arm_call_conventions() -> &'static [CallConv] {
-    CallConv::from_raw_slice(unsafe { &sys::bac_arm_CC_TABLE })
+pub fn arm64_call_conventions() -> &'static [CallConv] {
+    CallConv::from_raw_slice(unsafe { &sys::bac_arm64_CC_TABLE })
 }
 pub fn wasm_call_conventions() -> &'static [CallConv] {
     CallConv::from_raw_slice(unsafe { &sys::bac_wasm_CC_TABLE })

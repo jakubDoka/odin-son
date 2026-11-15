@@ -448,12 +448,8 @@ check :: proc(a: $T, b: T, max_value: T) -> int {
 }
 
 main :: proc() -> int {
-	// COMPILER BUG: inlining literal narrow arguments loses overflow during constant folding.
-	// return check(u8(250), 10, 255) + check(u16(65530), 10, 65535)
-	@(static) seed := 0
-	s := seed
-	return check(u8(s + 250), u8(s + 10), u8(s + 255)) +
-	       check(u16(s + 65530), u16(s + 10), u16(s + 65535))
+	return check(u8(250), u8(10), u8(255)) +
+	       check(u16(65530), u16(10), u16(65535))
 }
 ```
 
@@ -476,12 +472,8 @@ check :: proc(a: $T, b: T, expected: int) -> int {
 }
 
 main :: proc() -> int {
-	// COMPILER BUG: inlining literal narrow arguments loses overflow during constant folding.
-	// return check(i8(120), 10, -126) + check(i16(32760), 10, -32766)
-	@(static) seed := 0
-	s := seed
-	return check(i8(s + 120), i8(s + 10), s - 126) +
-	       check(i16(s + 32760), i16(s + 10), s - 32766)
+	return check(i8(120), i8(10), -126) +
+	       check(i16(32760), i16(10), -32766)
 }
 ```
 
@@ -2101,35 +2093,26 @@ package main
 main :: proc() -> int {
 	i := 0
 	sum := 0
-	// COMPILER BUG: emitting the loop condition's false arm after this body
-	// makes graph-coloring register allocation exceed its round limit.
-	// Failing order in gen.odin:
-	// ssa.start_if(ctx, ctx.node_scope, &if_state, cond)
-	// emit_stmts(ctx, {d.body})
-	// ssa.start_else(ctx, &ctx.node_scope, &if_state)
-	// ssa.loop_control(.Break, ctx, ctx.node_scope, &loop_state.bstate)
-	// ctx.node_scope = 0
-	// ssa.end_else(ctx, &ctx.node_scope, &if_state)
 	for i < 4 {
 		i += 1
 		if i == 2 do continue
 		sum += i
 	}
-	//for ; i < 6; {
-	//	i += 1
-	//	sum += i
-	//}
-	//for ; ; i += 1 {
-	//	if i == 8 do break
-	//	sum += i
-	//}
-	//for j := 0; ; j += 1 {
-	//	if j == 3 do break
-	//	sum += j
-	//}
-	//for false {
-	//	sum += 0x1000
-	//}
+	for ; i < 6; {
+		i += 1
+		sum += i
+	}
+	for ; ; i += 1 {
+		if i == 8 do break
+		sum += i
+	}
+	for j := 0; ; j += 1 {
+		if j == 3 do break
+		sum += j
+	}
+	for false {
+		sum += 0x1000
+	}
 	return sum + i
 }
 ```
@@ -7994,16 +7977,12 @@ main :: proc() -> int {
 		r = r * 3 + shifts(i8(-85), n)
 		r = r * 3 + shifts(u16(42405), n)
 		r = r * 3 + shifts(i16(-21845), n)
-		// COMPILER BUG: wasm emits an out-of-range positive i32.const for u32(2779096485).
-		// r = r * 3 + shifts(u32(2779096485), n)
-		r = r * 3 + shifts(u32(1431655765), n)
+		r = r * 3 + shifts(u32(2779096485), n)
 		r = r * 3 + shifts(i32(-1431655765), n)
 		r = r * 3 + shifts(u64(11936128518282651045), n)
 		r = r * 3 + shifts(i64(-6148914691236517205), n)
 	}
-	// COMPILER BUG: ARM skips zero halfwords when materializing negative folded constants.
-	// return r
-	return r % 251
+	return r
 }
 ```
 
@@ -8014,8 +7993,6 @@ package main
 opt_level :: "none"
 
 shifts :: proc(x: $T, n: $C) -> int {
-	// COMPILER BUG: shift counts other than uint are rejected by the frontend.
-	// return int(x << n) ~ int(x >> n)
 	return int(x << uint(n)) ~ int(x >> uint(n))
 }
 
@@ -9990,10 +9967,10 @@ push :: proc(v: ^Vec($T), x: T) {
 sum :: proc(v: Vec(int)) -> int {
 	// COMPILER BUG: the optimizer asserts in apply_peeps when the loop below
 	// gets inlined after the pushes into the array field
-	// s := 0
-	// for i in 0 ..< v.len do s += v.data[i]
-	// return s
-	return v.data[0] + v.data[1] + v.data[2] + v.data[3] + v.len
+	s := 0
+	for i in 0 ..< v.len do s += v.data[i]
+	return s
+	//return v.data[0] + v.data[1] + v.data[2] + v.data[3] + v.len
 }
 
 // the polymorphic T of the caller must not leak into the fields of Vec(u8)
@@ -10832,17 +10809,9 @@ main :: proc() -> int {
 	h.us[1].i = -1
 	r := int(h.tag) + int(h.u.b[0]) + int(h.u.b[3]) + int(h.us[0].i) + int(h.us[1].b[2])
 
-	// COMPILER BUG: two locals written and then read through the loops trip
-	// node.rtype != DEAD_NODE_KIND in bac/ssa/memopt.odin, the same happens
-	// with plain i32 locals read through (^[4]u8)(&e)
-	// arr: [3]U
-	// for &e, i in arr do e.i = i32(i) * 0x100
-	// for e in arr do r += int(e.b[1])
 	arr: [3]U
-	arr[0].i = 0x100
-	arr[1].i = 0x200
-	arr[2].i = 0x3_0400
-	r += int(arr[0].b[1]) + int(arr[1].b[1]) + int(arr[2].b[2]) + int(arr[2].b[1])
+	for &e, i in arr do e.i = i32(i) * 0x100
+	for e in arr do r += int(e.b[1])
 	return r
 }
 ```

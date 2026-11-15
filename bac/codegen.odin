@@ -1031,36 +1031,6 @@ putb :: #force_inline proc(b: ^[dynamic]u8, vl: $T) {
 	append(b, transmute(u8)vl)
 }
 
-// The full product of narrow operands fits twice their width, so the high half
-// is an ordinary multiply and shift there.
-normalize_u_mul_hi :: proc(
-	ctx: ^Proc,
-	node: $N/Expanded_Node,
-) -> Maybe(Node_ID) {
-	assert(node.itype == .U_Mul_Hi)
-	if node.dt == .I64 do return nil
-
-	@(static, rodata)
-	WIDE := #partial [Node_Datatype]Node_Datatype {
-		.I8  = .I32,
-		.I16 = .I32,
-		.I32 = .I64,
-	}
-	wide := WIDE[node.dt]
-	assert(wide != .Void)
-
-	lhs := add_un_op(ctx, "umhl", .U_Conv, wide, node.inps[0])
-	worklist_add(ctx, ctx.worklist, lhs)
-	rhs := add_un_op(ctx, "umhr", .U_Conv, wide, node.inps[1])
-	worklist_add(ctx, ctx.worklist, rhs)
-	prod := add_bin_op(ctx, "umhm", .Mul, wide, lhs, rhs)
-	worklist_add(ctx, ctx.worklist, prod)
-	bits := add_c_int(ctx, "umhb", wide, i64(DT_SIZE[node.dt] * 8))
-	high := add_bin_op(ctx, "umhs", .U_Shr, wide, prod, bits)
-	worklist_add(ctx, ctx.worklist, high)
-	return add_un_op(ctx, "umhn", .U_Conv, node.dt, high)
-}
-
 lsbs_to_msbs :: proc(ctx: ^Proc, node: $N/Expanded_Node) -> Node_ID {
 	assert(node.itype == .Simd_Extract_Lsbs)
 	lsbsmt := add_c_int(

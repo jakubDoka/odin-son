@@ -1,16 +1,53 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     push rbx
+    push rbp
     xor ecx, ecx
     xor edx, edx
 1:
     cmp rdx, 4
-    jl 2
-    mov rax, rcx
-    add rax, rdx
+    jl 8
+    mov rbx, rcx
+    mov rbp, rdx
+2:
+    cmp rbp, 6
+    jl 7
+    mov rax, rbx
+    mov rsi, rbp
+3:
+    cmp rsi, 8
+    je 4
+    mov rdi, rsi
+    add rdi, 1
+    mov r8, rax
+    add r8, rsi
+    mov rsi, rdi
+    mov rax, r8
+    jmp 3
+4:
+    xor edi, edi
+5:
+    cmp rdi, 3
+    je 6
+    mov r8, rax
+    add r8, rdi
+    mov r9, rdi
+    add r9, 1
+    mov rax, r8
+    mov rdi, r9
+    jmp 5
+6:
+    add rax, rsi
+    pop rbp
     pop rbx
     ret
-2:
+7:
+    mov rax, rbp
+    add rax, 1
+    add rbx, rax
+    mov rbp, rax
+    jmp 2
+8:
     mov rax, rdx
     add rax, 1
     mov rbx, rcx
@@ -22,34 +59,96 @@ main:
     jmp 1
 =========== OPT LEVEL: none ===========
 main:
-    xor eax, eax
+    xor edx, edx
     xor ecx, ecx
 1:
     cmp rcx, 4
-    jl 2
+    jl 8
+2:
+    cmp rcx, 6
+    jl 7
+3:
+    cmp rcx, 8
+    je 4
+    mov rax, rcx
+    add rax, 1
+    add rdx, rcx
+    mov rcx, rax
+    jmp 3
+4:
+    xor eax, eax
+5:
+    cmp rax, 3
+    je 6
+    add rdx, rax
+    add rax, 1
+    jmp 5
+6:
+    mov rax, rdx
     add rax, rcx
     ret
-2:
+7:
     add rcx, 1
-    mov rdx, rax
     add rdx, rcx
-    cmp rcx, 2
-    cmove rdx, rax
+    jmp 2
+8:
+    add rcx, 1
     mov rax, rdx
+    add rax, rcx
+    cmp rcx, 2
+    cmove rax, rdx
+    mov rdx, rax
     jmp 1
 =========== OPT LEVEL: moderate-quick ===========
 main:
     push rbx
+    push rbp
     xor ecx, ecx
     xor edx, edx
 1:
     cmp rdx, 4
-    jl 2
-    mov rax, rcx
-    add rax, rdx
+    jl 8
+    mov rbx, rcx
+    mov rbp, rdx
+2:
+    cmp rbp, 6
+    jl 7
+    mov rax, rbx
+    mov rsi, rbp
+3:
+    cmp rsi, 8
+    je 4
+    mov rdi, rsi
+    add rdi, 1
+    mov r8, rax
+    add r8, rsi
+    mov rsi, rdi
+    mov rax, r8
+    jmp 3
+4:
+    xor edi, edi
+5:
+    cmp rdi, 3
+    je 6
+    mov r8, rax
+    add r8, rdi
+    mov r9, rdi
+    add r9, 1
+    mov rax, r8
+    mov rdi, r9
+    jmp 5
+6:
+    add rax, rsi
+    pop rbp
     pop rbx
     ret
-2:
+7:
+    mov rax, rbp
+    add rax, 1
+    add rbx, rax
+    mov rbp, rax
+    jmp 2
+8:
     mov rax, rdx
     add rax, 1
     mov rbx, rcx
@@ -61,43 +160,103 @@ main:
     jmp 1
 =========== OPT LEVEL: moderate ===========
 main:
-    xor eax, eax
+    xor edx, edx
     xor ecx, ecx
 1:
     cmp rcx, 4
-    jl 2
+    jl 8
+2:
+    cmp rcx, 6
+    jl 7
+3:
+    cmp rcx, 8
+    je 4
+    mov rax, rcx
+    add rax, 1
+    add rdx, rcx
+    mov rcx, rax
+    jmp 3
+4:
+    xor eax, eax
+5:
+    cmp rax, 3
+    je 6
+    add rdx, rax
+    add rax, 1
+    jmp 5
+6:
+    mov rax, rdx
     add rax, rcx
     ret
-2:
+7:
     add rcx, 1
-    mov rdx, rax
     add rdx, rcx
-    cmp rcx, 2
-    cmove rdx, rax
+    jmp 2
+8:
+    add rcx, 1
     mov rax, rdx
+    add rax, rcx
+    cmp rcx, 2
+    cmove rax, rdx
+    mov rdx, rax
     jmp 1
 =========== OPT LEVEL: all ===========
 main:
     xor eax, eax
-    xor ecx, ecx
+    xor edx, edx
 1:
-    mov r8, rcx
-    mov rdi, rax
-    mov rax, rdi
+    mov rsi, rdx
+    mov rcx, rax
+    mov rax, rcx
     add rax, 1
-    mov rcx, r8
-    add rcx, rax
+    mov rdx, rsi
+    add rdx, rax
     cmp rax, 2
+    sete r8b
+    movzx r8d, r8b
+    cmp rcx, 4
+    setl dil
+    movzx edi, dil
+    test r8b, r8b
+    cmovne rdx, rsi
+    test dil, dil
+    jne 1
+2:
+    mov rax, rsi
+    mov rdx, rcx
+    cmp rdx, 6
+    setl dil
+    movzx edi, dil
+    mov rcx, rdx
+    add rcx, 1
+    mov rsi, rax
+    add rsi, rcx
+    test dil, dil
+    jne 2
+3:
+    mov rdi, rdx
+    mov rcx, rax
+    cmp rdi, 8
     sete sil
     movzx esi, sil
-    cmp rdi, 4
-    setl dl
-    movzx edx, dl
+    mov rdx, rdi
+    add rdx, 1
+    mov rax, rcx
+    add rax, rdi
     test sil, sil
-    cmovne rcx, r8
+    je 3
+    xor eax, eax
+4:
+    mov rsi, rcx
+    cmp rax, 3
+    sete dl
+    movzx edx, dl
+    mov rcx, rsi
+    add rcx, rax
+    add rax, 1
     test dl, dl
-    jne 1
-    mov rax, r8
+    je 4
+    mov rax, rsi
     add rax, rdi
     ret
 =========== OPT LEVEL: aggresive ===========

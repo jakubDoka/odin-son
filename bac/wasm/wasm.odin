@@ -193,8 +193,6 @@ peep :: proc(
 			in_range,
 		)
 	case .U_Mul_Hi:
-		if res := bac.normalize_u_mul_hi(ctx, node); res != nil do return res
-
 		// no widening multiply, the product is assembled from 32-bit halves
 		low := bac.add_c_int(ctx, "umhk", .I64, 0xffffffff)
 		half := bac.add_c_int(ctx, "umhh", .I64, 32)

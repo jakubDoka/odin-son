@@ -230,8 +230,6 @@ peep :: proc(
 		)
 		bac.worklist_add(ctx, ctx.worklist, guard)
 		return guard
-	case .U_Mul_Hi:
-		return bac.normalize_u_mul_hi(ctx, node)
 	case .Popcnt:
 		vec := bac.add_un_op(ctx, "pcv", .Cast, .F64, node.inps[0])
 		cnt := add_cnt(ctx, "pcc", .F64, vec)

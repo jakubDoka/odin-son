@@ -14,6 +14,12 @@ get_lattice :: bac.get_lattice
 
 DEAD_EXCEPTIONS := bit_set[bac.Node_Type]{.Nil, .Entry, .Region, .Loop}
 
+uext :: proc(oper: i64, ty: bac.Node_Datatype) -> i64 {
+	bit_size := uint(bac.DT_SIZE[ty] * 8)
+	mask := max(u64) >> (64 - bit_size)
+	return oper & i64(mask)
+}
+
 sext :: proc(oper: i64, ty: bac.Node_Datatype) -> (value: i64) {
 	bit_size := uint(bac.DT_SIZE[ty] * 8)
 	mask: i64 = -1 << bit_size
@@ -115,11 +121,15 @@ fold_bin_op :: proc(
 	#partial switch op {
 	case .Div, .Rem, .Shr, .Shl, .Le ..= .Ge:
 		lhs = sext(lhs, op_ty)
+	case:
+		lhs = uext(lhs, op_ty)
 	}
 
 	#partial switch op {
 	case .Div, .Rem, .Le ..= .Ge:
 		rhs = sext(rhs, op_ty)
+	case:
+		rhs = uext(rhs, op_ty)
 	}
 
 	switch op {
@@ -181,6 +191,7 @@ fold_bin_op :: proc(
 		mask := max(u64) >> (64 - bits)
 		value = i64((u128(u64(lhs) & mask) * u128(u64(rhs) & mask)) >> bits)
 	}
+
 	return
 
 	float_ops :: proc(lhs: $T, op: Bin_Op, rhs: T) -> i64 {
@@ -335,6 +346,22 @@ peep :: proc(
 
 		if cnt.dt == node.dt do return inp.inps[0]
 		return bac.add_un_op(ctx, "bcfc", .U_Conv, node.dt, inp.inps[0])
+	case .U_Mul_Hi:
+		if node.dt == .I64 || ctx.smallest_type == .Void do break
+
+		wide := max(node.dt + bac.Node_Datatype(1), ctx.smallest_type)
+		assert(wide in bac.INT_DTS)
+
+		lhs := bac.add_un_op(ctx, "umhl", .U_Conv, wide, node.inps[0])
+		bac.worklist_add(ctx, ctx.worklist, lhs)
+		rhs := bac.add_un_op(ctx, "umhr", .U_Conv, wide, node.inps[1])
+		bac.worklist_add(ctx, ctx.worklist, rhs)
+		prod := bac.add_bin_op(ctx, "umhm", .Mul, wide, lhs, rhs)
+		bac.worklist_add(ctx, ctx.worklist, prod)
+		bits := bac.add_c_int(ctx, "umhb", wide, i64(bac.DT_SIZE[node.dt] * 8))
+		high := bac.add_bin_op(ctx, "umhs", .U_Shr, wide, prod, bits)
+		bac.worklist_add(ctx, ctx.worklist, high)
+		return bac.add_un_op(ctx, "umhn", .U_Conv, node.dt, high)
 	}
 
 	#partial match: switch node.itype {
@@ -1131,18 +1158,16 @@ peep :: proc(
 						cursor = out.id
 						continue
 					}
-					if onode.itype == .Copy &&
-					   bac.is_noalias(ctx, node.inps[2], onode.inps[3]) {}
 					osize := bac.mem_op_size(ctx, out.id) or_break eliminate
 					obase, ooff := bac.base_and_offset(ctx, onode.inps[2])
-					if base != obase {
-						bac.peep_ctx_add_trigger(ctx, obase, id)
-						break eliminate
-					}
 
-					if ooff <= off && off + size <= ooff + osize {
+					if base == obase && ooff <= off && off + size <= ooff + osize {
 						clobbered = false
 						return node.inps[1]
+					}
+
+					for inp in bac.get_inputs(ctx, onode.inps[2]) {
+						bac.peep_ctx_add_trigger(ctx, inp, id)
 					}
 
 					break eliminate

@@ -867,7 +867,6 @@ main:
     movsd.q [rsp + 0x10], xmm0
     movsd.q xmm0, [rsp + 0x10]
     call src
-    xor ecx, ecx
     movsd.q [rsp + 0x160], xmm0
     movsd.q [rsp], xmm15
     movsd.q xmm15, [rsp + 0x100]
@@ -902,6 +901,7 @@ main:
     movsd.q xmm9, [rsp + 0x200]
     movsd.q xmm0, [rsp + 0x220]
     movsd.q xmm1, [rsp + 0x210]
+    xor eax, eax
 2:
     movsd.q xmm3, [rsp + 0x160]
     movsd.q xmm4, [rsp + 0x150]
@@ -922,11 +922,9 @@ main:
     movsd.q [rsp + 0x180], xmm9
     movsd.q [rsp + 0x170], xmm1
     movsd xmm2, xmm0
-    cmp rcx, 2
-    sete al
-    movzx eax, al
+    mov rcx, rax
     add rcx, 1
-    test al, al
+    cmp rax, 2
     movsd.q [rsp + 0x160], xmm2
     movsd.q [rsp + 0x150], xmm3
     movsd.q [rsp + 0x140], xmm4
@@ -943,7 +941,8 @@ main:
     movsd.q xmm9, [rsp + 0x190]
     movsd.q xmm1, [rsp + 0x180]
     movsd.q xmm0, [rsp + 0x170]
-    je 2
+    mov rax, rcx
+    jne 2
     movsd.q xmm1, [rsp + 0xf0]
     movsd.q xmm0, [rsp + 0x170]
     vfmadd213sd xmm0, xmm1, xmm2

@@ -9,44 +9,38 @@ main:
     movzx ebx, al
     mov rbp, rcx
     add rbp, 1
+    mov rsi, rdx
+    add rsi, rbx
     cmp rbp, 3
-    setg sil
-    movzx esi, sil
-    mov rdi, rdx
-    add rdi, rbx
-    test sil, sil
-    jne 2
+    jg 2
     cmp al, -1
     je 2
     add al, 1
     mov rcx, rbp
-    mov rdx, rdi
+    mov rdx, rsi
     jmp 1
 2:
     mov al, 0x7e
-    mov rcx, rdi
+    mov rcx, rsi
     mov rdx, rbp
 3:
     movsx rbx, al
     mov rbp, rdx
     add rbp, 1
+    mov rsi, rcx
+    add rsi, rbx
     cmp rbp, 6
-    setg sil
-    movzx esi, sil
-    mov rdi, rcx
-    add rdi, rbx
-    test sil, sil
-    jne 4
+    jg 4
     cmp al, 0x7f
     je 4
     add al, 1
     mov rdx, rbp
-    mov rcx, rdi
+    mov rcx, rsi
     jmp 3
 4:
     xor eax, eax
     mov rcx, -2
-    mov rdx, rdi
+    mov rdx, rsi
     mov rbx, rbp
 5:
     mov rbp, rcx
@@ -54,128 +48,109 @@ main:
     add rbp, rax
     mov rsi, rbx
     add rsi, 1
+    mov rdi, rdx
+    add rdi, rbp
     cmp rsi, 9
-    setg dil
-    movzx edi, dil
-    mov r8, rdx
-    add r8, rbp
-    test dil, dil
-    jne 6
+    jg 6
     cmp rcx, -1
     je 6
     mov rbp, rax
     add rbp, 1
-    mov rdi, rcx
-    add rdi, 1
-    mov rdx, r8
+    mov r8, rcx
+    add r8, 1
+    mov rdx, rdi
     mov rbx, rsi
     mov rax, rbp
-    mov rcx, rdi
+    mov rcx, r8
     jmp 5
 6:
     movabs rax, 0x7fffffffffffffff
     movabs rcx, 0x7ffffffffffffffe
-    mov rdx, r8
+    mov rdx, rdi
     mov rbx, rsi
 7:
     mov rbp, rcx
     and rbp, 0xff
     mov rsi, rbx
     add rsi, 1
+    mov rdi, rdx
+    add rdi, rbp
     cmp rsi, 0xc
-    setg dil
-    movzx edi, dil
-    mov r8, rdx
-    add r8, rbp
-    test dil, dil
-    jne 8
+    jg 8
     cmp rax, rcx
     je 8
     mov rbp, rcx
     add rbp, 1
-    mov rdx, r8
+    mov rdx, rdi
     mov rbx, rsi
     mov rcx, rbp
     jmp 7
 8:
     imul rax, rsi, 0x3e8
-    add rax, r8
+    add rax, rdi
     pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
 main:
-    mov sil, -2
-    xor ecx, ecx
-    xor r9d, r9d
+    mov cl, -2
+    xor edi, edi
+    xor esi, esi
 1:
-    movzx edx, sil
-    add rcx, 1
-    cmp rcx, 3
-    setg al
-    movzx eax, al
-    add r9, rdx
-    test al, al
-    jne 2
-    cmp sil, -1
+    movzx eax, cl
+    add rdi, 1
+    add rsi, rax
+    cmp rdi, 3
+    jg 2
+    cmp cl, -1
     je 2
-    add sil, 1
+    add cl, 1
     jmp 1
 2:
-    mov sil, 0x7e
+    mov cl, 0x7e
 3:
-    movsx rdx, sil
-    add rcx, 1
-    cmp rcx, 6
-    setg al
-    movzx eax, al
-    add r9, rdx
-    test al, al
-    jne 4
-    cmp sil, 0x7f
+    movsx rax, cl
+    add rdi, 1
+    add rsi, rax
+    cmp rdi, 6
+    jg 4
+    cmp cl, 0x7f
     je 4
-    add sil, 1
+    add cl, 1
     jmp 3
 4:
-    xor edx, edx
+    xor ecx, ecx
     mov rax, -2
 5:
-    mov rdi, rax
-    and rdi, 0xff
-    add rdi, rdx
-    add rcx, 1
-    cmp rcx, 9
-    setg sil
-    movzx esi, sil
-    add r9, rdi
-    test sil, sil
-    jne 6
+    mov rdx, rax
+    and rdx, 0xff
+    add rdx, rcx
+    add rdi, 1
+    add rsi, rdx
+    cmp rdi, 9
+    jg 6
     cmp rax, -1
     je 6
-    add rdx, 1
+    add rcx, 1
     add rax, 1
     jmp 5
 6:
-    movabs r8, 0x7fffffffffffffff
+    movabs rdx, 0x7fffffffffffffff
     movabs rax, 0x7ffffffffffffffe
-    mov rdx, r9
 7:
-    mov rdi, rax
-    and rdi, 0xff
-    add rcx, 1
-    cmp rcx, 0xc
-    setg sil
-    movzx esi, sil
-    add rdx, rdi
-    test sil, sil
-    jne 8
-    cmp r8, rax
+    mov rcx, rax
+    and rcx, 0xff
+    add rdi, 1
+    add rsi, rcx
+    cmp rdi, 0xc
+    jg 8
+    cmp rdx, rax
     je 8
     add rax, 1
     jmp 7
 8:
-    imul rax, rcx, 0x3e8
-    add rax, rdx
+    imul rax, rdi, 0x3e8
+    add rax, rsi
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
@@ -188,44 +163,38 @@ main:
     movzx ebx, al
     mov rbp, rcx
     add rbp, 1
+    mov rsi, rdx
+    add rsi, rbx
     cmp rbp, 3
-    setg sil
-    movzx esi, sil
-    mov rdi, rdx
-    add rdi, rbx
-    test sil, sil
-    jne 2
+    jg 2
     cmp al, -1
     je 2
     add al, 1
     mov rcx, rbp
-    mov rdx, rdi
+    mov rdx, rsi
     jmp 1
 2:
     mov al, 0x7e
-    mov rcx, rdi
+    mov rcx, rsi
     mov rdx, rbp
 3:
     movsx rbx, al
     mov rbp, rdx
     add rbp, 1
+    mov rsi, rcx
+    add rsi, rbx
     cmp rbp, 6
-    setg sil
-    movzx esi, sil
-    mov rdi, rcx
-    add rdi, rbx
-    test sil, sil
-    jne 4
+    jg 4
     cmp al, 0x7f
     je 4
     add al, 1
     mov rdx, rbp
-    mov rcx, rdi
+    mov rcx, rsi
     jmp 3
 4:
     xor eax, eax
     mov rcx, -2
-    mov rdx, rdi
+    mov rdx, rsi
     mov rbx, rbp
 5:
     mov rbp, rcx
@@ -233,128 +202,109 @@ main:
     add rbp, rax
     mov rsi, rbx
     add rsi, 1
+    mov rdi, rdx
+    add rdi, rbp
     cmp rsi, 9
-    setg dil
-    movzx edi, dil
-    mov r8, rdx
-    add r8, rbp
-    test dil, dil
-    jne 6
+    jg 6
     cmp rcx, -1
     je 6
     mov rbp, rax
     add rbp, 1
-    mov rdi, rcx
-    add rdi, 1
-    mov rdx, r8
+    mov r8, rcx
+    add r8, 1
+    mov rdx, rdi
     mov rbx, rsi
     mov rax, rbp
-    mov rcx, rdi
+    mov rcx, r8
     jmp 5
 6:
     movabs rax, 0x7fffffffffffffff
     movabs rcx, 0x7ffffffffffffffe
-    mov rdx, r8
+    mov rdx, rdi
     mov rbx, rsi
 7:
     mov rbp, rcx
     and rbp, 0xff
     mov rsi, rbx
     add rsi, 1
+    mov rdi, rdx
+    add rdi, rbp
     cmp rsi, 0xc
-    setg dil
-    movzx edi, dil
-    mov r8, rdx
-    add r8, rbp
-    test dil, dil
-    jne 8
+    jg 8
     cmp rax, rcx
     je 8
     mov rbp, rcx
     add rbp, 1
-    mov rdx, r8
+    mov rdx, rdi
     mov rbx, rsi
     mov rcx, rbp
     jmp 7
 8:
     imul rax, rsi, 0x3e8
-    add rax, r8
+    add rax, rdi
     pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 main:
-    mov sil, -2
-    xor ecx, ecx
-    xor r9d, r9d
+    mov cl, -2
+    xor edi, edi
+    xor esi, esi
 1:
-    movzx edx, sil
-    add rcx, 1
-    cmp rcx, 3
-    setg al
-    movzx eax, al
-    add r9, rdx
-    test al, al
-    jne 2
-    cmp sil, -1
+    movzx eax, cl
+    add rdi, 1
+    add rsi, rax
+    cmp rdi, 3
+    jg 2
+    cmp cl, -1
     je 2
-    add sil, 1
+    add cl, 1
     jmp 1
 2:
-    mov sil, 0x7e
+    mov cl, 0x7e
 3:
-    movsx rdx, sil
-    add rcx, 1
-    cmp rcx, 6
-    setg al
-    movzx eax, al
-    add r9, rdx
-    test al, al
-    jne 4
-    cmp sil, 0x7f
+    movsx rax, cl
+    add rdi, 1
+    add rsi, rax
+    cmp rdi, 6
+    jg 4
+    cmp cl, 0x7f
     je 4
-    add sil, 1
+    add cl, 1
     jmp 3
 4:
-    xor edx, edx
+    xor ecx, ecx
     mov rax, -2
 5:
-    mov rdi, rax
-    and rdi, 0xff
-    add rdi, rdx
-    add rcx, 1
-    cmp rcx, 9
-    setg sil
-    movzx esi, sil
-    add r9, rdi
-    test sil, sil
-    jne 6
+    mov rdx, rax
+    and rdx, 0xff
+    add rdx, rcx
+    add rdi, 1
+    add rsi, rdx
+    cmp rdi, 9
+    jg 6
     cmp rax, -1
     je 6
-    add rdx, 1
+    add rcx, 1
     add rax, 1
     jmp 5
 6:
-    movabs r8, 0x7fffffffffffffff
+    movabs rdx, 0x7fffffffffffffff
     movabs rax, 0x7ffffffffffffffe
-    mov rdx, r9
 7:
-    mov rdi, rax
-    and rdi, 0xff
-    add rcx, 1
-    cmp rcx, 0xc
-    setg sil
-    movzx esi, sil
-    add rdx, rdi
-    test sil, sil
-    jne 8
-    cmp r8, rax
+    mov rcx, rax
+    and rcx, 0xff
+    add rdi, 1
+    add rsi, rcx
+    cmp rdi, 0xc
+    jg 8
+    cmp rdx, rax
     je 8
     add rax, 1
     jmp 7
 8:
-    imul rax, rcx, 0x3e8
-    add rax, rdx
+    imul rax, rdi, 0x3e8
+    add rax, rsi
     ret
 =========== OPT LEVEL: all ===========
 main:
@@ -365,13 +315,10 @@ main:
     movzx r8d, al
     mov rdx, rdi
     add rdx, 1
-    cmp rdx, 3
-    setg dil
-    movzx edi, dil
     mov rcx, rsi
     add rcx, r8
-    test dil, dil
-    jne 2
+    cmp rdx, 3
+    jg 2
     mov r8, rax
     add r8b, 1
     cmp al, -1
@@ -383,65 +330,52 @@ main:
     mov al, 0x7e
 3:
     movsx rsi, al
-    mov r8, rdx
-    add r8, 1
-    cmp r8, 6
-    setg dl
-    movzx edx, dl
-    mov rdi, rcx
-    add rdi, rsi
-    test dl, dl
-    jne 4
+    mov rdi, rdx
+    add rdi, 1
+    mov r8, rcx
+    add r8, rsi
+    cmp rdi, 6
+    jg 4
     mov rsi, rax
     add sil, 1
     cmp al, 0x7f
-    mov rdx, r8
-    mov rcx, rdi
+    mov rdx, rdi
+    mov rcx, r8
     mov rax, rsi
     jne 3
 4:
     mov rax, -2
-    xor ecx, ecx
-    mov rsi, rdi
-    mov rdx, r8
+    xor esi, esi
 5:
-    mov rdi, rax
-    and rdi, 0xff
-    add rdi, rcx
-    mov r10, rdx
-    add r10, 1
-    cmp r10, 9
-    setg dl
-    movzx edx, dl
-    mov r8, rsi
-    add r8, rdi
-    test dl, dl
-    jne 6
-    mov rdi, rax
-    add rdi, 1
+    mov r9, rax
+    and r9, 0xff
+    add r9, rsi
+    mov rcx, rdi
     add rcx, 1
+    mov rdx, r8
+    add rdx, r9
+    cmp rcx, 9
+    jg 6
+    mov r9, rax
+    add r9, 1
+    add rsi, 1
     cmp rax, -1
-    mov rsi, r8
-    mov rdx, r10
-    mov rax, rdi
+    mov r8, rdx
+    mov rdi, rcx
+    mov rax, r9
     jne 5
 6:
     movabs r9, 0x7fffffffffffffff
     movabs rax, 0x7ffffffffffffffe
-    mov rdx, r8
-    mov rcx, r10
 7:
     mov rsi, rax
     and rsi, 0xff
     mov r8, rcx
     add r8, 1
-    cmp r8, 0xc
-    setg cl
-    movzx ecx, cl
     mov rdi, rdx
     add rdi, rsi
-    test cl, cl
-    jne 8
+    cmp r8, 0xc
+    jg 8
     mov rsi, rax
     add rsi, 1
     cmp r9, rax

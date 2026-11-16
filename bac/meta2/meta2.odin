@@ -78,6 +78,12 @@ main :: proc() {
 			no_ctor = true,
 		}
 
+		AMD64_COMPARISON_SPEC :: meta.Class_Spec {
+			id      = amd64.Mem_Op,
+			no_ctor = true,
+			flags   = {.Clonable},
+		}
+
 		AMD64_SIMPLE_SHIFT_OP_SPEC :: meta.Class_Spec {
 			id      = amd64.Mem_Op,
 			no_ctor = true,
@@ -89,7 +95,8 @@ main :: proc() {
 		}
 
 		AMD64_CLASSES := [amd64.Node_Type]meta.Class_Spec {
-			.AMD64_Add ..= .AMD64_U_Ge = AMD64_SIMPLE_BIN_OP_SPEC,
+			.AMD64_Add ..= .AMD64_Xor = AMD64_SIMPLE_BIN_OP_SPEC,
+			.AMD64_Eq ..= .AMD64_U_Ge = AMD64_COMPARISON_SPEC,
 			.AMD64_Shl ..= .AMD64_U_Shr = AMD64_SIMPLE_SHIFT_OP_SPEC,
 			.AMD64_Neg ..= .AMD64_Not = AMD64_SIMPLE_UN_OP_SPEC,
 			.AMD64_Pcmpeq = {no_ctor = true, flags = {.Interned}},

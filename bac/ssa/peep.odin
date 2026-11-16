@@ -642,6 +642,10 @@ peep :: proc(
 				onode := expand_node(ctx, out.id)
 				if onode.itype == .Phi &&
 				   onode.inps[1 + d.then_idx] != onode.inps[1 + d.else_idx] {
+					// Phis that do not select (memory) only converge through
+					// their inputs being replaced, which does not peep the phi.
+					bac.peep_ctx_add_trigger(ctx, onode.inps[1 + d.then_idx], id)
+					bac.peep_ctx_add_trigger(ctx, onode.inps[1 + d.else_idx], id)
 					continue collapse
 				}
 			}

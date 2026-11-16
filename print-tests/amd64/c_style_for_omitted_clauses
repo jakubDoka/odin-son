@@ -212,50 +212,37 @@ main:
     mov rdx, rsi
     add rdx, rax
     cmp rax, 2
-    sete r8b
-    movzx r8d, r8b
+    cmove rdx, rsi
     cmp rcx, 4
-    setl dil
-    movzx edi, dil
-    test r8b, r8b
-    cmovne rdx, rsi
-    test dil, dil
-    jne 1
+    jl 1
 2:
     mov rax, rsi
     mov rdx, rcx
-    cmp rdx, 6
-    setl dil
-    movzx edi, dil
     mov rcx, rdx
     add rcx, 1
     mov rsi, rax
     add rsi, rcx
-    test dil, dil
-    jne 2
+    cmp rdx, 6
+    jl 2
 3:
     mov rdi, rdx
     mov rcx, rax
-    cmp rdi, 8
-    sete sil
-    movzx esi, sil
     mov rdx, rdi
     add rdx, 1
     mov rax, rcx
     add rax, rdi
-    test sil, sil
-    je 3
+    cmp rdi, 8
+    jne 3
     xor eax, eax
 4:
     mov rsi, rcx
-    cmp rax, 3
-    sete dl
-    movzx edx, dl
     mov rcx, rsi
     add rcx, rax
-    add rax, 1
-    test dl, dl
-    je 4
+    mov rdx, rax
+    add rdx, 1
+    cmp rax, 3
+    mov rax, rdx
+    jne 4
     mov rax, rsi
     add rax, rdi
     ret

@@ -314,7 +314,8 @@ enum {
 	bac_Opt_Flag_Local_Peeps = 1,
 	bac_Opt_Flag_Mem_Opt = 2,
 	bac_Opt_Flag_Loop_Opt = 3,
-	bac_Opt_Flag_Inline = 4,
+	bac_Opt_Flag_Widen = 4,
+	bac_Opt_Flag_Inline = 5,
 };
 struct bac_Interner {
 	bac_uintptr hash_idx;
@@ -487,6 +488,7 @@ enum {
 	bac_Pass_Sccp = 1,
 	bac_Pass_Mem = 2,
 	bac_Pass_Loop = 3,
+	bac_Pass_Widen = 4,
 };
 struct bac_Node_Output {
 	bac_u32 id : 22;
@@ -510,7 +512,8 @@ enum {
 	bac_Bs_Opt_Flag_Local_Peeps = 1 << 1,
 	bac_Bs_Opt_Flag_Mem_Opt = 1 << 2,
 	bac_Bs_Opt_Flag_Loop_Opt = 1 << 3,
-	bac_Bs_Opt_Flag_Inline = 1 << 4,
+	bac_Bs_Opt_Flag_Widen = 1 << 4,
+	bac_Bs_Opt_Flag_Inline = 1 << 5,
 };
 enum {
 	bac_Bs_Node_Datatype_Void = 1 << 0,
@@ -566,6 +569,7 @@ enum {
 	bac_Bs_Pass_Sccp = 1 << 1,
 	bac_Bs_Pass_Mem = 1 << 2,
 	bac_Bs_Pass_Loop = 1 << 3,
+	bac_Bs_Pass_Widen = 1 << 4,
 };
 struct bac_Tag {
 	bac_String name[1];

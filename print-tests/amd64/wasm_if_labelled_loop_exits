@@ -1,33 +1,25 @@
 =========== OPT LEVEL: none-quick ===========
 choose:
-    push rbx
-    push rbp
-    cmp rdi, 0
-    setne cl
-    movzx ecx, cl
     xor eax, eax
-    mov rdx, -1
+    mov rcx, -1
 1:
+    add rcx, 1
+    cmp rcx, 4
+    jge 7
+    mov rdx, -1
+2:
     add rdx, 1
     cmp rdx, 4
-    jge 7
-    mov rbx, -1
-2:
-    add rbx, 1
-    cmp rbx, 4
     jge 5
-    cmp rsi, rbx
-    sete bpl
-    movzx ebp, bpl
-    test cl, cl
+    cmp rdi, 0
     jne 3
-    test bpl, bpl
-    jne 7
+    cmp rsi, rdx
+    je 7
     add rax, 0x23
     jmp 4
 3:
-    test bpl, bpl
-    jne 6
+    cmp rsi, rdx
+    je 6
     add rax, 0x11
 4:
     imul rax, rax, 3
@@ -39,16 +31,14 @@ choose:
     jmp 1
 7:
     add rax, 0x100
-    pop rbp
-    pop rbx
     ret
 main:
     push rbx
-    mov.q rdi, [rip + 0xe8c]
+    mov.q rdi, [rip + 0xeaa]
     mov rsi, 2
     call choose
     mov rbx, rax
-    mov.q rdi, [rip + 0xe76]
+    mov.q rdi, [rip + 0xe94]
     add rdi, 1
     mov rsi, 2
     call choose
@@ -59,9 +49,6 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 choose:
-    cmp rdi, 0
-    setne r8b
-    movzx r8d, r8b
     xor eax, eax
     mov rcx, -1
 1:
@@ -73,18 +60,15 @@ choose:
     add rdx, 1
     cmp rdx, 4
     jge 5
-    cmp rsi, rdx
-    sete dil
-    movzx edi, dil
-    test r8b, r8b
+    cmp rdi, 0
     jne 3
-    test dil, dil
-    jne 7
+    cmp rsi, rdx
+    je 7
     add rax, 0x23
     jmp 4
 3:
-    test dil, dil
-    jne 6
+    cmp rsi, rdx
+    je 6
     add rax, 0x11
 4:
     imul rax, rax, 3
@@ -99,11 +83,11 @@ choose:
     ret
 main:
     push rbx
-    mov.q rdi, [rip + 0xeb1]
+    mov.q rdi, [rip + 0xec7]
     mov rsi, 2
     call choose
     mov rbx, rax
-    mov.q rdi, [rip + 0xe9b]
+    mov.q rdi, [rip + 0xeb1]
     add rdi, 1
     mov rsi, 2
     call choose
@@ -113,34 +97,26 @@ main:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 choose:
-    push rbx
-    push rbp
-    cmp rdi, 0
-    setne cl
-    movzx ecx, cl
     xor eax, eax
-    mov rdx, -1
+    mov rcx, -1
 1:
+    add rcx, 1
+    cmp rcx, 4
+    jge 7
+    mov rdx, -1
+2:
     add rdx, 1
     cmp rdx, 4
-    jge 7
-    mov rbx, -1
-2:
-    add rbx, 1
-    cmp rbx, 4
     jge 5
-    cmp rsi, rbx
-    sete bpl
-    movzx ebp, bpl
-    test cl, cl
+    cmp rdi, 0
     jne 3
-    test bpl, bpl
-    jne 7
+    cmp rsi, rdx
+    je 7
     add rax, 0x23
     jmp 4
 3:
-    test bpl, bpl
-    jne 6
+    cmp rsi, rdx
+    je 6
     add rax, 0x11
 4:
     imul rax, rax, 3
@@ -152,16 +128,14 @@ choose:
     jmp 1
 7:
     add rax, 0x100
-    pop rbp
-    pop rbx
     ret
 main:
     push rbx
-    mov.q rdi, [rip + 0xe8c]
+    mov.q rdi, [rip + 0xeaa]
     mov rsi, 2
     call choose
     mov rbx, rax
-    mov.q rdi, [rip + 0xe76]
+    mov.q rdi, [rip + 0xe94]
     add rdi, 1
     mov rsi, 2
     call choose
@@ -172,9 +146,6 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 choose:
-    cmp rdi, 0
-    setne r8b
-    movzx r8d, r8b
     xor eax, eax
     mov rcx, -1
 1:
@@ -186,18 +157,15 @@ choose:
     add rdx, 1
     cmp rdx, 4
     jge 5
-    cmp rsi, rdx
-    sete dil
-    movzx edi, dil
-    test r8b, r8b
+    cmp rdi, 0
     jne 3
-    test dil, dil
-    jne 7
+    cmp rsi, rdx
+    je 7
     add rax, 0x23
     jmp 4
 3:
-    test dil, dil
-    jne 6
+    cmp rsi, rdx
+    je 6
     add rax, 0x11
 4:
     imul rax, rax, 3
@@ -212,11 +180,11 @@ choose:
     ret
 main:
     push rbx
-    mov.q rdi, [rip + 0xeb1]
+    mov.q rdi, [rip + 0xec7]
     mov rsi, 2
     call choose
     mov rbx, rax
-    mov.q rdi, [rip + 0xe9b]
+    mov.q rdi, [rip + 0xeb1]
     add rdi, 1
     mov rsi, 2
     call choose
@@ -226,38 +194,32 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 choose:
-    cmp rdi, 0
-    setne r9b
-    movzx r9d, r9b
     xor eax, eax
     mov rcx, -1
 1:
     mov rdx, -1
 2:
-    mov r8, rdx
-    add r8, 1
-    cmp rsi, r8
-    sete dil
-    movzx edi, dil
-    test r9b, r9b
+    mov r9, rdx
+    add r9, 1
+    cmp rdi, 0
     jne 3
-    test dil, dil
-    jne 6
+    cmp rsi, r9
+    je 6
     add rax, 0x23
     jmp 4
 3:
-    test dil, dil
-    jne 5
+    cmp rsi, r9
+    je 5
     add rax, 0x11
 4:
-    imul rdi, rax, 3
-    mov rax, rdi
+    imul r8, rax, 3
+    mov rax, r8
     add rax, 1
     add rdx, 2
     cmp rdx, 4
-    mov rdx, r8
+    mov rdx, r9
     jl 2
-    mov rax, rdi
+    mov rax, r8
     add rax, 0x52
 5:
     mov rdx, rcx
@@ -270,11 +232,11 @@ choose:
     ret
 main:
     push rbx
-    mov.q rdi, [rip + 0xe9e]
+    mov.q rdi, [rip + 0xeb4]
     mov rsi, 2
     call choose
     mov rbx, rax
-    mov.q rdi, [rip + 0xe88]
+    mov.q rdi, [rip + 0xe9e]
     add rdi, 1
     mov rsi, 2
     call choose

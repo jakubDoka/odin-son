@@ -127,19 +127,14 @@ run f32:
 check f64:
     mov rax, 1
     addsd xmm0, xmm1
+    xor ecx, ecx
     ucomisd xmm0, xmm0
-    sete cl
-    jnp 6
-    mov cl, 0
+    jp 6
+    cmove rcx, rax
 6:
-    movzx ecx, cl
-    xor edx, edx
-    test cl, cl
-    cmovne rdx, rax
-    mov rax, rdx
+    mov rax, rcx
     add rax, 2
     ucomisd xmm0, xmm0
-    mov rcx, rdx
     cmovne rcx, rax
     cmovp rcx, rax
     mov rdx, rcx
@@ -151,19 +146,14 @@ check f64:
 check f32:
     mov rax, 1
     addss xmm0, xmm1
+    xor ecx, ecx
     ucomiss xmm0, xmm0
-    sete cl
-    jnp 8
-    mov cl, 0
+    jp 8
+    cmove rcx, rax
 8:
-    movzx ecx, cl
-    xor edx, edx
-    test cl, cl
-    cmovne rdx, rax
-    mov rax, rdx
+    mov rax, rcx
     add rax, 2
     ucomiss xmm0, xmm0
-    mov rcx, rdx
     cmovne rcx, rax
     cmovp rcx, rax
     mov rdx, rcx
@@ -296,17 +286,13 @@ run f32:
     pop rbx
     ret
 check f64:
-    mov rdx, 1
+    mov rcx, 1
     addsd xmm0, xmm1
-    ucomisd xmm0, xmm0
-    sete cl
-    jnp 6
-    mov cl, 0
-6:
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    ucomisd xmm0, xmm0
+    jp 6
+    cmove rax, rcx
+6:
     mov rcx, rax
     add rcx, 2
     ucomisd xmm0, xmm0
@@ -318,17 +304,13 @@ check f64:
     cmovae rax, rcx
     ret
 check f32:
-    mov rdx, 1
+    mov rcx, 1
     addss xmm0, xmm1
-    ucomiss xmm0, xmm0
-    sete cl
-    jnp 8
-    mov cl, 0
-8:
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    ucomiss xmm0, xmm0
+    jp 8
+    cmove rax, rcx
+8:
     mov rcx, rax
     add rcx, 2
     ucomiss xmm0, xmm0
@@ -468,19 +450,14 @@ run f32:
 check f64:
     mov rax, 1
     addsd xmm0, xmm1
+    xor ecx, ecx
     ucomisd xmm0, xmm0
-    sete cl
-    jnp 6
-    mov cl, 0
+    jp 6
+    cmove rcx, rax
 6:
-    movzx ecx, cl
-    xor edx, edx
-    test cl, cl
-    cmovne rdx, rax
-    mov rax, rdx
+    mov rax, rcx
     add rax, 2
     ucomisd xmm0, xmm0
-    mov rcx, rdx
     cmovne rcx, rax
     cmovp rcx, rax
     mov rdx, rcx
@@ -492,19 +469,14 @@ check f64:
 check f32:
     mov rax, 1
     addss xmm0, xmm1
+    xor ecx, ecx
     ucomiss xmm0, xmm0
-    sete cl
-    jnp 8
-    mov cl, 0
+    jp 8
+    cmove rcx, rax
 8:
-    movzx ecx, cl
-    xor edx, edx
-    test cl, cl
-    cmovne rdx, rax
-    mov rax, rdx
+    mov rax, rcx
     add rax, 2
     ucomiss xmm0, xmm0
-    mov rcx, rdx
     cmovne rcx, rax
     cmovp rcx, rax
     mov rdx, rcx
@@ -637,17 +609,13 @@ run f32:
     pop rbx
     ret
 check f64:
-    mov rdx, 1
+    mov rcx, 1
     addsd xmm0, xmm1
-    ucomisd xmm0, xmm0
-    sete cl
-    jnp 6
-    mov cl, 0
-6:
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    ucomisd xmm0, xmm0
+    jp 6
+    cmove rax, rcx
+6:
     mov rcx, rax
     add rcx, 2
     ucomisd xmm0, xmm0
@@ -659,17 +627,13 @@ check f64:
     cmovae rax, rcx
     ret
 check f32:
-    mov rdx, 1
+    mov rcx, 1
     addss xmm0, xmm1
-    ucomiss xmm0, xmm0
-    sete cl
-    jnp 8
-    mov cl, 0
-8:
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    ucomiss xmm0, xmm0
+    jp 8
+    cmove rax, rcx
+8:
     mov rcx, rax
     add rcx, 2
     ucomiss xmm0, xmm0
@@ -804,17 +768,13 @@ run f32:
     pop rbx
     ret
 check f64:
-    mov rdx, 1
+    mov rcx, 1
     addsd xmm0, xmm1
-    ucomisd xmm0, xmm0
-    sete cl
-    jnp 6
-    mov cl, 0
-6:
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    ucomisd xmm0, xmm0
+    jp 6
+    cmove rax, rcx
+6:
     mov rcx, rax
     add rcx, 2
     ucomisd xmm0, xmm0
@@ -826,17 +786,13 @@ check f64:
     cmovae rax, rcx
     ret
 check f32:
-    mov rdx, 1
+    mov rcx, 1
     addss xmm0, xmm1
-    ucomiss xmm0, xmm0
-    sete cl
-    jnp 8
-    mov cl, 0
-8:
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    ucomiss xmm0, xmm0
+    jp 8
+    cmove rax, rcx
+8:
     mov rcx, rax
     add rcx, 2
     ucomiss xmm0, xmm0
@@ -946,17 +902,13 @@ main:
     pop rbx
     ret
 check f64:
-    mov rdx, 1
+    mov rcx, 1
     addsd xmm0, xmm1
-    ucomisd xmm0, xmm0
-    sete cl
-    jnp 2
-    mov cl, 0
-2:
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    ucomisd xmm0, xmm0
+    jp 2
+    cmove rax, rcx
+2:
     mov rcx, rax
     add rcx, 2
     ucomisd xmm0, xmm0
@@ -968,17 +920,13 @@ check f64:
     cmovae rax, rcx
     ret
 check f32:
-    mov rdx, 1
+    mov rcx, 1
     addss xmm0, xmm1
-    ucomiss xmm0, xmm0
-    sete cl
-    jnp 4
-    mov cl, 0
-4:
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    ucomiss xmm0, xmm0
+    jp 4
+    cmove rax, rcx
+4:
     mov rcx, rax
     add rcx, 2
     ucomiss xmm0, xmm0

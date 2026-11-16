@@ -10,21 +10,14 @@ paint:
     mov rbx, 1
     movzx ebx, bx
     shlx ebx, ebx, ecx
-    cmp al, 0x20
-    setb al
-    movzx eax, al
     xor ebp, ebp
-    test al, al
-    cmovne ebp, edx
+    cmp al, 0x20
+    cmovb ebp, edx
     mov rax, rbp
     or.b [rdi], al
+    xor eax, eax
     cmp cx, 0x20
-    setb al
-    movzx eax, al
-    xor ecx, ecx
-    test al, al
-    cmovne ecx, ebx
-    mov rax, rcx
+    cmovb eax, ebx
     or.w [rdi + 0x2], ax
     xor.d [rdi + 0x4], 8
     pop rbp
@@ -64,11 +57,11 @@ main:
     mov.q rdi, [rsp + 0x1]
     mov.d esi, [rsp + 0x9]
     call pack
-    or.b [rip + 0xe23], 1
-    and.b [rip + 0xe1b], 0x7f
-    mov.w [rip + 0xe13], 0x88
-    movzx.b ecx, [rip + 0xe09]
-    movzx.w edx, [rip + 0xe03]
+    or.b [rip + 0xe3c], 1
+    and.b [rip + 0xe34], 0x7f
+    mov.w [rip + 0xe2c], 0x88
+    movzx.b ecx, [rip + 0xe22]
+    movzx.w edx, [rip + 0xe1c]
     mov.b [rsp], 0
     movzx.b ebx, [rsp]
     xor bl, -0x80
@@ -82,7 +75,7 @@ main:
     imul rax, rax, 0x100
     movzx ecx, bl
     add rax, rcx
-    movzx.w ecx, [rip + 0xdbc]
+    movzx.w ecx, [rip + 0xdd5]
     shr cx, 7
     and cx, 1
     cmp cx, 0
@@ -95,7 +88,7 @@ main:
 4:
     mov rdx, rcx
     add rdx, 2
-    movzx.b eax, [rip + 0xd7f]
+    movzx.b eax, [rip + 0xd98]
     not al
     and al, 0x19
     cmp al, 0
@@ -106,27 +99,20 @@ main:
     ret
 =========== OPT LEVEL: none ===========
 paint:
-    mov rcx, rsi
     mov r8, rsi
     mov al, 1
     movzx eax, al
-    shlx esi, eax, ecx
+    shlx edx, eax, r8d
     mov rax, 1
     movzx eax, ax
-    shlx edx, eax, r8d
-    cmp cl, 0x20
-    setb cl
-    movzx ecx, cl
+    shlx ecx, eax, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, esi
+    cmp r8b, 0x20
+    cmovb eax, edx
     or.b [rdi], al
-    cmp r8w, 0x20
-    setb cl
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne eax, edx
+    cmp si, 0x20
+    cmovb eax, ecx
     or.w [rdi + 0x2], ax
     xor.d [rdi + 0x4], 8
     ret
@@ -163,11 +149,11 @@ main:
     mov.q rdi, [rsp + 0x1]
     mov.d esi, [rsp + 0x9]
     call pack
-    or.b [rip + 0xe50], 1
-    and.b [rip + 0xe48], 0x7f
-    mov.w [rip + 0xe40], 0x88
-    movzx.b esi, [rip + 0xe36]
-    movzx.w edx, [rip + 0xe30]
+    or.b [rip + 0xe69], 1
+    and.b [rip + 0xe61], 0x7f
+    mov.w [rip + 0xe59], 0x88
+    movzx.b esi, [rip + 0xe4f]
+    movzx.w edx, [rip + 0xe49]
     mov.b [rsp], 0
     movzx.b ecx, [rsp]
     xor cl, -0x80
@@ -181,7 +167,7 @@ main:
     imul rdx, rax, 0x100
     movzx eax, cl
     add rdx, rax
-    movzx.w eax, [rip + 0xde9]
+    movzx.w eax, [rip + 0xe02]
     shr ax, 7
     and ax, 1
     cmp ax, 0
@@ -192,7 +178,7 @@ main:
 4:
     mov rcx, rdx
     add rcx, 2
-    movzx.b eax, [rip + 0xdb2]
+    movzx.b eax, [rip + 0xdcb]
     not al
     and al, 0x19
     cmp al, 0
@@ -212,21 +198,14 @@ paint:
     mov rbx, 1
     movzx ebx, bx
     shlx ebx, ebx, ecx
-    cmp al, 0x20
-    setb al
-    movzx eax, al
     xor ebp, ebp
-    test al, al
-    cmovne ebp, edx
+    cmp al, 0x20
+    cmovb ebp, edx
     mov rax, rbp
     or.b [rdi], al
+    xor eax, eax
     cmp cx, 0x20
-    setb al
-    movzx eax, al
-    xor ecx, ecx
-    test al, al
-    cmovne ecx, ebx
-    mov rax, rcx
+    cmovb eax, ebx
     or.w [rdi + 0x2], ax
     xor.d [rdi + 0x4], 8
     pop rbp
@@ -266,11 +245,11 @@ main:
     mov.q rdi, [rsp + 0x1]
     mov.d esi, [rsp + 0x9]
     call pack
-    or.b [rip + 0xe23], 1
-    and.b [rip + 0xe1b], 0x7f
-    mov.w [rip + 0xe13], 0x88
-    movzx.b ecx, [rip + 0xe09]
-    movzx.w edx, [rip + 0xe03]
+    or.b [rip + 0xe3c], 1
+    and.b [rip + 0xe34], 0x7f
+    mov.w [rip + 0xe2c], 0x88
+    movzx.b ecx, [rip + 0xe22]
+    movzx.w edx, [rip + 0xe1c]
     mov.b [rsp], 0
     movzx.b ebx, [rsp]
     xor bl, -0x80
@@ -284,7 +263,7 @@ main:
     imul rax, rax, 0x100
     movzx ecx, bl
     add rax, rcx
-    movzx.w ecx, [rip + 0xdbc]
+    movzx.w ecx, [rip + 0xdd5]
     shr cx, 7
     and cx, 1
     cmp cx, 0
@@ -297,7 +276,7 @@ main:
 4:
     mov rdx, rcx
     add rdx, 2
-    movzx.b eax, [rip + 0xd7f]
+    movzx.b eax, [rip + 0xd98]
     not al
     and al, 0x19
     cmp al, 0
@@ -308,27 +287,20 @@ main:
     ret
 =========== OPT LEVEL: moderate ===========
 paint:
-    mov rcx, rsi
     mov r8, rsi
     mov al, 1
     movzx eax, al
-    shlx esi, eax, ecx
+    shlx edx, eax, r8d
     mov rax, 1
     movzx eax, ax
-    shlx edx, eax, r8d
-    cmp cl, 0x20
-    setb cl
-    movzx ecx, cl
+    shlx ecx, eax, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, esi
+    cmp r8b, 0x20
+    cmovb eax, edx
     or.b [rdi], al
-    cmp r8w, 0x20
-    setb cl
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne eax, edx
+    cmp si, 0x20
+    cmovb eax, ecx
     or.w [rdi + 0x2], ax
     xor.d [rdi + 0x4], 8
     ret
@@ -365,11 +337,11 @@ main:
     mov.q rdi, [rsp + 0x1]
     mov.d esi, [rsp + 0x9]
     call pack
-    or.b [rip + 0xe50], 1
-    and.b [rip + 0xe48], 0x7f
-    mov.w [rip + 0xe40], 0x88
-    movzx.b esi, [rip + 0xe36]
-    movzx.w edx, [rip + 0xe30]
+    or.b [rip + 0xe69], 1
+    and.b [rip + 0xe61], 0x7f
+    mov.w [rip + 0xe59], 0x88
+    movzx.b esi, [rip + 0xe4f]
+    movzx.w edx, [rip + 0xe49]
     mov.b [rsp], 0
     movzx.b ecx, [rsp]
     xor cl, -0x80
@@ -383,7 +355,7 @@ main:
     imul rdx, rax, 0x100
     movzx eax, cl
     add rdx, rax
-    movzx.w eax, [rip + 0xde9]
+    movzx.w eax, [rip + 0xe02]
     shr ax, 7
     and ax, 1
     cmp ax, 0
@@ -394,7 +366,7 @@ main:
 4:
     mov rcx, rdx
     add rcx, 2
-    movzx.b eax, [rip + 0xdb2]
+    movzx.b eax, [rip + 0xdcb]
     not al
     and al, 0x19
     cmp al, 0
@@ -404,27 +376,20 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 paint:
-    mov rcx, rsi
     mov r8, rsi
     mov al, 1
     movzx eax, al
-    shlx esi, eax, ecx
+    shlx edx, eax, r8d
     mov rax, 1
     movzx eax, ax
-    shlx edx, eax, r8d
-    cmp cl, 0x20
-    setb cl
-    movzx ecx, cl
+    shlx ecx, eax, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, esi
+    cmp r8b, 0x20
+    cmovb eax, edx
     or.b [rdi], al
-    cmp r8w, 0x20
-    setb cl
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne eax, edx
+    cmp si, 0x20
+    cmovb eax, ecx
     or.w [rdi + 0x2], ax
     xor.d [rdi + 0x4], 8
     ret
@@ -461,19 +426,19 @@ main:
     mov.q rdi, [rsp]
     mov.d esi, [rsp + 0x8]
     call pack
-    or.b [rip + 0xe54], 1
-    and.b [rip + 0xe4c], 0x7f
-    mov.w [rip + 0xe44], 0x88
+    or.b [rip + 0xe6d], 1
+    and.b [rip + 0xe65], 0x7f
+    mov.w [rip + 0xe5d], 0x88
     imul rcx, rax, 0x100
-    movzx.b eax, [rip + 0xe33]
+    movzx.b eax, [rip + 0xe4c]
     add rcx, rax
-    movzx.w eax, [rip + 0xe2a]
+    movzx.w eax, [rip + 0xe43]
     shl rax, 0x10
     xor rcx, rax
     imul rax, rcx, 0x100
     add rax, 0x19
     imul rdx, rax, 0x100
-    movzx.w eax, [rip + 0xe06]
+    movzx.w eax, [rip + 0xe1f]
     shr ax, 7
     and ax, 1
     cmp ax, 0
@@ -485,7 +450,7 @@ main:
 4:
     mov rcx, rdx
     add rcx, 2
-    movzx.b eax, [rip + 0xdc8]
+    movzx.b eax, [rip + 0xde1]
     not al
     and al, 0x19
     cmp al, 0
@@ -495,27 +460,20 @@ main:
     ret
 =========== OPT LEVEL: aggresive ===========
 paint:
-    mov rcx, rsi
     mov r8, rsi
     mov al, 1
     movzx eax, al
-    shlx esi, eax, ecx
+    shlx edx, eax, r8d
     mov rax, 1
     movzx eax, ax
-    shlx edx, eax, r8d
-    cmp cl, 0x20
-    setb cl
-    movzx ecx, cl
+    shlx ecx, eax, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, esi
+    cmp r8b, 0x20
+    cmovb eax, edx
     or.b [rdi], al
-    cmp r8w, 0x20
-    setb cl
-    movzx ecx, cl
     xor eax, eax
-    test cl, cl
-    cmovne eax, edx
+    cmp si, 0x20
+    cmovb eax, ecx
     or.w [rdi + 0x2], ax
     xor.d [rdi + 0x4], 8
     ret
@@ -544,24 +502,24 @@ main:
     movzx.w eax, [rsp + 0xe]
     add rcx, rax
     imul rcx, rcx, 0x100
-    or.b [rip + 0xe72], 1
+    or.b [rip + 0xe8b], 1
     mov.d eax, [rsp + 0x10]
     add rcx, rax
     imul rcx, rcx, 0x100
     movzx.b eax, [rsp + 0x14]
     add rcx, rax
     imul rcx, rcx, 0x100
-    and.b [rip + 0xe4b], 0x7f
-    mov.w [rip + 0xe43], 0x88
-    movzx.b eax, [rip + 0xe39]
+    and.b [rip + 0xe64], 0x7f
+    mov.w [rip + 0xe5c], 0x88
+    movzx.b eax, [rip + 0xe52]
     add rcx, rax
-    movzx.w eax, [rip + 0xe30]
+    movzx.w eax, [rip + 0xe49]
     shl rax, 0x10
     xor rcx, rax
     imul rax, rcx, 0x100
     add rax, 0x19
     imul rdx, rax, 0x100
-    movzx.w eax, [rip + 0xe0c]
+    movzx.w eax, [rip + 0xe25]
     shr ax, 7
     and ax, 1
     cmp ax, 0
@@ -573,7 +531,7 @@ main:
 3:
     mov rcx, rdx
     add rcx, 2
-    movzx.b eax, [rip + 0xdce]
+    movzx.b eax, [rip + 0xde7]
     not al
     and al, 0x19
     cmp al, 0

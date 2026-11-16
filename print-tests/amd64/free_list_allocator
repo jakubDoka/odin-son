@@ -594,13 +594,11 @@ main:
     lea rdi, [rsp]
     mov rdx, 8
     call alloc_off
-    cmp rbx, 0
-    setge cl
-    movzx ecx, cl
+    mov rcx, rbx
     mov rdx, 1
     xor ebx, ebx
-    test cl, cl
-    cmovne rbx, rdx
+    cmp rcx, 0
+    cmovge rbx, rdx
     mov rcx, rbx
     add rcx, 2
     cmp rbp, 0
@@ -1204,7 +1202,7 @@ main:
     mov.q rsi, [rsp + 0x650]
     mov dl, 0x64
     call check_pattern
-    mov r15, rax
+    mov.q [rsp + 0x670], rax
     mov.q rdi, [rsp + 0x658]
     mov.q rsi, [rsp + 0x660]
     mov dl, 7
@@ -1216,7 +1214,7 @@ main:
     mov.q rsi, [rsp + 0x688]
     lea rdi, [rsp]
     call alloc_free
-    lea rdi, [rip + 0xa5b]
+    lea rdi, [rip + 0xa56]
     mov rsi, 0x200
     call test_coalesce
     mov rbp, rax
@@ -1225,7 +1223,7 @@ main:
     mov rdx, 8
     call alloc_off
     mov rbx, rax
-    lea rcx, [rip + 0x62b]
+    lea rcx, [rip + 0x626]
     add rcx, rbx
     mov rdx, rcx
     mov rax, rbx
@@ -1242,25 +1240,22 @@ main:
     mov.q rsi, [rsp + 0x620]
     mov dl, -0x38
     call check_pattern
-    mov.q [rsp + 0x670], rax
+    mov.q [rsp + 0x668], rax
     mov.q rdi, [rsp + 0x628]
     mov.q rsi, [rsp + 0x630]
     mov dl, 1
     call check_pattern
-    mov.q [rsp + 0x668], rax
+    mov r15, rax
     mov rsi, 0x186a0
     lea rdi, [rsp]
     mov rdx, 8
     call alloc_off
     mov rsi, rax
-    mov.q rax, [rsp + 0x690]
-    cmp rax, 0
-    setge dl
-    movzx edx, dl
+    mov.q rdx, [rsp + 0x690]
     mov rcx, 1
     xor eax, eax
-    test dl, dl
-    cmovne rax, rcx
+    cmp rdx, 0
+    cmovge rax, rcx
     mov rcx, rax
     mov rax, rcx
     add rax, 2
@@ -1299,7 +1294,7 @@ main:
     cmovne rcx, rax
     mov rax, rcx
     add rax, 0x100
-    test r15b, r15b
+    cmp.b [rsp + 0x670], 0
     cmovne rcx, rax
     mov rax, rcx
     add rax, 0x200
@@ -1315,11 +1310,11 @@ main:
     cmovge rcx, rax
     mov rax, rcx
     add rax, 0x1000
-    cmp.b [rsp + 0x670], 0
+    cmp.b [rsp + 0x668], 0
     cmovne rcx, rax
     mov rax, rcx
     add rax, 0x2000
-    cmp.b [rsp + 0x668], 0
+    test r15b, r15b
     cmovne rcx, rax
     mov rax, rcx
     add rax, 0x4000
@@ -1417,15 +1412,12 @@ alloc_off:
     jmp 3
 6:
     xor esi, esi
-    mov.q rax, [rsp + 0x68]
-    cmp rax, 0
-    setg bpl
-    movzx ebp, bpl
+    mov.q rbp, [rsp + 0x68]
     mov rdx, 0x48
     lea rdi, [rsp + 0x18]
-    call -0x18c
-    test bpl, bpl
-    jne 7
+    call -0x17d
+    cmp rbp, 0
+    jg 7
     jmp 8
 7:
     mov.q rax, [rsp]
@@ -1436,8 +1428,8 @@ alloc_off:
 8:
     mov rax, 1
     xor ecx, ecx
-    test bpl, bpl
-    cmovne rcx, rax
+    cmp rbp, 0
+    cmovg rcx, rax
     mov rax, rcx
     imul rcx, rax, 0x18
     lea rdx, [rsp + 0x18]
@@ -1525,7 +1517,7 @@ splice:
     imul rsi, r15, 0x18
     add rsi, r14
     mov rdx, 0x18
-    call -0x39e
+    call -0x397
     sub r15, 1
     jmp 16
 17:
@@ -1542,7 +1534,7 @@ splice:
     add rcx, rax
     mov rsi, rcx
     mov rdx, 0x18
-    call -0x3e2
+    call -0x3db
     add r15, 1
     jmp 18
 19:
@@ -1623,7 +1615,7 @@ coalesce:
     imul rdi, r13, 0x18
     add rdi, rbp
     mov rdx, 0x18
-    call -0x514
+    call -0x50d
     mov rdx, r13
     jmp 28
 27:
@@ -1722,7 +1714,7 @@ test_coalesce:
     mov rdx, 0x618
     xor esi, esi
     lea rdi, [rsp]
-    call -0x5c6
+    call -0x5bf
     mov.q rsi, [rsp + 0x618]
     mov.q rdx, [rsp + 0x620]
     lea rdi, [rsp]
@@ -1805,9 +1797,9 @@ main:
     xor esi, esi
     mov rdx, 0x618
     lea rdi, [rsp]
-    call -0x72c
+    call -0x725
     mov rdx, 0x400
-    lea rsi, [rip + 0x834]
+    lea rsi, [rip + 0x83b]
     lea rdi, [rsp]
     call alloc_init
     mov rsi, 0x64
@@ -1830,28 +1822,28 @@ main:
     lea rdi, [rsp]
     call alloc_off
     mov r13, rax
-    lea rax, [rip + 0x7bc]
+    lea rax, [rip + 0x7c3]
     add rax, rbx
     mov.q [rsp + 0x628], rax
     mov rax, rbx
     add rax, 0x64
     sub rax, rbx
     mov.q [rsp + 0x630], rax
-    lea rax, [rip + 0x795]
+    lea rax, [rip + 0x79c]
     add rax, rbp
     mov.q [rsp + 0x638], rax
     mov rax, rbp
     add rax, 0x28
     sub rax, rbp
     mov.q [rsp + 0x640], rax
-    lea rax, [rip + 0x76e]
+    lea rax, [rip + 0x775]
     add rax, r12
     mov.q [rsp + 0x648], rax
     mov rax, r12
     add rax, 7
     sub rax, r12
     mov.q [rsp + 0x650], rax
-    lea rax, [rip + 0x747]
+    lea rax, [rip + 0x74e]
     add rax, r13
     mov.q [rsp + 0x658], rax
     mov rax, r13
@@ -1900,7 +1892,7 @@ main:
     mov rsi, r12
     lea rdi, [rsp]
     call alloc_free
-    lea rdi, [rip + 0xa32]
+    lea rdi, [rip + 0xa39]
     mov rsi, 0x200
     call test_coalesce
     mov.q [rsp + 0x678], rax
@@ -1909,7 +1901,7 @@ main:
     mov rdx, 8
     call alloc_off
     mov.q [rsp + 0x680], rax
-    lea rax, [rip + 0x5f8]
+    lea rax, [rip + 0x5ff]
     mov.q rcx, [rsp + 0x680]
     add rax, rcx
     mov.q rcx, [rsp + 0x680]
@@ -1936,13 +1928,11 @@ main:
     lea rdi, [rsp]
     mov rdx, 8
     call alloc_off
-    cmp rbx, 0
-    setge cl
-    movzx ecx, cl
+    mov rcx, rbx
     mov rdx, 1
     xor ebx, ebx
-    test cl, cl
-    cmovne rbx, rdx
+    cmp rcx, 0
+    cmovge rbx, rdx
     mov rcx, rbx
     add rcx, 2
     cmp rbp, 0
@@ -2096,14 +2086,12 @@ alloc_off:
     jmp 3
 6:
     xor esi, esi
-    cmp r13, 0
-    setg bpl
-    movzx ebp, bpl
+    mov rbp, r13
     mov rdx, 0x48
     lea rdi, [rsp + 0x18]
-    call -0x180
-    test bpl, bpl
-    jne 7
+    call -0x174
+    cmp rbp, 0
+    jg 7
     jmp 8
 7:
     mov.q rax, [rsp]
@@ -2113,8 +2101,8 @@ alloc_off:
 8:
     mov rcx, 1
     xor eax, eax
-    test bpl, bpl
-    cmovne rax, rcx
+    cmp rbp, 0
+    cmovg rax, rcx
     mov rdi, rax
     imul rdx, rdi, 0x18
     lea rax, [rsp + 0x18]
@@ -2200,7 +2188,7 @@ splice:
     imul rsi, rbx, 0x18
     add rsi, rbp
     mov rdx, 0x18
-    call -0x372
+    call -0x36e
     sub rbx, 1
     jmp 16
 17:
@@ -2217,7 +2205,7 @@ splice:
     add rax, rcx
     mov rsi, rax
     mov rdx, 0x18
-    call -0x3b6
+    call -0x3b2
     add rbx, 1
     jmp 18
 19:
@@ -2294,7 +2282,7 @@ coalesce:
     imul rdi, rbx, 0x18
     add rdi, r12
     mov rdx, 0x18
-    call -0x4e0
+    call -0x4dc
     mov rax, rbx
     jmp 28
 27:
@@ -2381,7 +2369,7 @@ test_coalesce:
     mov rdx, 0x618
     xor esi, esi
     lea rdi, [rsp]
-    call -0x58d
+    call -0x589
     mov.q rsi, [rsp + 0x618]
     mov.q rdx, [rsp + 0x620]
     lea rdi, [rsp]
@@ -2464,9 +2452,9 @@ main:
     xor esi, esi
     mov rdx, 0x618
     lea rdi, [rsp]
-    call -0x6f3
+    call -0x6ef
     mov rdx, 0x400
-    lea rsi, [rip + 0x884]
+    lea rsi, [rip + 0x888]
     lea rdi, [rsp]
     call alloc_init
     mov rsi, 0x64
@@ -2489,7 +2477,7 @@ main:
     lea rdi, [rsp]
     call alloc_off
     mov r12, rax
-    lea rax, [rip + 0x802]
+    lea rax, [rip + 0x806]
     mov.q rcx, [rsp + 0x690]
     add rax, rcx
     mov.q [rsp + 0x628], rax
@@ -2498,14 +2486,14 @@ main:
     mov.q rcx, [rsp + 0x690]
     sub rax, rcx
     mov.q [rsp + 0x630], rax
-    lea rax, [rip + 0x7c6]
+    lea rax, [rip + 0x7ca]
     add rax, r13
     mov.q [rsp + 0x638], rax
     mov rax, r13
     add rax, 0x28
     sub rax, r13
     mov.q [rsp + 0x640], rax
-    lea rax, [rip + 0x79f]
+    lea rax, [rip + 0x7a3]
     mov.q rcx, [rsp + 0x688]
     add rax, rcx
     mov.q [rsp + 0x648], rax
@@ -2514,7 +2502,7 @@ main:
     mov.q rcx, [rsp + 0x688]
     sub rax, rcx
     mov.q [rsp + 0x650], rax
-    lea rax, [rip + 0x763]
+    lea rax, [rip + 0x767]
     add rax, r12
     mov.q [rsp + 0x658], rax
     mov rax, r12
@@ -2551,7 +2539,7 @@ main:
     mov.q rsi, [rsp + 0x650]
     mov dl, 0x64
     call check_pattern
-    mov r15, rax
+    mov.q [rsp + 0x670], rax
     mov.q rdi, [rsp + 0x658]
     mov.q rsi, [rsp + 0x660]
     mov dl, 7
@@ -2563,7 +2551,7 @@ main:
     mov.q rsi, [rsp + 0x688]
     lea rdi, [rsp]
     call alloc_free
-    lea rdi, [rip + 0xa49]
+    lea rdi, [rip + 0xa48]
     mov rsi, 0x200
     call test_coalesce
     mov rbp, rax
@@ -2572,7 +2560,7 @@ main:
     mov rdx, 8
     call alloc_off
     mov rbx, rax
-    lea rcx, [rip + 0x619]
+    lea rcx, [rip + 0x618]
     add rcx, rbx
     mov rdx, rcx
     mov rax, rbx
@@ -2589,25 +2577,22 @@ main:
     mov.q rsi, [rsp + 0x620]
     mov dl, -0x38
     call check_pattern
-    mov.q [rsp + 0x670], rax
+    mov.q [rsp + 0x668], rax
     mov.q rdi, [rsp + 0x628]
     mov.q rsi, [rsp + 0x630]
     mov dl, 1
     call check_pattern
-    mov.q [rsp + 0x668], rax
+    mov r15, rax
     mov rsi, 0x186a0
     lea rdi, [rsp]
     mov rdx, 8
     call alloc_off
     mov rsi, rax
-    mov.q rax, [rsp + 0x690]
-    cmp rax, 0
-    setge dl
-    movzx edx, dl
+    mov.q rdx, [rsp + 0x690]
     mov rcx, 1
     xor eax, eax
-    test dl, dl
-    cmovne rax, rcx
+    cmp rdx, 0
+    cmovge rax, rcx
     mov rcx, rax
     mov rax, rcx
     add rax, 2
@@ -2646,7 +2631,7 @@ main:
     cmovne rcx, rax
     mov rax, rcx
     add rax, 0x100
-    test r15b, r15b
+    cmp.b [rsp + 0x670], 0
     cmovne rcx, rax
     mov rax, rcx
     add rax, 0x200
@@ -2662,11 +2647,11 @@ main:
     cmovge rcx, rax
     mov rax, rcx
     add rax, 0x1000
-    cmp.b [rsp + 0x670], 0
+    cmp.b [rsp + 0x668], 0
     cmovne rcx, rax
     mov rax, rcx
     add rax, 0x2000
-    cmp.b [rsp + 0x668], 0
+    test r15b, r15b
     cmovne rcx, rax
     mov rax, rcx
     add rax, 0x4000
@@ -2767,14 +2752,12 @@ alloc_off:
     jmp 13
 6:
     xor esi, esi
-    cmp r13, 0
-    setg bpl
-    movzx ebp, bpl
+    mov rbp, r13
     mov rdx, 0x48
     lea rdi, [rsp + 0x18]
-    call -0x19d
-    test bpl, bpl
-    jne 7
+    call -0x191
+    cmp rbp, 0
+    jg 7
     jmp 8
 7:
     mov.q rax, [rsp]
@@ -2784,8 +2767,8 @@ alloc_off:
 8:
     mov rcx, 1
     xor eax, eax
-    test bpl, bpl
-    cmovne rax, rcx
+    cmp rbp, 0
+    cmovg rax, rcx
     mov rdi, rax
     imul rdx, rdi, 0x18
     lea rax, [rsp + 0x18]
@@ -2870,7 +2853,7 @@ splice:
     imul rsi, rbx, 0x18
     add rsi, rbp
     mov rdx, 0x18
-    call -0x38f
+    call -0x38b
     mov rcx, rbx
     sub rcx, 1
     cmp rcx, r15
@@ -2890,7 +2873,7 @@ splice:
     add rax, rcx
     mov rsi, rax
     mov rdx, 0x18
-    call -0x3e1
+    call -0x3dd
     add rbx, 1
     cmp rbx, r14
     jl 17
@@ -2966,7 +2949,7 @@ coalesce:
     imul rdi, rbp, 0x18
     add rdi, r12
     mov rdx, 0x18
-    call -0x50e
+    call -0x50a
     mov rcx, rbp
     jmp 26
 25:
@@ -3068,7 +3051,7 @@ test_coalesce:
     mov rdx, 0x618
     xor esi, esi
     lea rdi, [rsp]
-    call -0x5f2
+    call -0x5ee
     mov rsi, rbx
     mov rdx, r13
     lea rdi, [rsp]
@@ -3152,9 +3135,9 @@ main:
     xor esi, esi
     mov rdx, 0x618
     lea rdi, [rsp]
-    call -0x74b
+    call -0x747
     mov rdx, 0x400
-    lea rsi, [rip + 0x82c]
+    lea rsi, [rip + 0x830]
     lea rdi, [rsp]
     call alloc_init
     mov rsi, 0x64
@@ -3177,7 +3160,7 @@ main:
     lea rdi, [rsp]
     call alloc_off
     mov rbx, rax
-    lea rcx, [rip + 0x7aa]
+    lea rcx, [rip + 0x7ae]
     mov.q rax, [rsp + 0x650]
     add rcx, rax
     mov.q [rsp + 0x640], rcx
@@ -3190,7 +3173,7 @@ main:
     mov.q rsi, [rsp + 0x638]
     mov dl, 1
     call write_pattern
-    lea rcx, [rip + 0x756]
+    lea rcx, [rip + 0x75a]
     add rcx, rbp
     mov.q [rsp + 0x620], rcx
     mov rax, rbp
@@ -3201,7 +3184,7 @@ main:
     mov.q rsi, [rsp + 0x618]
     mov dl, 0x32
     call write_pattern
-    lea rcx, [rip + 0x717]
+    lea rcx, [rip + 0x71b]
     mov.q rax, [rsp + 0x648]
     add rcx, rax
     mov r15, rcx
@@ -3214,7 +3197,7 @@ main:
     mov rsi, r14
     mov dl, 0x64
     call write_pattern
-    lea rcx, [rip + 0x6d7]
+    lea rcx, [rip + 0x6db]
     add rcx, rbx
     mov r13, rcx
     mov rax, rbx
@@ -3251,7 +3234,7 @@ main:
     mov.q rsi, [rsp + 0x648]
     lea rdi, [rsp]
     call alloc_free
-    lea rdi, [rip + 0xa23]
+    lea rdi, [rip + 0xa27]
     mov rsi, 0x200
     call test_coalesce
     mov r15, rax
@@ -3260,7 +3243,7 @@ main:
     mov rdx, 8
     call alloc_off
     mov r14, rax
-    lea rcx, [rip + 0x5f3]
+    lea rcx, [rip + 0x5f7]
     add rcx, r14
     mov r13, rcx
     mov rax, r14
@@ -3286,14 +3269,11 @@ main:
     mov rdx, 8
     call alloc_off
     mov rsi, rax
-    mov.q rax, [rsp + 0x650]
-    cmp rax, 0
-    setge dl
-    movzx edx, dl
+    mov.q rdx, [rsp + 0x650]
     mov rcx, 1
     xor eax, eax
-    test dl, dl
-    cmovne rax, rcx
+    cmp rdx, 0
+    cmovge rax, rcx
     mov rcx, rax
     add rcx, 2
     cmp rbp, 0
@@ -3376,17 +3356,17 @@ alloc_off:
     push r14
     push r15
     sub rsp, 0x88
-    mov r15, rdi
+    mov r14, rdi
     mov.q [rsp + 0x78], rsi
     mov.q [rsp + 0x70], rdx
     mov.q rax, [rsp + 0x78]
     cmp rax, 0
     jle 14
-    cmp.q [r15 + 0x610], 0
+    cmp.q [r14 + 0x610], 0
     jle 13
-    mov rax, r15
+    mov rax, r14
     add rax, 0x10
-    mov r14, rax
+    mov r15, rax
     mov.q rax, [rsp + 0x70]
     sub rax, 1
     not rax
@@ -3394,7 +3374,7 @@ alloc_off:
     xor ebx, ebx
 1:
     imul rsi, rbx, 0x18
-    add rsi, r14
+    add rsi, r15
     lea rdi, [rsp]
     mov rdx, 0x18
     call -0x11d
@@ -3423,22 +3403,19 @@ alloc_off:
 3:
     mov rcx, rbx
     add rcx, 1
-    cmp.q rcx, [r15 + 0x610]
+    cmp.q rcx, [r14 + 0x610]
     mov rbx, rcx
     jl 1
     mov rax, -1
     jmp 15
 4:
     xor esi, esi
-    mov.q rax, [rsp + 0x60]
-    cmp rax, 0
-    setg r12b
-    movzx r12d, r12b
+    mov.q r12, [rsp + 0x60]
     mov rdx, 0x48
     lea rdi, [rsp + 0x18]
-    call -0x14d
-    test r12b, r12b
-    jne 5
+    call -0x13e
+    cmp r12, 0
+    jg 5
     jmp 6
 5:
     mov.q rax, [rsp]
@@ -3449,8 +3426,8 @@ alloc_off:
 6:
     mov rcx, 1
     xor eax, eax
-    test r12b, r12b
-    cmovne rax, rcx
+    cmp r12, 0
+    cmovg rax, rcx
     imul rdx, rax, 0x18
     lea rcx, [rsp + 0x18]
     add rdx, rcx
@@ -3464,7 +3441,7 @@ alloc_off:
     add rcx, 1
     cmp rbp, 0
     jg 7
-    mov rbp, rcx
+    mov r12, rcx
     jmp 8
 7:
     imul rsi, rcx, 0x18
@@ -3477,28 +3454,28 @@ alloc_off:
     mov.q [rsi + 0x8], rbp
     mov.b [rsi + 0x10], 1
     add rax, 2
-    mov rbp, rax
+    mov r12, rax
 8:
-    mov r12, rbp
-    sub r12, 1
-    cmp r12, 0
+    mov rbp, r12
+    sub rbp, 1
+    cmp rbp, 0
     jg 9
     jmp 11
 9:
-    mov.q rax, [r15 + 0x610]
+    mov.q rax, [r14 + 0x610]
     sub rax, 1
     cmp rax, rbx
     jle 11
     mov r13, rax
 10:
     mov rax, r13
-    add rax, r12
+    add rax, rbp
     imul rdi, rax, 0x18
-    add rdi, r14
+    add rdi, r15
     imul rsi, r13, 0x18
-    add rsi, r14
+    add rsi, r15
     mov rdx, 0x18
-    call -0x2d5
+    call -0x2ce
     mov rax, r13
     sub rax, 1
     cmp rax, rbx
@@ -3510,18 +3487,18 @@ alloc_off:
     mov rax, rbx
     add rax, r13
     imul rdi, rax, 0x18
-    add rdi, r14
+    add rdi, r15
     imul rsi, r13, 0x18
     lea rax, [rsp + 0x18]
     add rsi, rax
     mov rdx, 0x18
-    call -0x319
+    call -0x312
     mov rax, r13
     add rax, 1
-    cmp rax, rbp
+    cmp rax, r12
     mov r13, rax
     jl 12
-    add.q [r15 + 0x610], r12
+    add.q [r14 + 0x610], rbp
     mov.q rax, [rsp + 0x68]
     jmp 15
 13:
@@ -3551,7 +3528,7 @@ alloc_free:
     xor edi, edi
 17:
     cmp.q rdi, [r13 + 0x610]
-    jge 24
+    jge 23
     imul rdx, rdi, 0x18
     add rdx, r12
     mov.q rax, [rdx]
@@ -3567,7 +3544,7 @@ alloc_free:
     je 17
     mov.b [rdx + 0x10], 1
     cmp.q [r13 + 0x610], 0
-    je 23
+    je +0xb3
     cmp.q [r13 + 0x610], 1
     jle 21
     mov rbx, 1
@@ -3586,7 +3563,7 @@ alloc_free:
     imul rdi, rbp, 0x18
     add rdi, r12
     mov rdx, 0x18
-    call -0x442
+    call -0x43b
     mov rcx, rbp
     jmp 20
 19:
@@ -3607,12 +3584,12 @@ alloc_free:
 22:
     mov.q [r13 + 0x610], rcx
     mov al, 1
-    jmp +0xb
-23:
+    jmp 24
     mov al, 1
-    jmp +0x3
-24:
+    jmp 24
+23:
     xor eax, eax
+24:
     add rsp, 8
     pop r13
     pop r12
@@ -3691,17 +3668,17 @@ main:
     push r14
     push r15
     sub rsp, 0xc98
-    lea rbx, [rip + 0xa5a]
+    lea rbx, [rip + 0xa61]
     xor esi, esi
     lea rdi, [rsp]
     mov rdx, 0x618
-    call -0x53e
+    call -0x537
     mov.q [rsp + 0xc40], rbx
     mov.q [rsp + 0xc48], 0x400
     lea rsi, [rsp + 0xc40]
     lea rdi, [rsp]
     mov rdx, 0x10
-    call -0x5e5
+    call -0x5de
     mov.q [rsp + 0x610], 1
     mov.q [rsp + 0x10], 0
     mov.q rax, [rsp + 0xc48]
@@ -3803,14 +3780,14 @@ main:
     xor esi, esi
     mov rdx, 0x618
     lea rdi, [rsp + 0x618]
-    call -0x7a3
-    lea rax, [rip + 0xbdb]
+    call -0x79c
+    lea rax, [rip + 0xbe2]
     mov.q [rsp + 0xc30], rax
     mov.q [rsp + 0xc38], 0x200
     lea rsi, [rsp + 0xc30]
     mov rdx, 0x10
     lea rdi, [rsp + 0x618]
-    call -0x855
+    call -0x84e
     mov.q [rsp + 0xc28], 1
     mov.q [rsp + 0x628], 0
     mov.q rax, [rsp + 0xc38]
@@ -3917,14 +3894,11 @@ main:
     mov rdx, 8
     call alloc_off
     mov rsi, rax
-    mov.q rax, [rsp + 0xc60]
-    cmp rax, 0
-    setge dl
-    movzx edx, dl
+    mov.q rdx, [rsp + 0xc60]
     mov rcx, 1
     xor eax, eax
-    test dl, dl
-    cmovne rax, rcx
+    cmp rdx, 0
+    cmovge rax, rcx
     mov rdx, rax
     add rdx, 2
     mov.q rcx, [rsp + 0xc50]

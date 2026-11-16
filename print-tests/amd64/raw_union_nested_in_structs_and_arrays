@@ -204,16 +204,13 @@ main:
     add rax, rcx
     movzx.b ecx, [rsp + 0x1a]
     add rax, rcx
-    xor esi, esi
+    xor edx, edx
 2:
-    movzx.b edx, [rsp + rsi*4 + 0x1]
-    add rsi, 1
-    cmp rsi, 3
-    setge cl
-    movzx ecx, cl
-    add rax, rdx
-    test cl, cl
-    je 2
+    movzx.b ecx, [rsp + rdx*4 + 0x1]
+    add rdx, 1
+    add rax, rcx
+    cmp rdx, 3
+    jl 2
     add rsp, 0x28
     ret
 =========== OPT LEVEL: aggresive ===========

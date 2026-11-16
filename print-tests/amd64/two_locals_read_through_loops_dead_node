@@ -124,15 +124,12 @@ main:
     jl 1
     mov.d [rsp - 0x18], 0x4030201
     movzx.b eax, [rsp - 0x15]
-    xor esi, esi
+    xor edx, edx
 2:
-    movzx.b edx, [rsp + rsi*4 - 0x13]
-    add rsi, 1
-    cmp rsi, 3
-    setge cl
-    movzx ecx, cl
-    add rax, rdx
-    test cl, cl
-    je 2
+    movzx.b ecx, [rsp + rdx*4 - 0x13]
+    add rdx, 1
+    add rax, rcx
+    cmp rdx, 3
+    jl 2
     ret
 =========== OPT LEVEL: aggresive ===========

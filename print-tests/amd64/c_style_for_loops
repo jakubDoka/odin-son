@@ -98,40 +98,37 @@ main:
     jmp 1
 =========== OPT LEVEL: all ===========
 main:
-    xor ecx, ecx
+    xor eax, eax
     xor edx, edx
 1:
-    mov rax, rdx
-    cmp rcx, 6
-    setl sil
-    movzx esi, sil
-    mov rdx, rax
-    add rdx, rcx
-    add rcx, 1
-    test sil, sil
-    jne 1
-    mov rdi, 3
-2:
-    mov rcx, rax
-    imul rsi, rdi, 0xa
-    cmp rdi, 0
-    setg dl
-    movzx edx, dl
-    mov rax, rcx
-    add rax, rsi
-    sub rdi, 1
-    test dl, dl
-    jne 2
-    mov rsi, 4
-3:
-    mov rax, rcx
-    cmp rsi, 4
-    setl dl
-    movzx edx, dl
-    mov rcx, rax
-    add rcx, 0x1000
+    mov rcx, rdx
+    mov rdx, rcx
+    add rdx, rax
+    mov rsi, rax
     add rsi, 1
-    test dl, dl
-    jne 3
+    cmp rax, 6
+    mov rax, rsi
+    jl 1
+    mov rax, 3
+2:
+    mov rdx, rcx
+    imul rsi, rax, 0xa
+    mov rcx, rdx
+    add rcx, rsi
+    mov rsi, rax
+    sub rsi, 1
+    cmp rax, 0
+    mov rax, rsi
+    jg 2
+    mov rcx, 4
+3:
+    mov rax, rdx
+    mov rdx, rax
+    add rdx, 0x1000
+    mov rsi, rcx
+    add rsi, 1
+    cmp rcx, 4
+    mov rcx, rsi
+    jl 3
     ret
 =========== OPT LEVEL: aggresive ===========

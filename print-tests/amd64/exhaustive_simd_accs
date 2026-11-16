@@ -3048,19 +3048,16 @@ main:
     pand xmm0, xmm2
     pxor xmm0, xmm2
     por xmm0, xmm2
-    mov rcx, rax
-    add rcx, 0x20
-    cmp rcx, 0x21
-    setge dl
-    movzx edx, dl
+    mov rdx, rax
+    add rdx, 0x20
     mov rcx, rax
     add rcx, 0x10
     movups xmm1, xmm0
     psubb xmm1, xmm2
-    test dl, dl
+    cmp rdx, 0x21
     mov rax, rcx
     movups xmm0, xmm1
-    je 5
+    jl 5
     mov rax, 0x21
     sub rax, rcx
     mov r9, rax
@@ -3106,47 +3103,41 @@ main:
     pand xmm0, xmm1
     pxor xmm0, xmm1
     por xmm0, xmm1
-    mov rdx, rcx
-    add rdx, 0x10
-    cmp rdx, 0x11
-    setge sil
-    movzx esi, sil
+    mov rsi, rcx
+    add rsi, 0x10
     mov rdx, rcx
     add rdx, 8
     movups xmm2, xmm0
     psubw xmm2, xmm1
-    test sil, sil
+    cmp rsi, 0x11
     mov rcx, rdx
     movups xmm0, xmm2
-    je 9
+    jl 9
     pshufd xmm1, xmm2, 0x55
-    mov r10, 0x11
-    sub r10, rdx
+    mov r9, 0x11
+    sub r9, rdx
     pshufd xmm0, xmm2, -0x12
     paddw xmm0, xmm2
     paddw xmm1, xmm0
     pextrw esi, xmm1, 1
     movd ecx, xmm1
     add si, cx
-    cmp r10, 0
+    cmp r9, 0
     jle 11
-    lea r9, [rsp + rdx*2 + 0x21]
-    xor r8d, r8d
+    lea r8, [rsp + rdx*2 + 0x21]
+    xor edi, edi
     xor ecx, ecx
 10:
-    movzx.w edi, [r9 + rcx*2]
-    add r8w, di
-    and r8w, di
-    xor r8w, di
-    or r8w, di
+    movzx.w edx, [r8 + rcx*2]
+    add di, dx
+    and di, dx
+    xor di, dx
+    or di, dx
     add rcx, 1
-    cmp rcx, r10
-    setge dl
-    movzx edx, dl
-    sub r8w, di
-    test dl, dl
-    je 10
-    add si, r8w
+    sub di, dx
+    cmp rcx, r9
+    jl 10
+    add si, di
 11:
     xor ecx, ecx
     pxor xmm0, xmm0
@@ -3158,66 +3149,57 @@ main:
     por xmm0, xmm2
     mov rdx, rcx
     add rdx, 8
-    cmp rdx, 9
-    setge dl
-    movzx edx, dl
     mov rdi, rcx
     add rdi, 4
     movups xmm1, xmm0
     psubd xmm1, xmm2
-    test dl, dl
+    cmp rdx, 9
     mov rcx, rdi
     movups xmm0, xmm1
-    je 12
+    jl 12
     pshufd xmm0, xmm1, -0x12
     paddd xmm0, xmm1
-    mov r11, 9
-    sub r11, rdi
-    pextrd edx, xmm0, 1
-    movd ecx, xmm0
-    add edx, ecx
-    cmp r11, 0
+    mov r10, 9
+    sub r10, rdi
+    pextrd ecx, xmm0, 1
+    movd edx, xmm0
+    add ecx, edx
+    cmp r10, 0
     jle 14
-    lea r10, [rsp + rdi*4 + 0x43]
-    xor r9d, r9d
-    xor ecx, ecx
+    lea r9, [rsp + rdi*4 + 0x43]
+    xor r8d, r8d
+    xor edx, edx
 13:
-    mov.d r8d, [r10 + rcx*4]
-    add r9d, r8d
-    and r9d, r8d
-    xor r9d, r8d
-    or r9d, r8d
-    add rcx, 1
-    cmp rcx, r11
-    setge dil
-    movzx edi, dil
-    sub r9d, r8d
-    test dil, dil
-    je 13
-    add edx, r9d
+    mov.d edi, [r9 + rdx*4]
+    add r8d, edi
+    and r8d, edi
+    xor r8d, edi
+    or r8d, edi
+    add rdx, 1
+    sub r8d, edi
+    cmp rdx, r10
+    jl 13
+    add ecx, r8d
 14:
-    xor ecx, ecx
+    xor edx, edx
     pxor xmm1, xmm1
 15:
-    movups.x xmm0, [rsp + rcx*8 + 0x67]
+    movups.x xmm0, [rsp + rdx*8 + 0x67]
     paddq xmm1, xmm0
     pand xmm1, xmm0
     pxor xmm1, xmm0
     por xmm1, xmm0
-    mov rdi, rcx
+    mov rdi, rdx
     add rdi, 4
-    cmp rdi, 5
-    setge dil
-    movzx edi, dil
-    mov r8, rcx
+    mov r8, rdx
     add r8, 2
     psubq xmm1, xmm0
-    test dil, dil
-    mov rcx, r8
-    je 15
-    pextrq rcx, xmm1, 1
+    cmp rdi, 5
+    mov rdx, r8
+    jl 15
+    pextrq rdx, xmm1, 1
     movq rdi, xmm1
-    add rcx, rdi
+    add rdx, rdi
     mov rbx, 5
     sub rbx, r8
     cmp rbx, 0
@@ -3233,21 +3215,18 @@ main:
     xor r9, r10
     or r9, r10
     add r8, 1
-    cmp r8, rbx
-    setge dil
-    movzx edi, dil
     sub r9, r10
-    test dil, dil
+    cmp r8, rbx
     mov rdi, r9
-    je 16
-    add rcx, r9
+    jl 16
+    add rdx, r9
 17:
     movzx eax, al
     movzx esi, si
     add rax, rsi
-    mov edx, edx
-    add rax, rdx
+    mov ecx, ecx
     add rax, rcx
+    add rax, rdx
     add rsp, 0x90
     pop rbx
     ret

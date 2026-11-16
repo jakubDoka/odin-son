@@ -848,6 +848,19 @@ SIMPLE_BINOP_CLASS :: Class_Spec {
 	api   = true,
 }
 
+COMUTING_COMPARISON_CLASS :: Class_Spec {
+	args  = {"lhs", "rhs"},
+	group = "Bin_Op",
+	flags = {.Comutes, .Interned, .Clonable},
+	api   = true,
+}
+
+COMPARISON_CLASS :: Class_Spec {
+	args  = {"lhs", "rhs"},
+	group = "Bin_Op",
+	flags = {.Interned, .Clonable},
+}
+
 SIMPLE_WIDENING_BINOP_CLASS :: Class_Spec {
 	args  = {"lhs", "rhs"},
 	group = "Bin_Op",
@@ -882,12 +895,12 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 		flags = {.Interned, .Widening},
 	},
 	.Mul = SIMPLE_WIDENING_BINOP_CLASS,
-	.Eq = SIMPLE_BINOP_CLASS,
-	.Ne = SIMPLE_BINOP_CLASS,
-	.Le = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.Lt = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.Gt = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.Ge = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
+	.Eq = COMUTING_COMPARISON_CLASS,
+	.Ne = COMUTING_COMPARISON_CLASS,
+	.Le = COMPARISON_CLASS,
+	.Lt = COMPARISON_CLASS,
+	.Gt = COMPARISON_CLASS,
+	.Ge = COMPARISON_CLASS,
 	.Div = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Rem = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.And = SIMPLE_WIDENING_BINOP_CLASS,
@@ -922,10 +935,10 @@ IDEAL_CLASSES := [bac.Node_Type]Class_Spec {
 	},
 	.Shl = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.Shr = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.U_Lt = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.U_Gt = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.U_Le = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
-	.U_Ge = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
+	.U_Lt = COMPARISON_CLASS,
+	.U_Gt = COMPARISON_CLASS,
+	.U_Le = COMPARISON_CLASS,
+	.U_Ge = COMPARISON_CLASS,
 	.U_Div = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Rem = {args = {"lhs", "rhs"}, group = "Bin_Op", flags = {.Interned}},
 	.U_Mul_Hi = SIMPLE_BINOP_CLASS,

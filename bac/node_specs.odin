@@ -1,5 +1,5 @@
 package bac
-// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1037:2)
+// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta/meta.odin(1050:2)
 
 INHERITANCE_TABLE :: []u16{		0b1, // Nil
 		0b1, // Entry
@@ -187,16 +187,16 @@ NODE_EXTRA_SIZES :: []u8{		1, // Nil -> Cfg
 		{Class_Flag.Interned, Class_Flag.Comutes, Class_Flag.Widening}, // And
 		{Class_Flag.Interned, Class_Flag.Comutes, Class_Flag.Widening}, // Or
 		{Class_Flag.Interned, Class_Flag.Comutes, Class_Flag.Widening}, // Xor
-		{Class_Flag.Interned, Class_Flag.Comutes}, // Eq
-		{Class_Flag.Interned, Class_Flag.Comutes}, // Ne
-		{Class_Flag.Interned}, // Le
-		{Class_Flag.Interned}, // Lt
-		{Class_Flag.Interned}, // Gt
-		{Class_Flag.Interned}, // Ge
-		{Class_Flag.Interned}, // U_Lt
-		{Class_Flag.Interned}, // U_Gt
-		{Class_Flag.Interned}, // U_Le
-		{Class_Flag.Interned}, // U_Ge
+		{Class_Flag.Interned, Class_Flag.Comutes, Class_Flag.Clonable}, // Eq
+		{Class_Flag.Interned, Class_Flag.Comutes, Class_Flag.Clonable}, // Ne
+		{Class_Flag.Interned, Class_Flag.Clonable}, // Le
+		{Class_Flag.Interned, Class_Flag.Clonable}, // Lt
+		{Class_Flag.Interned, Class_Flag.Clonable}, // Gt
+		{Class_Flag.Interned, Class_Flag.Clonable}, // Ge
+		{Class_Flag.Interned, Class_Flag.Clonable}, // U_Lt
+		{Class_Flag.Interned, Class_Flag.Clonable}, // U_Gt
+		{Class_Flag.Interned, Class_Flag.Clonable}, // U_Le
+		{Class_Flag.Interned, Class_Flag.Clonable}, // U_Ge
 		{Class_Flag.Interned}, // Shl
 		{Class_Flag.Interned}, // Shr
 		{Class_Flag.Interned}, // U_Shr

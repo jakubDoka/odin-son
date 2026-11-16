@@ -1392,12 +1392,10 @@ main:
     and dx, 0x1f8
     or cx, dx
     mov.w [rip + 0xadc], cx
-    cmp rax, 5
-    setge cl
-    movzx ecx, cl
+    mov rcx, rax
     add rax, 1
-    test cl, cl
-    je 10
+    cmp rcx, 5
+    jl 10
     call bits
     mov rdx, rax
     imul rcx, rbp, 7
@@ -1547,12 +1545,10 @@ main:
     mov rdi, r8
     movsx r8, dil
     add rsi, 1
-    cmp rsi, 3
-    setge dil
-    movzx edi, dil
+    mov rdi, rsi
     add rdx, r8
-    test dil, dil
-    je 3
+    cmp rdi, 3
+    jl 3
     mov.q [rsp + 0x2], 0
     xor esi, esi
 4:
@@ -1590,30 +1586,28 @@ main:
     imul rbx, rbx, 5
     movzx.w edx, [rsp + rax*2 + 0x2]
     add rax, 1
-    cmp rax, 4
-    setge cl
-    movzx ecx, cl
+    mov rcx, rax
     add rbx, rdx
-    test cl, cl
-    je 6
+    cmp rcx, 4
+    jl 6
     mov sil, 1
-    movzx.w eax, [rip + 0xc2f]
-    lea rdi, [rip + 0xc28]
+    movzx.w eax, [rip + 0xc3f]
+    lea rdi, [rip + 0xc38]
     and ax, -0x1f9
     or ax, 0x100
-    mov.w [rip + 0xc14], ax
-    movzx.w eax, [rip + 0xc0c]
+    mov.w [rip + 0xc24], ax
+    movzx.w eax, [rip + 0xc1c]
     and ax, 0x3ff
     or ax, -0x400
-    mov.w [rip + 0xbf8], ax
+    mov.w [rip + 0xc08], ax
     mov dl, 0x1f
     call poke
-    movzx.w eax, [rip + 0xbf2]
+    movzx.w eax, [rip + 0xc02]
     and ax, -8
     or ax, 7
-    mov.w [rip + 0xbde], ax
-    movzx.w ecx, [rip + 0xbd2]
-    movzx.w eax, [rip + 0xbd8]
+    mov.w [rip + 0xbee], ax
+    movzx.w ecx, [rip + 0xbe2]
+    movzx.w eax, [rip + 0xbe8]
     and cx, 0x3ff
     shr ax, 0xa
     and ax, 0x3f
@@ -1621,49 +1615,48 @@ main:
     shl ax, 0xa
     and ax, -0x400
     or cx, ax
-    mov.w [rip + 0xb9c], cx
-    movzx.w edx, [rip + 0xb94]
-    movzx.w eax, [rip + 0xb9a]
-    movzx.w r10d, [rip + 0xb88]
-    movzx.w r9d, [rip + 0xb76]
-    xor esi, esi
+    mov.w [rip + 0xbac], cx
+    movzx.w r10d, [rip + 0xba4]
+    movzx.w r9d, [rip + 0xbaa]
+    movzx.w r8d, [rip + 0xb98]
+    movzx.w edi, [rip + 0xb86]
+    xor eax, eax
 7:
-    movzx.w ecx, [rip + 0xb81]
-    mov r8, rcx
-    and r8w, 0x3ff
-    mov rdi, rcx
-    shr di, 0xa
-    and di, 0x3f
-    add di, 0xd
-    shl di, 0xa
-    and di, -0x400
-    or r8w, di
-    mov rdi, r8
-    and di, -0x1f9
-    shl r8w, 7
-    sar r8w, 0xa
-    sub r8b, 9
-    movsx r8, r8b
-    shl r8w, 3
-    and r8w, 0x1f8
-    or di, r8w
-    mov.w [rip + 0xb23], di
-    cmp rsi, 5
-    setge dil
-    movzx edi, dil
-    add rsi, 1
-    test dil, dil
-    je 7
-    imul rsi, rbx, 7
-    xor rsi, r9
-    shl r10, 0x10
-    xor rsi, r10
-    imul rsi, rsi, 7
-    xor rsi, rdx
-    and ax, 7
+    movzx.w ecx, [rip + 0xb91]
+    mov rsi, rcx
+    and si, 0x3ff
+    mov rdx, rcx
+    shr dx, 0xa
+    and dx, 0x3f
+    add dx, 0xd
+    shl dx, 0xa
+    and dx, -0x400
+    or si, dx
+    mov rdx, rsi
+    and dx, -0x1f9
+    shl si, 7
+    sar si, 0xa
+    sub sil, 9
+    movsx rsi, sil
+    shl si, 3
+    and si, 0x1f8
+    or dx, si
+    mov.w [rip + 0xb33], dx
+    mov rdx, rax
+    add rax, 1
+    cmp rdx, 5
+    jl 7
+    imul rax, rbx, 7
+    xor rax, rdi
+    shl r8, 0x10
+    xor rax, r8
+    imul rdx, rax, 7
+    xor rdx, r10
+    and r9w, 7
+    mov rax, r9
     movzx eax, al
-    add rsi, rax
-    imul rax, rsi, 7
+    add rdx, rax
+    imul rax, rdx, 7
     movzx ecx, cx
     xor rax, rcx
     add rsp, 0x28

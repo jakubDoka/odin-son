@@ -101,34 +101,32 @@ main:
     movzx.b ebx, [rip + 0xf4b]
     mov rsi, 4
     call add
-    lea rcx, [rbx + rax + 0x1f]
-    add rcx, -5
-    xor esi, esi
+    lea rdx, [rbx + rax + 0x1f]
+    add rdx, -5
+    xor ecx, ecx
 2:
-    mov rax, rcx
-    cmp rsi, 3
-    setl dl
-    movzx edx, dl
-    mov rcx, rax
-    add rcx, rsi
+    mov rax, rdx
+    mov rdx, rax
+    add rdx, rcx
+    mov rsi, rcx
     add rsi, 1
-    test dl, dl
-    jne 2
+    cmp rcx, 3
+    mov rcx, rsi
+    jl 2
     pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    movzx.b ecx, [rip + 0xf5b]
-    add rcx, 0x21
-    xor esi, esi
+    movzx.b edx, [rip + 0xf5b]
+    add rdx, 0x21
+    xor ecx, ecx
 1:
-    mov rax, rcx
-    cmp rsi, 3
-    setl dl
-    movzx edx, dl
-    mov rcx, rax
-    add rcx, rsi
+    mov rax, rdx
+    mov rdx, rax
+    add rdx, rcx
+    mov rsi, rcx
     add rsi, 1
-    test dl, dl
-    jne 1
+    cmp rcx, 3
+    mov rcx, rsi
+    jl 1
     ret

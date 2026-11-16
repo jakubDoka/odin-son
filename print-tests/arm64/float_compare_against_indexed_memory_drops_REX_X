@@ -298,11 +298,11 @@ main:
     str x21, [xzr, #16]
     str x22, [xzr, #24]
     str x23, [xzr, #32]
-    movz x10, #8
-    movz x9, #1
+    movz x9, #8
+    movz x8, #1
     adr x17, 0xfc0
-    adr x8, 0xf80
-    add x16, x17, x10
+    adr x7, 0xf80
+    add x16, x17, x9
     movz x0, #16
     add x15, x0, x17
     movz x0, #24
@@ -321,13 +321,13 @@ main:
     add x19, x0, x17
     movz x18, #0
 1:
-    madd x0, x18, x10, xzr
-    add x0, x0, x8
+    madd x0, x18, x9, xzr
+    add x0, x0, x7
     scvtf d0, x18
     str d0, [x0]
     ldr x12, [x17]
     ldr x11, [x16]
-    ldr x7, [x15]
+    ldr x10, [x15]
     ldr x6, [x14]
     ldr x5, [x13]
     ldr x4, [x23]
@@ -335,31 +335,28 @@ main:
     ldr x2, [x21]
     ldr x1, [x20]
     ldr x0, [x19]
-    add x18, x18, x9
-    cmp x18, x10
+    add x18, x18, x8
+    cmp x18, x9
     b.ne 1
     adr x13, 0x1020
     ldr d1, [x13]
     movz x14, #0
     movz x13, #0
 2:
-    add x17, x14, x9
-    madd x15, x13, x10, xzr
-    add x15, x15, x8
+    add x17, x14, x8
+    madd x15, x13, x9, xzr
+    add x15, x15, x7
     ldr d0, [x15]
+    add x16, x13, x8
     fcmp d0, d1
-    cset w15, mi
-    add x13, x13, x9
-    cmp x13, x10
-    cset w16, eq
-    cmp w15, #0
-    csel x15, x17, x14, ne
+    csel x15, x17, x14, mi
     mov x14, x15
-    cmp w16, #0
-    b.eq 2
-    add x8, x12, x15
-    add x8, x8, x11
-    add x7, x8, x7
+    mov x13, x16
+    cmp x16, x9
+    b.ne 2
+    add x7, x12, x15
+    add x7, x7, x11
+    add x7, x7, x10
     add x6, x7, x6
     add x5, x6, x5
     add x4, x5, x4

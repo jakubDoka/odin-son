@@ -46,12 +46,10 @@ main:
     mov r8, r9
     cmp rax, rdi
     je 5
-    cmp rdi, 1
-    sete r9b
-    movzx r9d, r9b
+    mov r9, rdi
     add rdi, 1
-    test r9b, r9b
-    cmovne rcx, rdx
+    cmp r9, 1
+    cmove rcx, rdx
     mov rbp, rdi
     mov rbx, r8
     jmp 4
@@ -112,12 +110,10 @@ main:
     add rcx, rdx
     cmp r8, rax
     je 6
-    cmp rax, 1
-    sete dl
-    movzx edx, dl
+    mov rdx, rax
     add rax, 1
-    test dl, dl
-    cmovne rdi, rsi
+    cmp rdx, 1
+    cmove rdi, rsi
     mov rbx, rcx
     jmp 4
 5:
@@ -182,12 +178,10 @@ main:
     mov r8, r9
     cmp rax, rdi
     je 5
-    cmp rdi, 1
-    sete r9b
-    movzx r9d, r9b
+    mov r9, rdi
     add rdi, 1
-    test r9b, r9b
-    cmovne rcx, rdx
+    cmp r9, 1
+    cmove rcx, rdx
     mov rbp, rdi
     mov rbx, r8
     jmp 4
@@ -248,12 +242,10 @@ main:
     add rcx, rdx
     cmp r8, rax
     je 6
-    cmp rax, 1
-    sete dl
-    movzx edx, dl
+    mov rdx, rax
     add rax, 1
-    test dl, dl
-    cmovne rdi, rsi
+    cmp rdx, 1
+    cmove rdi, rsi
     mov rbx, rcx
     jmp 4
 5:
@@ -335,22 +327,21 @@ main:
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    mov rdi, 2
+    xor esi, esi
     xor edx, edx
-    xor eax, eax
+    mov rax, 2
 1:
-    mov rcx, rax
-    cmp rdi, 5
-    setge sil
-    movzx esi, sil
-    mov rax, rcx
-    add rax, rdi
-    mov r9, rdx
+    mov rcx, rdx
+    mov rdx, rcx
+    add rdx, rax
+    mov r9, rsi
     add r9, 1
+    mov rdi, rax
     add rdi, 1
-    test sil, sil
-    mov rdx, r9
-    je 1
+    cmp rax, 5
+    mov rsi, r9
+    mov rax, rdi
+    jl 1
     movabs r8, 0x7fffffffffffffff
     mov rdi, 3
     mov rsi, 4

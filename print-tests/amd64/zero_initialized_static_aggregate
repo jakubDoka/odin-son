@@ -160,19 +160,16 @@ main:
 3:
     lea rdx, [rip + 0xf29]
     add rdx, rax
-    movzx.b edi, [rdx]
+    movzx.b esi, [rdx]
     add rax, 1
-    cmp rax, 0x10
-    setge sil
-    movzx esi, sil
     mov rdx, rcx
-    add rdx, rdi
-    test sil, sil
+    add rdx, rsi
+    cmp rax, 0x10
     mov rcx, rdx
-    je 3
-    mov.q [rip + 0xeff], 7
-    mov.q [rip + 0xefc], 2
-    mov.q rax, [rip + 0xefd]
+    jl 3
+    mov.q [rip + 0xf0a], 7
+    mov.q [rip + 0xf07], 2
+    mov.q rax, [rip + 0xf08]
     imul rax, rdx
     add rax, 7
     sub rax, 2

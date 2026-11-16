@@ -215,14 +215,12 @@ main:
     mov rax, rbx
 4:
     mov rsi, rax
-    cmp rcx, 2
-    setl dl
-    movzx edx, dl
+    mov rdx, rcx
     mov rax, rsi
     add rax, 7
     add rcx, 1
-    test dl, dl
-    jne 4
+    cmp rdx, 2
+    jl 4
     mov rax, rsi
     add rax, 0x20
     add rsp, 8
@@ -243,25 +241,23 @@ main:
     xor edx, edx
 1:
     mov rcx, rdx
-    cmp rax, 4
-    setl sil
-    movzx esi, sil
-    add rax, 1
+    mov rsi, rax
+    add rsi, 1
     mov rdx, rcx
-    add rdx, rax
-    test sil, sil
-    jne 1
+    add rdx, rsi
+    cmp rax, 4
+    mov rax, rsi
+    jl 1
     xor eax, eax
 2:
     mov rsi, rcx
-    cmp rax, 2
-    setl dl
-    movzx edx, dl
     mov rcx, rsi
     add rcx, 7
-    add rax, 1
-    test dl, dl
-    jne 2
+    mov rdx, rax
+    add rdx, 1
+    cmp rax, 2
+    mov rax, rdx
+    jl 2
     mov rax, rsi
     add rax, 0x20
     ret

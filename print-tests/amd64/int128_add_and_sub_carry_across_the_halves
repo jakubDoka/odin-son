@@ -808,60 +808,52 @@ main:
     mov.q [rsp - 0x18], rcx
     mov.q [rsp - 0x10], -1
     mov.q [rsp - 0x8], -1
-    xor edx, edx
+    xor ecx, ecx
     xor edi, edi
 1:
-    imul rcx, rdx, 0x10
-    add rcx, rax
+    imul rdx, rcx, 0x10
+    add rdx, rax
     xor esi, esi
 2:
-    imul r11, rsi, 0x10
-    add r11, rax
-    mov.q r10, [rcx]
-    mov.q r9, [rcx + 0x8]
-    imul rdi, rdi, 0x1f
-    mov.q r8, [r11 + 0x8]
-    mov rbx, r9
-    add rbx, r8
-    sub r9, r8
-    mov.q r11, [r11]
-    mov r8, r10
-    sub r8, r11
-    mov r12, r10
-    add r12, r11
-    cmp r12, r10
+    imul r10, rsi, 0x10
+    add r10, rax
+    mov.q r9, [rdx]
+    mov.q r8, [rdx + 0x8]
+    imul r11, rdi, 0x1f
+    mov.q rdi, [r10 + 0x8]
+    mov rbx, r8
+    add rbx, rdi
+    sub r8, rdi
+    mov.q r10, [r10]
+    mov rdi, r9
+    sub rdi, r10
+    mov r12, r9
+    add r12, r10
+    cmp r12, r9
     setb bpl
     movzx ebp, bpl
     movzx ebp, bpl
     add rbx, rbp
     imul rbx, rbx, 3
     xor rbx, r12
-    add rdi, rbx
-    imul rdi, rdi, 0x1f
-    cmp r10, r11
-    setb r10b
-    movzx r10d, r10b
-    movzx r10d, r10b
-    sub r9, r10
-    imul r9, r9, 3
-    mov r10, r8
-    xor r10, r9
-    mov r9, rsi
-    add r9, 1
-    cmp r9, 6
-    setge sil
-    movzx esi, sil
-    mov r8, rdi
-    add r8, r10
-    test sil, sil
+    add r11, rbx
+    imul r11, r11, 0x1f
+    cmp r9, r10
+    setb r9b
+    movzx r9d, r9b
+    movzx r9d, r9b
+    sub r8, r9
+    imul r8, r8, 3
+    xor rdi, r8
+    add rsi, 1
+    mov r8, r11
+    add r8, rdi
+    cmp rsi, 6
     mov rdi, r8
-    mov rsi, r9
-    je 2
-    mov rcx, rdx
+    jl 2
     add rcx, 1
     cmp rcx, 6
     mov rdi, r8
-    mov rdx, rcx
     jl 1
     imul rax, r8, 0x1f
     add rax, 7

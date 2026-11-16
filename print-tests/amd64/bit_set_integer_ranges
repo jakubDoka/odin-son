@@ -10,20 +10,12 @@ digits:
     mov rdx, rsi
     shlx ebx, eax, ecx
     shlx ebp, eax, edx
+    xor eax, eax
     cmp cl, 0x20
-    setb al
-    movzx eax, al
+    cmovb eax, ebx
     xor ecx, ecx
-    test al, al
-    cmovne ecx, ebx
-    mov rax, rcx
     cmp dl, 0x20
-    setb cl
-    movzx ecx, cl
-    xor edx, edx
-    test cl, cl
-    cmovne edx, ebp
-    mov rcx, rdx
+    cmovb ecx, ebp
     or al, cl
     or al, 1
     pop rbp
@@ -41,20 +33,12 @@ around:
     add rbx, 1
     sub rbx, -2
     shlx ebp, eax, ebx
+    xor eax, eax
     cmp cl, 0x20
-    setb al
-    movzx eax, al
+    cmovb eax, edx
     xor ecx, ecx
-    test al, al
-    cmovne ecx, edx
-    mov rax, rcx
     cmp bl, 0x20
-    setb cl
-    movzx ecx, cl
-    xor edx, edx
-    test cl, cl
-    cmovne edx, ebp
-    mov rcx, rdx
+    cmovb ecx, ebp
     or al, cl
     or al, 1
     pop rbp
@@ -73,25 +57,17 @@ late:
     or ax, 0x200
     ret
 huge:
-    push rbx
     mov rax, 1
     shlx rcx, rax, rdi
     shlx rax, rax, rsi
-    cmp rdi, 0x40
-    setb dl
-    movzx edx, dl
-    xor ebx, ebx
-    test dl, dl
-    cmovne rbx, rcx
-    cmp rsi, 0x40
-    setb cl
-    movzx ecx, cl
     xor edx, edx
-    test cl, cl
-    cmovne rdx, rax
-    mov rax, rbx
-    or rax, rdx
-    pop rbx
+    cmp rdi, 0x40
+    cmovb rdx, rcx
+    xor ecx, ecx
+    cmp rsi, 0x40
+    cmovb rcx, rax
+    mov rax, rdx
+    or rax, rcx
     ret
 tests:
     push rbx
@@ -112,16 +88,13 @@ tests:
     cmovb ebp, ebx
     mov rdx, rbp
     and dl, 1
+    xor ebx, ebx
     cmp dl, 0
-    setne bl
-    movzx ebx, bl
-    xor ebp, ebp
-    test bl, bl
-    cmovne rbp, rax
-    mov rax, rbp
+    cmovne rbx, rax
+    mov rax, rbx
     or rax, 2
     cmp dl, 0
-    mov rdx, rbp
+    mov rdx, rbx
     cmove rdx, rax
     mov rax, rdx
     or rax, 4
@@ -250,52 +223,38 @@ main:
 =========== OPT LEVEL: none ===========
 digits:
     mov al, 1
-    movzx ecx, al
+    movzx eax, al
     sub rdi, 3
-    mov rax, rdi
     sub rsi, 3
-    mov rdi, rsi
-    shlx edx, ecx, eax
-    shlx esi, ecx, edi
-    cmp al, 0x20
-    setb cl
-    movzx ecx, cl
+    shlx ecx, eax, edi
+    shlx edx, eax, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, edx
     cmp dil, 0x20
-    setb dl
-    movzx edx, dl
+    cmovb eax, ecx
     xor ecx, ecx
-    test dl, dl
-    cmovne ecx, esi
+    cmp sil, 0x20
+    cmovb ecx, edx
     or al, cl
     or al, 1
     ret
 around:
     mov al, 1
-    movzx esi, al
+    movzx edx, al
     mov rax, rdi
     sub rax, -2
-    mov rcx, rax
-    shlx r8d, esi, ecx
+    mov r8, rax
+    shlx ecx, edx, r8d
     mov rax, rdi
     add rax, 1
     sub rax, -2
-    mov rdx, rax
-    shlx esi, esi, edx
-    cmp cl, 0x20
-    setb cl
-    movzx ecx, cl
+    mov rsi, rax
+    shlx edx, edx, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, r8d
-    cmp dl, 0x20
-    setb dl
-    movzx edx, dl
+    cmp r8b, 0x20
+    cmovb eax, ecx
     xor ecx, ecx
-    test dl, dl
-    cmovne ecx, esi
+    cmp sil, 0x20
+    cmovb ecx, edx
     or al, cl
     or al, 1
     ret
@@ -313,20 +272,13 @@ late:
 huge:
     mov rax, 1
     shlx rcx, rax, rdi
-    shlx r8, rax, rsi
+    shlx rdx, rax, rsi
+    xor eax, eax
     cmp rdi, 0x40
-    setb al
-    movzx eax, al
-    xor edx, edx
-    test al, al
-    cmovne rdx, rcx
-    cmp rsi, 0x40
-    setb al
-    movzx eax, al
+    cmovb rax, rcx
     xor ecx, ecx
-    test al, al
-    cmovne rcx, r8
-    mov rax, rdx
+    cmp rsi, 0x40
+    cmovb rcx, rdx
     or rax, rcx
     ret
 tests:
@@ -346,11 +298,8 @@ tests:
     cmovb eax, ecx
     mov rcx, rax
     and cl, 1
-    cmp cl, 0
-    setne al
-    movzx eax, al
     xor esi, esi
-    test al, al
+    cmp cl, 0
     cmovne rsi, r9
     mov rax, rsi
     or rax, 2
@@ -491,20 +440,12 @@ digits:
     mov rdx, rsi
     shlx ebx, eax, ecx
     shlx ebp, eax, edx
+    xor eax, eax
     cmp cl, 0x20
-    setb al
-    movzx eax, al
+    cmovb eax, ebx
     xor ecx, ecx
-    test al, al
-    cmovne ecx, ebx
-    mov rax, rcx
     cmp dl, 0x20
-    setb cl
-    movzx ecx, cl
-    xor edx, edx
-    test cl, cl
-    cmovne edx, ebp
-    mov rcx, rdx
+    cmovb ecx, ebp
     or al, cl
     or al, 1
     pop rbp
@@ -522,20 +463,12 @@ around:
     add rbx, 1
     sub rbx, -2
     shlx ebp, eax, ebx
+    xor eax, eax
     cmp cl, 0x20
-    setb al
-    movzx eax, al
+    cmovb eax, edx
     xor ecx, ecx
-    test al, al
-    cmovne ecx, edx
-    mov rax, rcx
     cmp bl, 0x20
-    setb cl
-    movzx ecx, cl
-    xor edx, edx
-    test cl, cl
-    cmovne edx, ebp
-    mov rcx, rdx
+    cmovb ecx, ebp
     or al, cl
     or al, 1
     pop rbp
@@ -554,25 +487,17 @@ late:
     or ax, 0x200
     ret
 huge:
-    push rbx
     mov rax, 1
     shlx rcx, rax, rdi
     shlx rax, rax, rsi
-    cmp rdi, 0x40
-    setb dl
-    movzx edx, dl
-    xor ebx, ebx
-    test dl, dl
-    cmovne rbx, rcx
-    cmp rsi, 0x40
-    setb cl
-    movzx ecx, cl
     xor edx, edx
-    test cl, cl
-    cmovne rdx, rax
-    mov rax, rbx
-    or rax, rdx
-    pop rbx
+    cmp rdi, 0x40
+    cmovb rdx, rcx
+    xor ecx, ecx
+    cmp rsi, 0x40
+    cmovb rcx, rax
+    mov rax, rdx
+    or rax, rcx
     ret
 tests:
     push rbx
@@ -593,16 +518,13 @@ tests:
     cmovb ebp, ebx
     mov rdx, rbp
     and dl, 1
+    xor ebx, ebx
     cmp dl, 0
-    setne bl
-    movzx ebx, bl
-    xor ebp, ebp
-    test bl, bl
-    cmovne rbp, rax
-    mov rax, rbp
+    cmovne rbx, rax
+    mov rax, rbx
     or rax, 2
     cmp dl, 0
-    mov rdx, rbp
+    mov rdx, rbx
     cmove rdx, rax
     mov rax, rdx
     or rax, 4
@@ -731,52 +653,38 @@ main:
 =========== OPT LEVEL: moderate ===========
 digits:
     mov al, 1
-    movzx ecx, al
+    movzx eax, al
     sub rdi, 3
-    mov rax, rdi
     sub rsi, 3
-    mov rdi, rsi
-    shlx edx, ecx, eax
-    shlx esi, ecx, edi
-    cmp al, 0x20
-    setb cl
-    movzx ecx, cl
+    shlx ecx, eax, edi
+    shlx edx, eax, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, edx
     cmp dil, 0x20
-    setb dl
-    movzx edx, dl
+    cmovb eax, ecx
     xor ecx, ecx
-    test dl, dl
-    cmovne ecx, esi
+    cmp sil, 0x20
+    cmovb ecx, edx
     or al, cl
     or al, 1
     ret
 around:
     mov al, 1
-    movzx esi, al
+    movzx edx, al
     mov rax, rdi
     sub rax, -2
-    mov rcx, rax
-    shlx r8d, esi, ecx
+    mov r8, rax
+    shlx ecx, edx, r8d
     mov rax, rdi
     add rax, 1
     sub rax, -2
-    mov rdx, rax
-    shlx esi, esi, edx
-    cmp cl, 0x20
-    setb cl
-    movzx ecx, cl
+    mov rsi, rax
+    shlx edx, edx, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, r8d
-    cmp dl, 0x20
-    setb dl
-    movzx edx, dl
+    cmp r8b, 0x20
+    cmovb eax, ecx
     xor ecx, ecx
-    test dl, dl
-    cmovne ecx, esi
+    cmp sil, 0x20
+    cmovb ecx, edx
     or al, cl
     or al, 1
     ret
@@ -794,20 +702,13 @@ late:
 huge:
     mov rax, 1
     shlx rcx, rax, rdi
-    shlx r8, rax, rsi
+    shlx rdx, rax, rsi
+    xor eax, eax
     cmp rdi, 0x40
-    setb al
-    movzx eax, al
-    xor edx, edx
-    test al, al
-    cmovne rdx, rcx
-    cmp rsi, 0x40
-    setb al
-    movzx eax, al
+    cmovb rax, rcx
     xor ecx, ecx
-    test al, al
-    cmovne rcx, r8
-    mov rax, rdx
+    cmp rsi, 0x40
+    cmovb rcx, rdx
     or rax, rcx
     ret
 tests:
@@ -827,11 +728,8 @@ tests:
     cmovb eax, ecx
     mov rcx, rax
     and cl, 1
-    cmp cl, 0
-    setne al
-    movzx eax, al
     xor esi, esi
-    test al, al
+    cmp cl, 0
     cmovne rsi, r9
     mov rax, rsi
     or rax, 2
@@ -963,52 +861,38 @@ main:
 =========== OPT LEVEL: all ===========
 digits:
     mov al, 1
-    movzx ecx, al
+    movzx eax, al
     sub rdi, 3
-    mov rax, rdi
     sub rsi, 3
-    mov rdi, rsi
-    shlx edx, ecx, eax
-    shlx esi, ecx, edi
-    cmp al, 0x20
-    setb cl
-    movzx ecx, cl
+    shlx ecx, eax, edi
+    shlx edx, eax, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, edx
     cmp dil, 0x20
-    setb dl
-    movzx edx, dl
+    cmovb eax, ecx
     xor ecx, ecx
-    test dl, dl
-    cmovne ecx, esi
+    cmp sil, 0x20
+    cmovb ecx, edx
     or al, cl
     or al, 1
     ret
 around:
     mov al, 1
-    movzx esi, al
+    movzx edx, al
     mov rax, rdi
     sub rax, -2
-    mov rcx, rax
-    shlx r8d, esi, ecx
+    mov r8, rax
+    shlx ecx, edx, r8d
     mov rax, rdi
     add rax, 1
     sub rax, -2
-    mov rdx, rax
-    shlx esi, esi, edx
-    cmp cl, 0x20
-    setb cl
-    movzx ecx, cl
+    mov rsi, rax
+    shlx edx, edx, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, r8d
-    cmp dl, 0x20
-    setb dl
-    movzx edx, dl
+    cmp r8b, 0x20
+    cmovb eax, ecx
     xor ecx, ecx
-    test dl, dl
-    cmovne ecx, esi
+    cmp sil, 0x20
+    cmovb ecx, edx
     or al, cl
     or al, 1
     ret
@@ -1026,20 +910,13 @@ late:
 huge:
     mov rax, 1
     shlx rcx, rax, rdi
-    shlx r8, rax, rsi
+    shlx rdx, rax, rsi
+    xor eax, eax
     cmp rdi, 0x40
-    setb al
-    movzx eax, al
-    xor edx, edx
-    test al, al
-    cmovne rdx, rcx
-    cmp rsi, 0x40
-    setb al
-    movzx eax, al
+    cmovb rax, rcx
     xor ecx, ecx
-    test al, al
-    cmovne rcx, r8
-    mov rax, rdx
+    cmp rsi, 0x40
+    cmovb rcx, rdx
     or rax, rcx
     ret
 tests:
@@ -1059,11 +936,8 @@ tests:
     cmovb eax, ecx
     mov rcx, rax
     and cl, 1
-    cmp cl, 0
-    setne al
-    movzx eax, al
     xor esi, esi
-    test al, al
+    cmp cl, 0
     cmovne rsi, r9
     mov rax, rsi
     or rax, 2
@@ -1195,25 +1069,17 @@ main:
 =========== OPT LEVEL: aggresive ===========
 digits:
     mov al, 1
-    movzx ecx, al
+    movzx eax, al
     sub rdi, 3
-    mov rax, rdi
     sub rsi, 3
-    mov rdi, rsi
-    shlx edx, ecx, eax
-    shlx esi, ecx, edi
-    cmp al, 0x20
-    setb cl
-    movzx ecx, cl
+    shlx ecx, eax, edi
+    shlx edx, eax, esi
     xor eax, eax
-    test cl, cl
-    cmovne eax, edx
     cmp dil, 0x20
-    setb dl
-    movzx edx, dl
+    cmovb eax, ecx
     xor ecx, ecx
-    test dl, dl
-    cmovne ecx, esi
+    cmp sil, 0x20
+    cmovb ecx, edx
     or al, cl
     or al, 1
     ret
@@ -1234,11 +1100,8 @@ tests:
     cmovb eax, ecx
     mov rcx, rax
     and cl, 1
-    cmp cl, 0
-    setne al
-    movzx eax, al
     xor esi, esi
-    test al, al
+    cmp cl, 0
     cmovne rsi, r9
     mov rax, rsi
     or rax, 2

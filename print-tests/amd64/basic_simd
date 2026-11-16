@@ -1038,27 +1038,21 @@ main:
     add rcx, rax
     mov rdx, rax
     add rdx, 0x20
-    cmp rdx, 0x23
-    setge dl
-    movzx edx, dl
     add rax, 0x10
     movups xmm1, xmm0
     paddb.x xmm1, [rcx]
-    test dl, dl
-    movups xmm0, xmm1
-    je 1
-    xor esi, esi
-    xor edx, edx
-2:
-    lea rax, [rip + 0xecf]
-    add rax, rdx
-    add rdx, 1
     cmp rdx, 0x23
-    setge cl
-    movzx ecx, cl
-    add.b sil, [rax]
-    test cl, cl
-    je 2
+    movups xmm0, xmm1
+    jl 1
+    xor edx, edx
+    xor ecx, ecx
+2:
+    lea rax, [rip + 0xeda]
+    add rax, rcx
+    add rcx, 1
+    add.b dl, [rax]
+    cmp rcx, 0x23
+    jl 2
     mov.q rax, [rsp + 0x8]
     mov.q rcx, [rsp]
     imul rcx, rcx, 0xa
@@ -1067,7 +1061,7 @@ main:
     paddb xmm0, xmm1
     psadbw xmm0, xmm2
     movd ecx, xmm0
-    add cl, sil
+    add cl, dl
     movzx ecx, cl
     imul rcx, rcx, 0x64
     add rax, rcx

@@ -733,76 +733,74 @@ main:
     shl eax, 3
     and eax, 0xf8
     or edx, eax
-    mov ecx, edx
+    mov edx, edx
     movabs rax, 0x388321267b
-    xor r8d, r8d
-    xor rcx, rax
+    xor rdx, rax
+    xor ecx, ecx
     xor eax, eax
 2:
-    mov rdi, rcx
-    imul rcx, rdi, 5
-    mov rdx, rax
-    and dl, -0x10
-    and al, 0xf
-    add al, 3
-    and al, 0xf
-    or dl, al
-    mov rax, rdx
-    and al, 0xf
-    sar dl, 4
-    sub dl, 5
-    shl dl, 4
-    and dl, -0x10
-    or al, dl
-    movzx edx, al
-    add rcx, rdx
-    mov rdx, rax
-    sar dl, 4
-    movsx rsi, dl
-    cmp r8, 0x15
-    setge dl
-    movzx edx, dl
-    add rcx, rsi
-    add r8, 1
-    test dl, dl
-    je 2
+    mov rdi, rdx
+    imul rdx, rdi, 5
+    mov rsi, rcx
+    and sil, -0x10
+    and cl, 0xf
+    add cl, 3
+    and cl, 0xf
+    or sil, cl
+    mov rcx, rsi
+    and cl, 0xf
+    sar sil, 4
+    sub sil, 5
+    shl sil, 4
+    and sil, -0x10
+    or cl, sil
+    movzx esi, cl
+    add rdx, rsi
+    mov rsi, rcx
+    sar sil, 4
+    movsx rsi, sil
+    add rdx, rsi
+    mov rsi, rax
+    add rsi, 1
+    cmp rax, 0x15
+    mov rax, rsi
+    jl 2
     movabs rax, 0x4400000007ffffff
     xor rax, rdi
     add rsp, 8
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    xor r8d, r8d
+    xor ecx, ecx
+    movabs rdx, 0x385316a8c4
     xor eax, eax
-    movabs rcx, 0x385316a8c4
 1:
-    mov rdi, rcx
-    imul rcx, rdi, 5
-    mov rdx, rax
-    and dl, -0x10
-    and al, 0xf
-    add al, 3
-    and al, 0xf
-    or dl, al
-    mov rax, rdx
-    and al, 0xf
-    sar dl, 4
-    sub dl, 5
-    shl dl, 4
-    and dl, -0x10
-    or al, dl
-    movzx edx, al
-    add rcx, rdx
-    mov rdx, rax
-    sar dl, 4
-    movsx rsi, dl
-    cmp r8, 0x15
-    setge dl
-    movzx edx, dl
-    add rcx, rsi
-    add r8, 1
-    test dl, dl
-    je 1
+    mov rdi, rdx
+    imul rdx, rdi, 5
+    mov rsi, rcx
+    and sil, -0x10
+    and cl, 0xf
+    add cl, 3
+    and cl, 0xf
+    or sil, cl
+    mov rcx, rsi
+    and cl, 0xf
+    sar sil, 4
+    sub sil, 5
+    shl sil, 4
+    and sil, -0x10
+    or cl, sil
+    movzx esi, cl
+    add rdx, rsi
+    mov rsi, rcx
+    sar sil, 4
+    movsx rsi, sil
+    add rdx, rsi
+    mov rsi, rax
+    add rsi, 1
+    cmp rax, 0x15
+    mov rax, rsi
+    jl 1
     movabs rax, 0x4400000007ffffff
     xor rax, rdi
     ret

@@ -179,29 +179,25 @@ main:
     xor edi, edi
 2:
     mov rsi, rdi
-    cmp rax, 4
-    setge r8b
-    movzx r8d, r8b
     mov rdi, rsi
     add rdi, rax
-    add rax, 1
-    test r8b, r8b
-    je 2
+    mov r8, rax
+    add r8, 1
+    cmp rax, 4
+    mov rax, r8
+    jl 2
     xor eax, eax
     xor edi, edi
 3:
-    mov r10, rdi
-    cmp rax, 4
-    setge r9b
-    movzx r9d, r9b
+    mov r9, rdi
     mov r8, rax
     add r8, 1
-    lea rdi, [r10 + rax*2]
-    test r9b, r9b
+    lea rdi, [r9 + rax*2]
+    cmp rax, 4
     mov rax, r8
-    je 3
+    jl 3
     add rcx, 1
-    add rsi, r10
+    add rsi, r9
     mov rax, rdx
     add rax, rsi
     cmp rcx, 4

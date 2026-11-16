@@ -1,7 +1,6 @@
 =========== OPT LEVEL: none-quick ===========
 main:
     push rbx
-    push rbp
     xor ecx, ecx
 1:
     add rcx, 1
@@ -20,22 +19,18 @@ main:
     xor edx, edx
 4:
     add rdx, 1
+    mov rbx, rax
+    add rbx, 1
     cmp rdx, 5
-    sete bl
-    movzx ebx, bl
-    mov rbp, rax
-    add rbp, 1
-    test bl, bl
-    jne 5
-    mov rax, rbp
+    je 5
+    mov rax, rbx
     jmp 4
 5:
-    mov rax, rbp
+    mov rax, rbx
     jmp 7
 6:
     xor eax, eax
 7:
-    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: none ===========
@@ -58,12 +53,9 @@ main:
     xor eax, eax
 4:
     add rax, 1
-    cmp rax, 5
-    sete dl
-    movzx edx, dl
     add rcx, 1
-    test dl, dl
-    jne 5
+    cmp rax, 5
+    je 5
     jmp 4
 5:
     mov rax, rcx
@@ -75,7 +67,6 @@ main:
 =========== OPT LEVEL: moderate-quick ===========
 main:
     push rbx
-    push rbp
     xor ecx, ecx
 1:
     add rcx, 1
@@ -94,22 +85,18 @@ main:
     xor edx, edx
 4:
     add rdx, 1
+    mov rbx, rax
+    add rbx, 1
     cmp rdx, 5
-    sete bl
-    movzx ebx, bl
-    mov rbp, rax
-    add rbp, 1
-    test bl, bl
-    jne 5
-    mov rax, rbp
+    je 5
+    mov rax, rbx
     jmp 4
 5:
-    mov rax, rbp
+    mov rax, rbx
     jmp 7
 6:
     xor eax, eax
 7:
-    pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
@@ -132,12 +119,9 @@ main:
     xor eax, eax
 4:
     add rax, 1
-    cmp rax, 5
-    sete dl
-    movzx edx, dl
     add rcx, 1
-    test dl, dl
-    jne 5
+    cmp rax, 5
+    je 5
     jmp 4
 5:
     mov rax, rcx
@@ -161,14 +145,11 @@ main:
     xor eax, eax
 3:
     add rax, 1
-    cmp rax, 5
-    sete sil
-    movzx esi, sil
     mov rdx, rcx
     add rdx, 1
-    test sil, sil
+    cmp rax, 5
     mov rcx, rdx
-    je 3
+    jne 3
     mov rax, rdx
     jmp 5
 4:

@@ -661,20 +661,19 @@ colors:
 1:
     mov rax, rcx
     imul rcx, rax, 0x10
-    mov r8, rdx
-    sub r8b, 1
+    mov rdi, rdx
+    sub dil, 1
     mov rsi, rdx
     or si, 0x100
     tzcnt si, si
     add sil, 2
-    movzx edi, sil
-    cmp dl, 0
-    sete sil
     movzx esi, sil
-    add rcx, rdi
-    and dl, r8b
-    test sil, sil
-    je 1
+    add rcx, rsi
+    mov rsi, rdx
+    and sil, dil
+    cmp dl, 0
+    mov rdx, rsi
+    jne 1
     ret
 digits:
     xor eax, eax
@@ -715,30 +714,28 @@ around:
     movzx esi, si
     add rsi, -2
     add rcx, rsi
-    cmp dl, 0
-    sete sil
-    movzx esi, sil
     add rcx, 2
-    and dl, dil
-    test sil, sil
-    je -0x4d
+    mov rsi, rdx
+    and sil, dil
+    cmp dl, 0
+    mov rdx, rsi
+    jne -0x48
     ret
 huge:
     mov rdx, rdi
     xor ecx, ecx
     mov rax, rcx
     imul rcx, rax, 0x40
-    mov r8, rdx
-    sub r8, 1
     mov rdi, rdx
-    tzcnt rdi, rdi
+    sub rdi, 1
+    mov rsi, rdx
+    tzcnt rsi, rsi
+    add rcx, rsi
+    mov rsi, rdx
+    and rsi, rdi
     cmp rdx, 0
-    sete sil
-    movzx esi, sil
-    add rcx, rdi
-    and rdx, r8
-    test sil, sil
-    je -0x3a
+    mov rdx, rsi
+    jne -0x35
     ret
 nested:
     xor eax, eax
@@ -764,14 +761,13 @@ nested:
     movzx edx, dl
     mov r8, r11
     imul r8, rdx
-    cmp al, 0
-    sete dil
-    movzx edi, dil
-    and al, r9b
+    mov rdi, rax
+    and dil, r9b
     mov rdx, r10
     add rdx, r8
-    test dil, dil
-    je 10
+    cmp al, 0
+    mov rax, rdi
+    jne 10
     mov rax, rcx
     sub al, 1
     and al, cl
@@ -831,30 +827,27 @@ colors:
 1:
     mov rax, rcx
     imul rcx, rax, 0x10
-    mov r8, rdx
-    sub r8b, 1
+    mov rdi, rdx
+    sub dil, 1
     mov rsi, rdx
     or si, 0x100
     tzcnt si, si
     add sil, 2
-    movzx edi, sil
-    cmp dl, 0
-    sete sil
     movzx esi, sil
-    add rcx, rdi
-    and dl, r8b
-    test sil, sil
-    je 1
+    add rcx, rsi
+    mov rsi, rdx
+    and sil, dil
+    cmp dl, 0
+    mov rdx, rsi
+    jne 1
     ret
 main:
     push rbx
     push rbp
     push r12
-    push r13
-    sub rsp, 8
     mov dil, 0x31
     call colors
-    mov r13, rax
+    mov r12, rax
     xor edi, edi
     call colors
     xor esi, esi
@@ -897,58 +890,55 @@ main:
     movzx r8d, r8w
     add r8, -2
     add rdx, r8
-    cmp cl, 0
-    sete r8b
-    movzx r8d, r8b
     add rdx, 2
-    and cl, r9b
-    test r8b, r8b
-    je 7
+    mov r8, rcx
+    and r8b, r9b
+    cmp cl, 0
+    mov rcx, r8
+    jne 7
     movabs rcx, -0x7ffffffdffffffff
     xor r8d, r8d
 8:
     mov rdx, r8
     imul r8, rdx, 0x40
-    mov r11, rcx
-    tzcnt r11, r11
+    mov r9, rcx
+    tzcnt r9, r9
     mov r10, rcx
     sub r10, 1
+    add r8, r9
+    mov r9, rcx
+    and r9, r10
     cmp rcx, 0
-    sete r9b
-    movzx r9d, r9b
-    add r8, r11
-    and rcx, r10
-    test r9b, r9b
-    je 8
+    mov rcx, r9
+    jne 8
     mov r8b, 3
     xor r11d, r11d
 9:
     mov rcx, r8
     or cx, 0x100
     tzcnt cx, cx
-    movzx r9d, cx
-    add r9, 3
-    mov r10b, 0x22
+    movzx r10d, cx
+    add r10, 3
+    mov r9b, 0x22
 10:
     mov rcx, r11
-    mov r11, r10
+    mov r11, r9
     sub r11b, 1
-    mov rbx, r10
+    mov rbx, r9
     or bx, 0x100
     tzcnt bx, bx
     add bl, 2
-    movzx ebx, bl
-    mov r12, r9
-    imul r12, rbx
-    cmp r10b, 0
-    sete bpl
-    movzx ebp, bpl
-    mov rbx, rcx
-    add rbx, r12
-    and r10b, r11b
-    test bpl, bpl
-    mov r11, rbx
-    je 10
+    movzx ebp, bl
+    mov rbx, r10
+    imul rbx, rbp
+    mov rbp, rcx
+    add rbp, rbx
+    mov rbx, r9
+    and bl, r11b
+    cmp r9b, 0
+    mov r11, rbp
+    mov r9, rbx
+    jne 10
     mov r9, r8
     sub r9b, 1
     and r9b, r8b
@@ -956,7 +946,7 @@ main:
     mov r11, rcx
     mov r8, r9
     jne 9
-    imul r8, r13, 0x1000
+    imul r8, r12, 0x1000
     add r8, rax
     imul rax, r8, 0x1000
     add rax, rdi
@@ -965,8 +955,6 @@ main:
     shl rdx, 8
     xor rax, rdx
     xor rax, rcx
-    add rsp, 8
-    pop r13
     pop r12
     pop rbp
     pop rbx

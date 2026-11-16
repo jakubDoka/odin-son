@@ -194,16 +194,14 @@ main:
     mov.q [rsp + 0x20], rax
     movsd.q xmm0, [rsp + 0x20]
     movabs rax, 0x100000002
-    cmp rbx, rax
-    sete al
-    movzx eax, al
-    xor edx, edx
-    test al, al
-    cmovne rdx, rcx
-    mov rax, rdx
+    mov rdx, rbx
+    xor ebx, ebx
+    cmp rdx, rax
+    cmove rbx, rcx
+    mov rax, rbx
     add rax, 2
     test bpl, bpl
-    mov rcx, rdx
+    mov rcx, rbx
     cmovne rcx, rax
     mov rax, rcx
     add rax, 4
@@ -223,7 +221,7 @@ main:
     cmove rcx, rax
     mov rdx, rcx
     add rdx, 0x40
-    ucomisd.q xmm0, [rip + 0xac5]
+    ucomisd.q xmm0, [rip + 0xacd]
     mov rax, rcx
     jp 15
     cmove rax, rdx
@@ -425,16 +423,14 @@ main:
     movsd.q [rsp + 0x18], xmm0
     mov.q rdi, [rsp + 0x18]
     call swap_d
-    mov rdx, 1
+    mov rsi, 1
     mov.q [rsp + 0x20], rax
     movsd.q xmm0, [rsp + 0x20]
-    movabs rcx, 0x100000002
-    cmp r15, rcx
-    sete cl
-    movzx ecx, cl
+    movabs rdx, 0x100000002
+    mov rcx, r15
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    cmp rcx, rdx
+    cmove rax, rsi
     mov rcx, rax
     add rcx, 2
     test r14b, r14b
@@ -457,7 +453,7 @@ main:
     cmove rax, rcx
     mov rcx, rax
     add rcx, 0x40
-    ucomisd.q xmm0, [rip + 0xaee]
+    ucomisd.q xmm0, [rip + 0xaf6]
     jp 15
     cmove rax, rcx
 15:
@@ -666,16 +662,14 @@ main:
     mov.q [rsp + 0x20], rax
     movsd.q xmm0, [rsp + 0x20]
     movabs rax, 0x100000002
-    cmp rbx, rax
-    sete al
-    movzx eax, al
-    xor edx, edx
-    test al, al
-    cmovne rdx, rcx
-    mov rax, rdx
+    mov rdx, rbx
+    xor ebx, ebx
+    cmp rdx, rax
+    cmove rbx, rcx
+    mov rax, rbx
     add rax, 2
     test bpl, bpl
-    mov rcx, rdx
+    mov rcx, rbx
     cmovne rcx, rax
     mov rax, rcx
     add rax, 4
@@ -695,7 +689,7 @@ main:
     cmove rcx, rax
     mov rdx, rcx
     add rdx, 0x40
-    ucomisd.q xmm0, [rip + 0xac8]
+    ucomisd.q xmm0, [rip + 0xad0]
     mov rax, rcx
     jp 15
     cmove rax, rdx
@@ -898,16 +892,14 @@ main:
     movsd.q [rsp + 0x18], xmm0
     mov.q rdi, [rsp + 0x18]
     call swap_d
-    mov rdx, 1
+    mov rsi, 1
     mov.q [rsp + 0x20], rax
     movsd.q xmm0, [rsp + 0x20]
-    movabs rcx, 0x100000002
-    cmp r15, rcx
-    sete cl
-    movzx ecx, cl
+    movabs rdx, 0x100000002
+    mov rcx, r15
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    cmp rcx, rdx
+    cmove rax, rsi
     mov rcx, rax
     add rcx, 2
     test r14b, r14b
@@ -930,7 +922,7 @@ main:
     cmove rax, rcx
     mov rcx, rax
     add rcx, 0x40
-    ucomisd.q xmm0, [rip + 0xaf1]
+    ucomisd.q xmm0, [rip + 0xaf9]
     jp 15
     cmove rax, rcx
 15:
@@ -1125,22 +1117,19 @@ main:
     mov rbp, rdx
     movabs rdi, 0x4000000000000000
     call swap_d
-    mov rdx, rax
-    mov rcx, 1
+    mov rcx, rax
+    mov rdi, 1
     pxor xmm0, xmm0
     movups.x [rsp + 0x70], xmm0
     mov.q [rsp + 0x70], r12
     mov.q [rsp + 0x78], rbp
     mov.d eax, [rsp + 0x70]
-    movq xmm0, rdx
+    movq xmm0, rcx
     movabs rsi, 0x100000002
-    mov.q rdx, [rsp + 0x100]
-    cmp rdx, rsi
-    sete sil
-    movzx esi, sil
+    mov.q rcx, [rsp + 0x100]
     xor edx, edx
-    test sil, sil
-    cmovne rdx, rcx
+    cmp rcx, rsi
+    cmove rdx, rdi
     mov rcx, rdx
     add rcx, 2
     test r15b, r15b
@@ -1163,7 +1152,7 @@ main:
     cmove rdx, rcx
     mov rcx, rdx
     add rcx, 0x40
-    ucomisd.q xmm0, [rip + 0xb05]
+    ucomisd.q xmm0, [rip + 0xb10]
     mov rax, rdx
     jp 15
     cmove rax, rcx
@@ -1269,24 +1258,21 @@ main:
     movups.x [rsp + 0x74], xmm0
     mov.q [rsp + 0x74], r13
     mov.q [rsp + 0x7c], r12
-    mov.q rsi, [rsp + 0x34]
-    mov.q rcx, [rsp + 0x3c]
+    mov.q rdi, [rsp + 0x34]
+    mov.q rsi, [rsp + 0x3c]
     mov.d edx, [rsp + 0x74]
     mov.d [rsp + 0x20], ebp
-    movabs rax, 0x100000002
-    cmp rcx, rax
-    sete cl
-    movzx ecx, cl
+    movabs rcx, 0x100000002
     xor eax, eax
-    test cl, cl
-    cmovne rax, rbx
+    cmp rsi, rcx
+    cmove rax, rbx
     mov rcx, rax
     add rcx, 2
     test r15b, r15b
     cmovne rax, rcx
     mov rcx, rax
     add rcx, 4
-    cmp rsi, 0xb
+    cmp rdi, 0xb
     cmove rax, rcx
     mov rcx, rax
     add rcx, 0x18

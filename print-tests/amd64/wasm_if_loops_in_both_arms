@@ -234,19 +234,19 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 choose:
-    mov r8, -1
+    mov rdx, -1
     cmp rdi, 0
     jne 3
     xor eax, eax
 1:
     mov rcx, rax
-    add r8, 1
-    cmp r8, rsi
+    add rdx, 1
+    cmp rdx, rsi
     jge 2
     imul rax, rcx, 5
-    add rax, r8
+    add rax, rdx
     add rax, 1
-    cmp r8, 3
+    cmp rdx, 3
     jne 1
     mov rax, rcx
     jmp 5
@@ -256,22 +256,16 @@ choose:
 3:
     xor eax, eax
 4:
-    mov rdi, rax
-    imul rax, rdi, 3
-    add r8, 1
-    add rax, r8
+    mov rcx, rax
+    imul rax, rcx, 3
+    add rdx, 1
+    add rax, rdx
     add rax, 1
-    cmp r8, 2
-    sete dl
-    movzx edx, dl
-    cmp r8, rsi
-    setge cl
-    movzx ecx, cl
-    test dl, dl
-    cmovne rax, rdi
-    test cl, cl
-    je 4
-    mov rax, rdi
+    cmp rdx, 2
+    cmove rax, rcx
+    cmp rdx, rsi
+    jl 4
+    mov rax, rcx
 5:
     add rax, 0x100
     ret
@@ -279,16 +273,16 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rdi, [rip + 0xea8]
+    mov.q rdi, [rip + 0xebe]
     mov rsi, 4
     call choose
     mov rbx, rax
-    mov.q rdi, [rip + 0xe92]
+    mov.q rdi, [rip + 0xea8]
     add rdi, 1
     mov rsi, 4
     call choose
     mov rbp, rax
-    mov.q rdi, [rip + 0xe75]
+    mov.q rdi, [rip + 0xe8b]
     add rdi, 1
     xor esi, esi
     call choose

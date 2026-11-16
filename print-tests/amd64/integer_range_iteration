@@ -182,47 +182,45 @@ main:
     ret
 =========== OPT LEVEL: all ===========
 main:
-    mov rdi, -3
-    xor eax, eax
     xor ecx, ecx
+    xor edx, edx
+    mov rax, -3
 1:
-    mov r8, rcx
-    imul rsi, rdi, 0xa
-    add rsi, rax
-    cmp rdi, 4
-    setge dl
-    movzx edx, dl
-    add rdi, 1
-    mov rcx, r8
-    add rcx, rsi
-    add rax, 1
-    test dl, dl
-    je 1
+    mov rdi, rdx
+    imul r8, rax, 0xa
+    add r8, rcx
+    mov rsi, rax
+    add rsi, 1
+    mov rdx, rdi
+    add rdx, r8
+    add rcx, 1
+    cmp rax, 4
+    mov rax, rsi
+    jl 1
     movabs rdx, 0x7fffffffffffffff
     mov rax, 2
 2:
     cmp rax, 5
     jg 3
-    add r8, rax
+    add rdi, rax
     mov rcx, rax
     add rcx, 1
     cmp rdx, rax
     mov rax, rcx
     jne 2
 3:
-    mov rdi, 8
-    xor ecx, ecx
+    xor edx, edx
+    mov rcx, 8
 4:
-    mov rax, r8
-    imul rsi, rcx, 0x64
-    cmp rdi, 0xb
-    setge dl
-    movzx edx, dl
-    add rcx, 1
-    mov r8, rax
-    add r8, rsi
-    add rdi, 1
-    test dl, dl
-    je 4
+    mov rax, rdi
+    imul rsi, rdx, 0x64
+    add rdx, 1
+    mov rdi, rax
+    add rdi, rsi
+    mov rsi, rcx
+    add rsi, 1
+    cmp rcx, 0xb
+    mov rcx, rsi
+    jl 4
     ret
 =========== OPT LEVEL: aggresive ===========

@@ -2,7 +2,7 @@ package bac_amd64
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
-import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta2/meta2.odin(110:3)
+import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta2/meta2.odin(117:3)
 
 @(tag = "api", rodata, export, link_name = "bac_amd64_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
@@ -95,16 +95,16 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		{}, // AMD64_And
 		{}, // AMD64_Or
 		{}, // AMD64_Xor
-		{}, // AMD64_Eq
-		{}, // AMD64_Ne
-		{}, // AMD64_Le
-		{}, // AMD64_Lt
-		{}, // AMD64_Gt
-		{}, // AMD64_Ge
-		{}, // AMD64_U_Lt
-		{}, // AMD64_U_Gt
-		{}, // AMD64_U_Le
-		{}, // AMD64_U_Ge
+		{Class_Flag.Clonable}, // AMD64_Eq
+		{Class_Flag.Clonable}, // AMD64_Ne
+		{Class_Flag.Clonable}, // AMD64_Le
+		{Class_Flag.Clonable}, // AMD64_Lt
+		{Class_Flag.Clonable}, // AMD64_Gt
+		{Class_Flag.Clonable}, // AMD64_Ge
+		{Class_Flag.Clonable}, // AMD64_U_Lt
+		{Class_Flag.Clonable}, // AMD64_U_Gt
+		{Class_Flag.Clonable}, // AMD64_U_Le
+		{Class_Flag.Clonable}, // AMD64_U_Ge
 		{}, // AMD64_Shl
 		{}, // AMD64_Shr
 		{}, // AMD64_U_Shr

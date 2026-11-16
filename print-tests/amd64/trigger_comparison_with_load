@@ -55,19 +55,14 @@ main:
     pop rbx
     ret
 imm_cmps:
-    push rbx
     mov.q rax, [rdi]
     mov rcx, 1
+    xor edx, edx
     cmp rax, 0
-    sete dl
-    movzx edx, dl
-    xor ebx, ebx
-    test dl, dl
-    cmovne rbx, rcx
-    mov rcx, rbx
+    cmove rdx, rcx
+    mov rcx, rdx
     add rcx, 2
     cmp rax, 0
-    mov rdx, rbx
     cmovne rdx, rcx
     mov rcx, rdx
     add rcx, 4
@@ -86,22 +81,16 @@ imm_cmps:
     cmp rax, 0
     mov rax, rdx
     cmovg rax, rcx
-    pop rbx
     ret
 cmps:
-    push rbx
     mov.q rax, [rsi]
     mov rcx, 1
+    xor edx, edx
     cmp rdi, rax
-    sete dl
-    movzx edx, dl
-    xor ebx, ebx
-    test dl, dl
-    cmovne rbx, rcx
-    mov rcx, rbx
+    cmove rdx, rcx
+    mov rcx, rdx
     add rcx, 2
     cmp rdi, rax
-    mov rdx, rbx
     cmovne rdx, rcx
     mov rcx, rdx
     add rcx, 4
@@ -120,7 +109,6 @@ cmps:
     cmp rdi, rax
     mov rax, rdx
     cmovl rax, rcx
-    pop rbx
     ret
 =========== OPT LEVEL: none ===========
 main:
@@ -179,63 +167,57 @@ main:
     pop rbx
     ret
 imm_cmps:
-    mov.q rsi, [rdi]
-    mov rdx, 1
-    cmp rsi, 0
-    sete cl
-    movzx ecx, cl
+    mov.q rdx, [rdi]
+    mov rcx, 1
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    cmp rdx, 0
+    cmove rax, rcx
     mov rcx, rax
     add rcx, 2
-    cmp rsi, 0
+    cmp rdx, 0
     cmovne rax, rcx
     mov rcx, rax
     add rcx, 4
-    cmp rsi, 0
+    cmp rdx, 0
     cmovle rax, rcx
     mov rcx, rax
     add rcx, 8
-    cmp rsi, 0
+    cmp rdx, 0
     cmovge rax, rcx
     mov rcx, rax
     add rcx, 0x10
-    cmp rsi, 0
+    cmp rdx, 0
     cmovl rax, rcx
     mov rcx, rax
     add rcx, 0x20
-    cmp rsi, 0
+    cmp rdx, 0
     cmovg rax, rcx
     ret
 cmps:
-    mov.q rsi, [rsi]
-    mov rdx, 1
-    cmp rdi, rsi
-    sete cl
-    movzx ecx, cl
+    mov.q rdx, [rsi]
+    mov rcx, 1
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    cmp rdi, rdx
+    cmove rax, rcx
     mov rcx, rax
     add rcx, 2
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovne rax, rcx
     mov rcx, rax
     add rcx, 4
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovge rax, rcx
     mov rcx, rax
     add rcx, 8
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovle rax, rcx
     mov rcx, rax
     add rcx, 0x10
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovg rax, rcx
     mov rcx, rax
     add rcx, 0x20
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovl rax, rcx
     ret
 =========== OPT LEVEL: moderate-quick ===========
@@ -295,19 +277,14 @@ main:
     pop rbx
     ret
 imm_cmps:
-    push rbx
     mov.q rax, [rdi]
     mov rcx, 1
+    xor edx, edx
     cmp rax, 0
-    sete dl
-    movzx edx, dl
-    xor ebx, ebx
-    test dl, dl
-    cmovne rbx, rcx
-    mov rcx, rbx
+    cmove rdx, rcx
+    mov rcx, rdx
     add rcx, 2
     cmp rax, 0
-    mov rdx, rbx
     cmovne rdx, rcx
     mov rcx, rdx
     add rcx, 4
@@ -326,22 +303,16 @@ imm_cmps:
     cmp rax, 0
     mov rax, rdx
     cmovg rax, rcx
-    pop rbx
     ret
 cmps:
-    push rbx
     mov.q rax, [rsi]
     mov rcx, 1
+    xor edx, edx
     cmp rdi, rax
-    sete dl
-    movzx edx, dl
-    xor ebx, ebx
-    test dl, dl
-    cmovne rbx, rcx
-    mov rcx, rbx
+    cmove rdx, rcx
+    mov rcx, rdx
     add rcx, 2
     cmp rdi, rax
-    mov rdx, rbx
     cmovne rdx, rcx
     mov rcx, rdx
     add rcx, 4
@@ -360,7 +331,6 @@ cmps:
     cmp rdi, rax
     mov rax, rdx
     cmovl rax, rcx
-    pop rbx
     ret
 =========== OPT LEVEL: moderate ===========
 main:
@@ -419,63 +389,57 @@ main:
     pop rbx
     ret
 imm_cmps:
-    mov.q rsi, [rdi]
-    mov rdx, 1
-    cmp rsi, 0
-    sete cl
-    movzx ecx, cl
+    mov.q rdx, [rdi]
+    mov rcx, 1
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    cmp rdx, 0
+    cmove rax, rcx
     mov rcx, rax
     add rcx, 2
-    cmp rsi, 0
+    cmp rdx, 0
     cmovne rax, rcx
     mov rcx, rax
     add rcx, 4
-    cmp rsi, 0
+    cmp rdx, 0
     cmovle rax, rcx
     mov rcx, rax
     add rcx, 8
-    cmp rsi, 0
+    cmp rdx, 0
     cmovge rax, rcx
     mov rcx, rax
     add rcx, 0x10
-    cmp rsi, 0
+    cmp rdx, 0
     cmovl rax, rcx
     mov rcx, rax
     add rcx, 0x20
-    cmp rsi, 0
+    cmp rdx, 0
     cmovg rax, rcx
     ret
 cmps:
-    mov.q rsi, [rsi]
-    mov rdx, 1
-    cmp rdi, rsi
-    sete cl
-    movzx ecx, cl
+    mov.q rdx, [rsi]
+    mov rcx, 1
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    cmp rdi, rdx
+    cmove rax, rcx
     mov rcx, rax
     add rcx, 2
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovne rax, rcx
     mov rcx, rax
     add rcx, 4
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovge rax, rcx
     mov rcx, rax
     add rcx, 8
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovle rax, rcx
     mov rcx, rax
     add rcx, 0x10
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovg rax, rcx
     mov rcx, rax
     add rcx, 0x20
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovl rax, rcx
     ret
 =========== OPT LEVEL: all ===========
@@ -535,63 +499,57 @@ main:
     pop rbx
     ret
 imm_cmps:
-    mov.q rsi, [rdi]
-    mov rdx, 1
-    cmp rsi, 0
-    sete cl
-    movzx ecx, cl
+    mov.q rdx, [rdi]
+    mov rcx, 1
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    cmp rdx, 0
+    cmove rax, rcx
     mov rcx, rax
     add rcx, 2
-    cmp rsi, 0
+    cmp rdx, 0
     cmovne rax, rcx
     mov rcx, rax
     add rcx, 4
-    cmp rsi, 0
+    cmp rdx, 0
     cmovle rax, rcx
     mov rcx, rax
     add rcx, 8
-    cmp rsi, 0
+    cmp rdx, 0
     cmovge rax, rcx
     mov rcx, rax
     add rcx, 0x10
-    cmp rsi, 0
+    cmp rdx, 0
     cmovl rax, rcx
     mov rcx, rax
     add rcx, 0x20
-    cmp rsi, 0
+    cmp rdx, 0
     cmovg rax, rcx
     ret
 cmps:
-    mov.q rsi, [rsi]
-    mov rdx, 1
-    cmp rdi, rsi
-    sete cl
-    movzx ecx, cl
+    mov.q rdx, [rsi]
+    mov rcx, 1
     xor eax, eax
-    test cl, cl
-    cmovne rax, rdx
+    cmp rdi, rdx
+    cmove rax, rcx
     mov rcx, rax
     add rcx, 2
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovne rax, rcx
     mov rcx, rax
     add rcx, 4
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovge rax, rcx
     mov rcx, rax
     add rcx, 8
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovle rax, rcx
     mov rcx, rax
     add rcx, 0x10
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovg rax, rcx
     mov rcx, rax
     add rcx, 0x20
-    cmp rdi, rsi
+    cmp rdi, rdx
     cmovl rax, rcx
     ret
 =========== OPT LEVEL: aggresive ===========

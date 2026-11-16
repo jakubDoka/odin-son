@@ -814,104 +814,99 @@ main:
     str x24, [xzr, #40]
     str x25, [xzr, #48]
     str x26, [xzr, #56]
-    movz x14, #4
-    movz x13, #0
-    movz x12, #1
+    movz x6, #4
+    movz x7, #0
+    movz x8, #1
     adr x0, 0xf80
     ldr x0, [x0]
-    sub x2, x0, x12
-    add x0, x2, x12
-    cmp x0, x14
+    sub x11, x0, x8
+    add x0, x11, x8
+    cmp x0, x6
     b.ge 3
-    movz x11, #65535
-    movk x11, #32767, lsl #16
+    movz x9, #65535
+    movk x9, #32767, lsl #16
     adr x0, 0xf88
     ldr d3, [x0]
     movz x10, #2
-    movz x9, #3
-    movz x8, #257
-    movz x7, #5
-    movz x6, #65535
-    movz x5, #256
-    movz x4, #16
-    movz x1, #0
+    movz x5, #3
+    movz x4, #257
+    movz x3, #5
+    movz x2, #65535
+    movz x1, #256
+    movz x13, #16
+    mov x12, x7
+    mov x14, x11
 1:
-    add x3, x2, x12
-    movz x19, #1
-    movz x18, #3
-    movz x25, #0
-    movn x21, #0
-    movz x17, #7
+    add x11, x14, x8
+    movz x0, #1
+    movz x15, #3
+    mov x26, x7
+    movn x18, #0
+    movz x16, #7
     orr v0.16b, v3.16b, v3.16b
-    movz x23, #17
+    movz x22, #17
 2:
-    mov x16, x21
-    mov x20, x25
-    add x21, x16, x12
-    add x22, x3, x21
-    and x0, x22, x12
-    cmp x0, x13
-    cset w25, ne
-    scvtf d1, x17
+    mov x21, x18
+    mov x25, x26
+    add x18, x21, x8
+    add x23, x11, x18
+    and x20, x23, x8
+    scvtf d1, x16
     fadd d2, d1, d0
-    mov w0, w18
-    add w15, w0, w23
-    mov w0, w19
-    sub w23, w23, w0
-    scvtf d1, x18
+    mov w17, w15
+    add w19, w17, w22
+    mov w17, w0
+    sub w24, w22, w17
+    scvtf d1, x15
     fsub d0, d0, d1
-    cmp w25, #0
+    cmp x20, x7
     fcsel d0, d2, d0, ne
-    fcvtzs x0, d0
-    madd x20, x20, x9, xzr
-    add x20, x20, x18
-    and x20, x20, x6
-    madd x24, x20, x9, xzr
-    cmp w25, #0
-    csel w23, w15, w23, ne
-    sxtw x15, w23
-    add x20, x24, x15
-    and x20, x20, x6
-    add x24, x24, x0
-    and x24, x24, x6
-    and x22, x22, x10
-    cmp x22, x13
-    cset w22, ne
-    add x16, x16, x10
-    cmp x16, x7
-    cset w26, ge
-    cmp w22, #0
-    csel x22, x20, x24, ne
-    cmp w25, #0
-    csel x24, x18, x17, ne
-    cmp w25, #0
-    csel x20, x17, x19, ne
-    cmp w25, #0
-    csel x16, x19, x18, ne
-    mov x25, x22
-    mov x19, x24
-    mov x18, x20
-    mov x17, x16
-    cmp w26, #0
-    b.eq 2
-    madd x18, x1, x8, xzr
-    madd x1, x5, x24, xzr
-    add x17, x1, x22
-    madd x1, x4, x20, xzr
-    add x1, x17, x1
-    add x1, x1, x16
-    add x1, x1, x15
-    add x0, x1, x0
-    add x0, x18, x0
-    and x0, x0, x11
-    add x1, x2, x10
-    cmp x1, x14
-    mov x1, x0
-    mov x2, x3
+    fcvtzs x17, d0
+    madd x22, x25, x5, xzr
+    add x22, x22, x15
+    and x22, x22, x2
+    madd x25, x22, x5, xzr
+    cmp x20, x7
+    csel w22, w19, w24, ne
+    sxtw x19, w22
+    add x24, x25, x19
+    and x26, x24, x2
+    add x24, x25, x17
+    and x24, x24, x2
+    and x23, x23, x10
+    add x25, x21, x10
+    cmp x23, x7
+    csel x23, x26, x24, ne
+    cmp x20, x7
+    csel x24, x15, x16, ne
+    cmp x20, x7
+    csel x21, x16, x0, ne
+    cmp x20, x7
+    csel x20, x0, x15, ne
+    mov x26, x23
+    mov x0, x24
+    mov x15, x21
+    mov x16, x20
+    cmp x25, x3
+    b.lt 2
+    madd x15, x12, x4, xzr
+    madd x0, x1, x24, xzr
+    add x12, x0, x23
+    madd x0, x13, x21, xzr
+    add x0, x12, x0
+    add x0, x0, x20
+    add x0, x0, x19
+    add x0, x0, x17
+    add x0, x15, x0
+    and x0, x0, x9
+    add x12, x14, x10
+    cmp x12, x6
+    mov x12, x0
+    mov x14, x11
     b.lt 1
     b 4
 3:
-    movz x0, #0
+    mov x0, x7
 4:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]

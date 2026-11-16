@@ -718,93 +718,86 @@ main:
     cmp rax, 4
     jge 5
     movsd.q xmm2, [rip + 0xf30]
-    mov rdx, rcx
-    xor ecx, ecx
+    xor edx, edx
 1:
-    mov rsi, 3
-    mov r10, 1
-    mov rax, 7
+    mov r13, 3
+    mov rbp, 1
+    mov r14, 7
     movsd xmm0, xmm2
-    mov r11, -1
-    xor r8d, r8d
-    mov r13, 0x11
+    mov rsi, -1
+    xor r12d, r12d
+    mov rax, 0x11
 2:
-    mov r14, r11
-    add r14, 1
-    lea r15, [rdx + r14 + 0x1]
+    mov r11, rsi
+    add r11, 1
+    lea r15, [rcx + r11 + 0x1]
     mov rdi, r15
     and rdi, 1
     cmp rdi, 0
-    setne r9b
-    movzx r9d, r9b
-    test r9b, r9b
     jne 3
-    cvtsi2sd xmm1, rsi
+    cvtsi2sd xmm1, r13
     subsd xmm0, xmm1
     jmp 4
 3:
-    cvtsi2sd xmm1, rax
+    cvtsi2sd xmm1, r14
     addsd xmm1, xmm0
     movsd xmm0, xmm1
 4:
-    test r9b, r9b
-    mov r12, rsi
-    cmovne r12, r10
-    test r9b, r9b
-    mov rbp, rax
-    cmovne rbp, rsi
-    test r9b, r9b
-    mov rbx, r10
-    cmovne rbx, rax
-    mov rdi, rsi
-    add edi, r13d
-    mov rax, r10
-    sub r13d, eax
-    test r9b, r9b
-    cmovne r13d, edi
-    cvttsd2si r9, xmm0
-    imul rax, r8, 3
-    add rax, rsi
-    and rax, 0xffff
-    imul rsi, rax, 3
-    movsxd rdi, r13d
-    mov r8, rsi
-    add r8, rdi
-    and r8, 0xffff
-    add rsi, r9
-    and rsi, 0xffff
-    mov rax, r15
-    and rax, 2
-    cmp rax, 0
-    mov r15, rsi
-    cmovne r15, r8
-    mov rax, r11
-    add rax, 2
-    cmp rax, 5
-    mov rax, r12
-    mov rsi, rbx
-    mov r8, r15
-    mov r10, rbp
-    mov r11, r14
-    jl 2
-    imul rsi, rcx, 0x101
-    imul rcx, rbp, 0x100
-    add rcx, r15
-    imul rax, rbx, 0x10
-    add rcx, rax
-    add rcx, r12
-    add rcx, rdi
-    add rcx, r9
-    mov rax, rsi
-    add rax, rcx
-    and rax, 0x7fffffff
-    mov rsi, rdx
+    cmp rdi, 0
+    mov r10, r13
+    cmovne r10, rbp
+    cmp rdi, 0
+    mov r9, r14
+    cmovne r9, r13
+    cmp rdi, 0
+    mov r8, rbp
+    cmovne r8, r14
+    mov r14, r13
+    add r14d, eax
+    mov rbx, rbp
+    sub eax, ebx
+    cmp rdi, 0
+    cmovne eax, r14d
+    cvttsd2si rdi, xmm0
+    imul rbx, r12, 3
+    add rbx, r13
+    and rbx, 0xffff
+    imul r12, rbx, 3
+    movsxd rbx, eax
+    mov r13, r12
+    add r13, rbx
+    and r13, 0xffff
+    add r12, rdi
+    and r12, 0xffff
+    mov rbp, r15
+    and rbp, 2
+    cmp rbp, 0
+    mov r15, r12
+    cmovne r15, r13
     add rsi, 2
-    mov rcx, rdx
-    add rcx, 1
-    cmp rsi, 4
+    cmp rsi, 5
+    mov r14, r10
+    mov r13, r8
+    mov r12, r15
+    mov rbp, r9
+    mov rsi, r11
+    jl 2
+    imul rsi, rdx, 0x101
+    imul rdx, r9, 0x100
+    add rdx, r15
+    imul rax, r8, 0x10
+    add rdx, rax
+    add rdx, r10
+    add rdx, rbx
+    add rdx, rdi
+    mov rax, rsi
+    add rax, rdx
+    and rax, 0x7fffffff
     mov rdx, rcx
-    mov rcx, rax
+    add rdx, 2
+    add rcx, 1
+    cmp rdx, 4
+    mov rdx, rax
     jl 1
     jmp 6
 5:

@@ -183,20 +183,17 @@ choose:
     mov rax, 0x51
     jmp 3
 1:
-    mov rdi, -1
+    mov rdx, -1
     xor eax, eax
 2:
-    mov rdx, rax
-    imul rax, rdx, 3
-    add rdi, 1
-    add rax, rdi
-    cmp rdi, rsi
-    setge cl
-    movzx ecx, cl
+    mov rcx, rax
+    imul rax, rcx, 3
+    add rdx, 1
+    add rax, rdx
     add rax, 1
-    test cl, cl
-    je 2
-    mov rax, rdx
+    cmp rdx, rsi
+    jl 2
+    mov rax, rcx
 3:
     add rax, 0x100
     ret
@@ -204,16 +201,16 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rdi, [rip + 0xef6]
+    mov.q rdi, [rip + 0xf01]
     mov rsi, 4
     call choose
     mov rbx, rax
-    mov.q rdi, [rip + 0xee0]
+    mov.q rdi, [rip + 0xeeb]
     add rdi, 1
     mov rsi, 4
     call choose
     mov rbp, rax
-    mov.q rdi, [rip + 0xec3]
+    mov.q rdi, [rip + 0xece]
     add rdi, 1
     xor esi, esi
     call choose

@@ -726,95 +726,87 @@ main:
     str x22, [xzr, #24]
     str x23, [xzr, #32]
     movz x14, #1
-    movz x13, #4
+    movz x1, #4
     adr x0, 0xf80
     ldr x0, [x0]
-    sub x1, x0, x14
-    movz x12, #0
-    add x0, x1, x14
-    cmp x0, x13
+    sub x3, x0, x14
+    movz x2, #0
+    add x0, x3, x14
+    cmp x0, x1
     b.ge 7
-    movz x11, #65535
-    movk x11, #32767, lsl #16
-    movz x10, #2
-    movz x9, #3
-    movz x8, #257
-    movz x7, #89
-    movz x6, #5
-    movz x5, #17
-    movz x4, #35
-    movz x3, #53
-    movz x2, #71
-    mov x15, x1
-    movz x16, #0
+    movz x13, #65535
+    movk x13, #32767, lsl #16
+    movz x12, #2
+    movz x11, #3
+    movz x10, #257
+    movz x9, #89
+    movz x8, #5
+    movz x7, #17
+    movz x6, #35
+    movz x5, #53
+    movz x4, #71
+    mov x16, x3
+    mov x17, x2
 1:
-    add x1, x15, x14
-    and x0, x1, x14
-    cmp x0, x12
-    cset w23, ne
-    mov x18, x16
-    movn x16, #0
+    add x3, x16, x14
+    and x15, x3, x14
+    mov x19, x17
+    movn x17, #0
 2:
-    mov x17, x16
-    add x16, x17, x14
-    cmp w23, #0
+    mov x18, x17
+    add x17, x18, x14
+    cmp x15, x2
     b.ne 4
-    movz x20, #0
-    movz x19, #0
+    mov x21, x2
+    mov x20, x2
 3:
-    madd x0, x19, x9, xzr
-    add x22, x3, x0
-    add x19, x2, x0
-    add x0, x20, x1
-    and x0, x0, x10
-    cmp x0, x12
-    cset w0, ne
-    add x20, x20, x14
-    cmp x20, x16
-    cset w21, ge
-    cmp w0, #0
-    csel x0, x22, x19, ne
-    mov x19, x0
-    cmp w21, #0
-    b.eq 3
+    madd x0, x20, x11, xzr
+    add x23, x5, x0
+    add x20, x4, x0
+    add x0, x21, x3
+    and x0, x0, x12
+    add x22, x21, x14
+    cmp x0, x2
+    csel x0, x23, x20, ne
+    mov x21, x22
+    mov x20, x0
+    cmp x22, x17
+    b.lt 3
     b 6
 4:
-    movz x20, #0
-    movz x19, #0
+    mov x21, x2
+    mov x20, x2
 5:
-    madd x0, x19, x9, xzr
-    add x22, x5, x0
-    add x19, x4, x0
-    add x0, x20, x1
-    and x0, x0, x10
-    cmp x0, x12
-    cset w0, ne
-    add x20, x20, x14
-    cmp x20, x16
-    cset w21, ge
-    cmp w0, #0
-    csel x0, x22, x19, ne
-    mov x19, x0
-    cmp w21, #0
-    b.eq 5
+    madd x0, x20, x11, xzr
+    add x23, x7, x0
+    add x20, x6, x0
+    add x0, x21, x3
+    and x0, x0, x12
+    add x22, x21, x14
+    cmp x0, x2
+    csel x0, x23, x20, ne
+    mov x21, x22
+    mov x20, x0
+    cmp x22, x17
+    b.lt 5
 6:
-    madd x18, x18, x8, xzr
-    madd x0, x0, x9, xzr
-    add x0, x0, x7
-    add x0, x18, x0
-    and x0, x0, x11
-    add x17, x17, x10
-    cmp x17, x6
-    mov x18, x0
+    madd x19, x19, x10, xzr
+    madd x0, x0, x11, xzr
+    add x0, x0, x9
+    add x0, x19, x0
+    and x0, x0, x13
+    add x18, x18, x12
+    cmp x18, x8
+    mov x19, x0
     b.lt 2
-    add x15, x15, x10
-    cmp x15, x13
-    mov x15, x1
-    mov x16, x0
+    add x15, x16, x12
+    cmp x15, x1
+    mov x16, x3
+    mov x17, x0
     b.lt 1
     b 8
 7:
-    movz x0, #0
+    mov x0, x2
 8:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]

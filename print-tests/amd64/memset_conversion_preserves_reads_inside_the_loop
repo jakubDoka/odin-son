@@ -123,25 +123,22 @@ fill_sum:
     xor eax, eax
     cmp rsi, 0
     jle 2
-    mov r10, rsi
-    sub r10, 1
-    add r10, rdi
+    mov r9, rsi
+    sub r9, 1
+    add r9, rdi
     xor eax, eax
     xor ecx, ecx
 1:
     mov rdx, rdi
     add rdx, rcx
     mov.b [rdx], 7
-    movzx.b r9d, [r10]
+    movzx.b r8d, [r9]
     add rcx, 1
-    cmp rcx, rsi
-    setge r8b
-    movzx r8d, r8b
     mov rdx, rax
-    add rdx, r9
-    test r8b, r8b
+    add rdx, r8
+    cmp rcx, rsi
     mov rax, rdx
-    je 1
+    jl 1
     mov rax, rdx
 2:
     ret
@@ -160,14 +157,11 @@ main:
     xor ecx, ecx
 1:
     mov.b [rsp + rcx - 0x8], 7
-    movzx.b edi, [rsp - 0x5]
+    movzx.b esi, [rsp - 0x5]
     add rcx, 1
-    cmp rcx, 4
-    setge sil
-    movzx esi, sil
     mov rax, rdx
-    add rax, rdi
-    test sil, sil
+    add rax, rsi
+    cmp rcx, 4
     mov rdx, rax
-    je 1
+    jl 1
     ret

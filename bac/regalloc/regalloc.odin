@@ -1297,8 +1297,7 @@ regalloc_round :: proc(
 					out_node := get_node(prc, out.id)
 
 					split := id
-					if out_node.itype != .Split {
-						assert(out_node.gvn < ctx.pre_split_gvn)
+					if !is_split_point(ctx, out_node) {
 						split = split_before(ctx, out.id, out.idx, "suse", redirect = id)
 						inserted_splits += 1
 					}
@@ -1332,11 +1331,6 @@ regalloc_round :: proc(
 				redirect := m
 				for out in slice.clone(mnode.outs) {
 					onode := expand_node(prc, out.id)
-					oblock := get_node_block(ctx, out.id)
-					if onode.itype == .Phi {
-						last := bac.get_inputs(ctx.prc, onode.inps[0])[out.idx - 1]
-						oblock = get_node_block(ctx, last)
-					}
 
 					if redirect == m {
 						redirect = split_after(ctx, "kla", m)
@@ -1344,7 +1338,7 @@ regalloc_round :: proc(
 					}
 
 					split := redirect
-					if onode.itype != .Split {
+					if !is_split_point(ctx, onode) {
 						split = split_before(ctx, out.id, out.idx, "klb", redirect)
 						inserted_splits += int(split != redirect)
 					}
@@ -1376,7 +1370,7 @@ regalloc_round :: proc(
 					}
 
 					splita := split
-					if get_node(prc, out.id).itype != .Split {
+					if !is_split_point(ctx, get_node(prc, out.id)) {
 						splita = split_before(
 							ctx,
 							out.id,
@@ -1413,12 +1407,6 @@ regalloc_round :: proc(
 					onode := expand_node(prc, out.id)
 					onode.must_spill = true
 					if !can_spill(ctx, &lrg) {
-						oblock := get_node_block(ctx, out.id)
-						if onode.itype == .Phi {
-							last := bac.get_inputs(ctx.prc, onode.inps[0])[out.idx - 1]
-							oblock = get_node_block(ctx, last)
-						}
-
 						if redirect == m {
 							redirect = split_after(
 								ctx,
@@ -1431,7 +1419,7 @@ regalloc_round :: proc(
 						}
 
 						split := redirect
-						if onode.itype != .Split && onode.itype != .Phi {
+						if !is_split_point(ctx, onode) && onode.itype != .Phi {
 							split = split_before(ctx, out.id, out.idx, "assb", redirect)
 							get_node(ctx.prc, split).must_spill = true
 							inserted_splits += 1
@@ -1853,7 +1841,7 @@ regalloc_round :: proc(
 		prc := ctx.prc
 		fnode := get_node(prc, use)
 
-		if bac.has_flag(prc, fnode, .Clonable) && !must {
+		if !must && should_clone(ctx, use) {
 			return use
 		}
 
@@ -1892,7 +1880,7 @@ regalloc_round :: proc(
 		if !is_def_while_splitting(ctx, inp_node) do return inp
 
 		split: Node_ID
-		if bac.has_flag(ctx.prc, inp_node, .Clonable) && !must {
+		if !must && should_clone(ctx, inp) {
 			if int(inp_node.gvn) > len(ctx.instr_placement) {
 				// NOTE: means we already split this to the largest extent
 				return inp
@@ -1924,6 +1912,91 @@ regalloc_round :: proc(
 
 		inject_at(&block.instrs, bidx, split)
 		return split
+	}
+
+	should_clone :: proc(ctx: Ctx, id: Node_ID) -> bool {
+		prc := ctx.prc
+		node := expand_node(prc, id)
+		if !bac.has_flag(prc, node, .Clonable) do return false
+
+		// Folded loads keep the memory state in the second slot, a clone could
+		// read the memory after it was clobbered.
+		if len(node.inps) > 1 && get_node(prc, node.inps[1]).dt == .Mem {
+			return false
+		}
+
+		if int(node.gvn) >= len(ctx.instr_placement) do return true
+
+		dmask := bac.rm_get(ctx.ra, ctx.gmetas[node.gvn].out)
+
+		// The clone replaces the value living from the def to the use, so
+		// extending at most one input over that range keeps the pressure.
+		for out in node.outs {
+			onode := get_node(prc, out.id)
+			if int(onode.gvn) >= len(ctx.gmetas) do return false
+
+			// A clone defines the same register class, only a split can move the
+			// value into a register the use accepts.
+			umeta := &ctx.gmetas[onode.gvn]
+			midx := out.idx - int(umeta.input_start)
+			if 0 <= midx && midx < len(umeta.masks) {
+				umask := bac.rm_get(ctx.ra, umeta.masks[midx])
+				if !bac.reg_mask_intersects(dmask, umask) do return false
+			}
+
+			extended := 0
+			for inp in node.inps {
+				if inp == 0 do continue
+				inode := get_node(prc, inp)
+				if bac.has_flag(prc, inode, .Clonable) do continue
+				if !is_def_while_splitting(ctx, inode) do continue
+				extended += int(!is_live_at_use(ctx, inp, id, out))
+			}
+			if extended > 1 do return false
+		}
+
+		return true
+	}
+
+	is_live_at_use :: proc(
+		ctx: Ctx,
+		val, def: Node_ID,
+		use: bac.Node_Output,
+	) -> bool {
+		prc := ctx.prc
+		unode := expand_node(prc, use.id)
+		if int(unode.gvn) >= len(ctx.instr_placement) do return false
+
+		block_idx: u32
+		use_idx: int
+		if unode.itype == .Phi {
+			last := bac.get_inputs(prc, unode.inps[0])[use.idx - 1]
+			block_idx = ctx.instr_placement[get_node(prc, last).gvn].block
+			use_idx = len(ctx.sched.bbs[block_idx].instrs) - 1
+		} else {
+			block_idx = ctx.instr_placement[unode.gvn].block
+			_, use_idx = get_node_block_and_idx(ctx, use.id)
+		}
+
+		vnode := get_node(prc, val)
+		if lrg := get_lrg(ctx, val); lrg != nil {
+			liveouts := &ctx.blocks[block_idx].liveouts
+			i, ok := liveouts_find(liveouts, lrg.index)
+			if ok && liveouts.data.id[i].node == val do return true
+		}
+
+		block := &ctx.sched.bbs[block_idx]
+		for out in bac.get_outputs(prc, vnode) {
+			if out.id == def do continue
+			onode := get_node(prc, out.id)
+			if onode.itype == .Phi do continue
+			if int(onode.gvn) >= len(ctx.instr_placement) do continue
+			if ctx.instr_placement[onode.gvn].block != block_idx do continue
+			oidx := arna.simd_search(block.instrs[:], out.id) or_continue
+			if oidx >= use_idx do return true
+		}
+
+		return false
 	}
 
 	get_node_block :: #force_inline proc(
@@ -2020,6 +2093,12 @@ regalloc_round :: proc(
 
 	is_def_while_splitting :: proc(ctx: Ctx, node: ^bac.Node) -> bool {
 		return node.gvn >= ctx.pre_split_gvn || is_def(ctx, node)
+	}
+
+	// Clones placed this round are not in the placement tables yet, they are
+	// revisited with fresh liveness next round.
+	is_split_point :: proc(ctx: Ctx, node: ^bac.Node) -> bool {
+		return node.itype == .Split || node.gvn >= ctx.pre_split_gvn
 	}
 
 	is_data_dep :: proc(

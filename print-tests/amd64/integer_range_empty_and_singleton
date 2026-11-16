@@ -112,27 +112,25 @@ main:
     mov rcx, rdx
     mov rdi, rax
     add rdi, 0x1000
-    cmp rax, 5
-    setge sil
-    movzx esi, sil
-    add rax, 1
+    mov rsi, rax
+    add rsi, 1
     mov rdx, rcx
     add rdx, rdi
-    test sil, sil
-    je 1
+    cmp rax, 5
+    mov rax, rsi
+    jl 1
     mov rax, 5
 2:
     mov rdx, rcx
-    mov rdi, rax
-    add rdi, 0x1000
-    cmp rax, 3
-    setge sil
-    movzx esi, sil
+    mov rsi, rax
+    add rsi, 0x1000
     mov rcx, rdx
-    add rcx, rdi
-    add rax, 1
-    test sil, sil
-    je 2
+    add rcx, rsi
+    mov rsi, rax
+    add rsi, 1
+    cmp rax, 3
+    mov rax, rsi
+    jl 2
     movabs r8, 0x7fffffffffffffff
     mov rcx, 5
     xor eax, eax

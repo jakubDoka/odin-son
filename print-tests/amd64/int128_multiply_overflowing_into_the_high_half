@@ -1126,15 +1126,14 @@ main:
     imul r8, r8, 0x1f
     add r8, rax
     imul r8, r8, 0x1f
-    add rdi, 1
-    cmp rdi, 7
-    setge dl
-    movzx edx, dl
+    mov rdx, rdi
+    add rdx, 1
     mov rbp, r8
     add rbp, rax
-    test dl, dl
+    cmp rdx, 7
     mov r8, rbp
-    je 2
+    mov rdi, rdx
+    jl 2
     mov rax, rsi
     add rax, 1
     cmp rax, 7
@@ -1149,7 +1148,7 @@ main:
     lea rdi, [rsp + 0x80]
     lea rsi, [rsp + 0x90]
     mov rdx, 0x10
-    call -0x234
+    call -0x22f
     mov.q rdi, [rsp + 0xa0]
     mov.q r10, [rsp + 0x90]
     mov rsi, rdi
@@ -1174,11 +1173,11 @@ main:
     lea rsi, [rsp + 0x80]
     lea rdi, [rsp + 0xa0]
     mov rdx, 0x10
-    call -0x2b1
+    call -0x2ac
     lea rdi, [rsp + 0x90]
     lea rsi, [rsp + 0x70]
     mov rdx, 0x10
-    call -0x2ca
+    call -0x2c5
     mov.q r9, [rsp + 0x90]
     mov.q r8, [rsp + 0xa8]
     mov.q rdi, [rsp + 0xa0]
@@ -1221,14 +1220,11 @@ main:
     mov rdx, rdi
     xor rdx, rax
     add rcx, 1
-    cmp rcx, 7
-    setge sil
-    movzx esi, sil
     mov rax, r10
     add rax, rdx
     mov rdx, rax
-    test sil, sil
-    je 4
+    cmp rcx, 7
+    jl 4
     add rsp, 0xb0
     pop r12
     pop rbp

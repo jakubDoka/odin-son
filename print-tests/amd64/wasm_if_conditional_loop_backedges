@@ -599,85 +599,74 @@ main:
     add rax, 1
     cmp rax, 4
     jge 7
-    mov r8, rcx
+    mov r9, rcx
     xor eax, eax
 1:
-    mov rcx, r8
+    mov rcx, r9
     add rcx, 1
-    mov rdx, rcx
-    and rdx, 1
-    cmp rdx, 0
-    setne bpl
-    movzx ebp, bpl
-    mov rdi, rax
-    mov rsi, -1
+    mov rsi, rcx
+    and rsi, 1
+    mov r8, rax
+    mov rdi, -1
 2:
-    mov rdx, rsi
+    mov rdx, rdi
     add rdx, 1
-    test bpl, bpl
+    cmp rsi, 0
     jne 4
-    xor r10d, r10d
+    xor r11d, r11d
     xor eax, eax
 3:
-    imul r9, rax, 3
-    mov rbx, r9
-    add rbx, 0x35
-    add r9, 0x47
-    mov rax, r10
+    imul r10, rax, 3
+    mov rbp, r10
+    add rbp, 0x35
+    add r10, 0x47
+    mov rax, r11
     add rax, rcx
     and rax, 2
+    mov rbx, r11
+    add rbx, 1
     cmp rax, 0
-    setne al
-    movzx eax, al
-    add r10, 1
-    cmp r10, rdx
-    setge r11b
-    movzx r11d, r11b
-    test al, al
-    cmovne r9, rbx
-    mov rax, r9
-    test r11b, r11b
-    je 3
+    cmovne r10, rbp
+    mov r11, rbx
+    mov rax, r10
+    cmp rbx, rdx
+    jl 3
     jmp 6
 4:
-    xor r9d, r9d
+    xor r10d, r10d
     xor eax, eax
 5:
-    imul r10, rax, 3
-    mov rbx, r10
-    add rbx, 0x11
-    add r10, 0x23
-    mov rax, r9
+    imul r11, rax, 3
+    mov rbp, r11
+    add rbp, 0x11
+    add r11, 0x23
+    mov rax, r10
     add rax, rcx
     and rax, 2
+    mov rbx, r10
+    add rbx, 1
     cmp rax, 0
-    setne al
-    movzx eax, al
-    add r9, 1
-    cmp r9, rdx
-    setge r11b
-    movzx r11d, r11b
-    test al, al
-    cmovne r10, rbx
-    mov rax, r10
-    test r11b, r11b
-    je 5
-    mov r9, r10
+    cmovne r11, rbp
+    mov r10, rbx
+    mov rax, r11
+    cmp rbx, rdx
+    jl 5
+    mov r10, r11
 6:
-    imul rax, rdi, 0x101
-    imul rdi, r9, 3
-    add rdi, 0x59
-    add rax, rdi
+    imul rax, r8, 0x101
+    imul r8, r10, 3
+    add r8, 0x59
+    add rax, r8
     and rax, 0x7fffffff
-    add rsi, 2
-    cmp rsi, 5
-    mov rdi, rax
-    mov rsi, rdx
+    add rdi, 2
+    cmp rdi, 5
+    mov r8, rax
+    mov rdi, rdx
     jl 2
-    mov rdx, r8
+    mov rdx, r9
     add rdx, 2
     cmp rdx, 4
-    mov r8, rcx
+    mov r9, rcx
     jl 1
     jmp 8
 7:

@@ -106,22 +106,19 @@ main:
     xor edx, edx
     xor esi, esi
 2:
-    mov r10, rsi
-    mov r9, rdx
-    cmp rcx, rax
-    setge r8b
-    movzx r8d, r8b
+    mov r9, rsi
+    mov r8, rdx
     mov rdi, rcx
     add rdi, 1
-    mov rsi, r10
+    mov rsi, r9
     add rsi, 1
-    mov rdx, r9
+    mov rdx, r8
     add rdx, rcx
-    test r8b, r8b
+    cmp rcx, rax
     mov rcx, rdi
-    je 2
-    imul rax, r9, 0x64
-    add rax, r10
+    jl 2
+    imul rax, r8, 0x64
+    add rax, r9
     add rsp, 8
     ret
 =========== OPT LEVEL: aggresive ===========
@@ -130,20 +127,17 @@ main:
     xor ecx, ecx
     xor edx, edx
 1:
-    mov r9, rdx
-    mov r8, rcx
-    cmp rax, 5
-    setge dil
-    movzx edi, dil
+    mov r8, rdx
+    mov rdi, rcx
     mov rsi, rax
     add rsi, 1
-    mov rdx, r9
+    mov rdx, r8
     add rdx, 1
-    mov rcx, r8
+    mov rcx, rdi
     add rcx, rax
-    test dil, dil
+    cmp rax, 5
     mov rax, rsi
-    je 1
-    imul rax, r8, 0x64
-    add rax, r9
+    jl 1
+    imul rax, rdi, 0x64
+    add rax, r8
     ret

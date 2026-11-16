@@ -688,88 +688,84 @@ main:
     cmp rax, 4
     jge 10
     xor eax, eax
-    mov rsi, rcx
-1:
-    mov rcx, rsi
-    add rcx, 1
     mov rdx, rcx
-    and rdx, 1
-    cmp rdx, 0
-    setne bpl
-    movzx ebp, bpl
-    mov r8, rax
-    mov rdi, -1
+1:
+    mov rcx, rdx
+    add rcx, 1
+    mov rdi, rcx
+    and rdi, 1
+    mov r9, rax
+    mov r8, -1
 2:
-    mov rdx, rdi
-    add rdx, 1
-    test bpl, bpl
+    mov rsi, r8
+    add rsi, 1
+    cmp rdi, 0
     jne 5
     mov rax, -1
-    xor r9d, r9d
+    xor r10d, r10d
 3:
-    mov rbx, rax
-    add rbx, 1
-    cmp rbx, rdx
+    mov rbp, rax
+    add rbp, 1
+    cmp rbp, rsi
     je 4
-    imul r9, r9, 3
-    mov r11, r9
-    add r11, 0x47
-    add r9, 0x59
-    lea r10, [rsi + rbx + 0x1]
-    and r10, 2
-    cmp r10, 0
-    cmovne r9, r11
+    imul r10, r10, 3
+    mov rbx, r10
+    add rbx, 0x47
+    add r10, 0x59
+    lea r11, [rdx + rbp + 0x1]
+    and r11, 2
+    cmp r11, 0
+    cmovne r10, rbx
     add rax, 2
     cmp rax, 4
-    mov rax, rbx
+    mov rax, rbp
     jl 3
-    imul rax, r9, 3
+    imul rax, r10, 3
     add rax, 0x6b
     jmp 7
 4:
-    add r9, 0x200
+    add r10, 0x200
     jmp 9
 5:
     mov rax, -1
-    xor r9d, r9d
+    xor r10d, r10d
 6:
-    mov rbx, rax
-    add rbx, 1
-    cmp rbx, rdx
+    mov rbp, rax
+    add rbp, 1
+    cmp rbp, rsi
     je 8
-    imul r9, r9, 3
-    mov r11, r9
-    add r11, 0x11
-    add r9, 0x23
-    lea r10, [rsi + rbx + 0x1]
-    and r10, 2
-    cmp r10, 0
-    cmovne r9, r11
+    imul r10, r10, 3
+    mov rbx, r10
+    add rbx, 0x11
+    add r10, 0x23
+    lea r11, [rdx + rbp + 0x1]
+    and r11, 2
+    cmp r11, 0
+    cmovne r10, rbx
     add rax, 2
     cmp rax, 4
-    mov rax, rbx
+    mov rax, rbp
     jl 6
-    imul rax, r9, 3
+    imul rax, r10, 3
     add rax, 0x35
 7:
-    imul r9, rax, 3
-    add r9, 0x7d
+    imul r10, rax, 3
+    add r10, 0x7d
     jmp 9
 8:
-    add r9, 0x100
+    add r10, 0x100
 9:
-    imul rax, r8, 0x101
-    add rax, r9
+    imul rax, r9, 0x101
+    add rax, r10
     and rax, 0x7fffffff
-    add rdi, 2
-    cmp rdi, 5
-    mov r8, rax
-    mov rdi, rdx
+    add r8, 2
+    cmp r8, 5
+    mov r9, rax
+    mov r8, rsi
     jl 2
-    mov rdx, rsi
     add rdx, 2
     cmp rdx, 4
-    mov rsi, rcx
+    mov rdx, rcx
     jl 1
     jmp 11
 10:

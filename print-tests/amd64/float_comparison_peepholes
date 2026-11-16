@@ -70,42 +70,32 @@ test_mixed_patterns:
     mov rax, 0x64
     mov rcx, 0xc8
     movss.d xmm1, [rsp + 0x10]
-    ucomiss xmm1, xmm0
-    sete dl
-    jnp 6
-    mov dl, 0
-6:
-    movzx edx, dl
-    xor ebx, ebx
-    test dl, dl
-    cmovne rbx, rcx
-    movss.d xmm1, [rsp + 0x10]
-    ucomiss xmm1, xmm0
-    setae cl
-    movzx ecx, cl
     xor edx, edx
-    test cl, cl
-    cmovne rdx, rbx
+    ucomiss xmm1, xmm0
+    jp 6
+    cmove rdx, rcx
+6:
+    movss.d xmm1, [rsp + 0x10]
+    xor ecx, ecx
+    ucomiss xmm1, xmm0
+    cmovae rcx, rdx
+    movss.d xmm1, [rsp + 0x10]
+    xor edx, edx
+    ucomiss xmm1, xmm0
+    cmova rdx, rcx
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm1, xmm0
-    seta cl
-    movzx ecx, cl
-    xor ebx, ebx
-    test cl, cl
-    cmovne rbx, rdx
-    movss.d xmm1, [rsp + 0x10]
-    ucomiss xmm1, xmm0
-    mov rcx, rbx
+    mov rcx, rdx
     cmovne rcx, rax
     cmovp rcx, rax
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm0, xmm1
-    mov rdx, rbx
-    cmovae rdx, rcx
+    mov rbx, rdx
+    cmovae rbx, rcx
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm0, xmm1
-    mov rax, rbx
-    cmova rax, rdx
+    mov rax, rdx
+    cmova rax, rbx
     add rsp, 0x20
     pop rbx
     ret
@@ -117,9 +107,9 @@ main:
     push r14
     push r15
     sub rsp, 0x28
-    movss.d xmm0, [rip + 0xd74]
+    movss.d xmm0, [rip + 0xd98]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xd69]
+    movss.d xmm0, [rip + 0xd8d]
     movss.d [rsp + 0x10], xmm0
     movss.d xmm0, [rsp]
     movss.d xmm1, [rsp + 0x10]
@@ -129,13 +119,13 @@ main:
     movss.d xmm0, [rsp + 0x10]
     call test_f32
     mov rbp, rax
-    movss.d xmm0, [rip + 0xd32]
+    movss.d xmm0, [rip + 0xd56]
     movss.d xmm1, [rsp]
     call test_f32
     mov r12, rax
-    movsd.q xmm0, [rip + 0xd1f]
+    movsd.q xmm0, [rip + 0xd43]
     movsd.q [rsp], xmm0
-    movsd.q xmm0, [rip + 0xd18]
+    movsd.q xmm0, [rip + 0xd3c]
     movsd.q [rsp + 0x10], xmm0
     movsd.q xmm0, [rsp]
     movsd.q xmm1, [rsp + 0x10]
@@ -145,11 +135,11 @@ main:
     movsd.q xmm0, [rsp + 0x10]
     call test_f64
     mov r14, rax
-    movsd.q xmm0, [rip + 0xce5]
+    movsd.q xmm0, [rip + 0xd09]
     movsd.q xmm1, [rsp]
     call test_f64
     mov r15, rax
-    movss.d xmm0, [rip + 0xcd6]
+    movss.d xmm0, [rip + 0xcfa]
     call test_mixed_patterns
     mov rcx, rbx
     add rcx, rbp
@@ -228,31 +218,21 @@ test_mixed_patterns:
     addss.d xmm0, [rip + 0xe66]
     call opaque32
     mov rsi, 0x64
-    mov rcx, 0xc8
+    mov rax, 0xc8
     movss.d xmm1, [rsp]
-    ucomiss xmm1, xmm0
-    sete al
-    jnp 6
-    mov al, 0
-6:
-    movzx eax, al
-    xor edx, edx
-    test al, al
-    cmovne rdx, rcx
-    movss.d xmm1, [rsp]
-    ucomiss xmm1, xmm0
-    setae al
-    movzx eax, al
     xor ecx, ecx
-    test al, al
-    cmovne rcx, rdx
-    movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    seta al
-    movzx eax, al
+    jp 6
+    cmove rcx, rax
+6:
+    movss.d xmm1, [rsp]
+    xor eax, eax
+    ucomiss xmm1, xmm0
+    cmovae rax, rcx
+    movss.d xmm1, [rsp]
     xor edx, edx
-    test al, al
-    cmovne rdx, rcx
+    ucomiss xmm1, xmm0
+    cmova rdx, rax
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
     mov rax, rdx
@@ -276,9 +256,9 @@ main:
     push r14
     push r15
     sub rsp, 0x28
-    movss.d xmm0, [rip + 0xda9]
+    movss.d xmm0, [rip + 0xdcd]
     movss.d [rsp + 0x10], xmm0
-    movss.d xmm0, [rip + 0xd9d]
+    movss.d xmm0, [rip + 0xdc1]
     movss.d [rsp], xmm0
     movss.d xmm0, [rsp + 0x10]
     movss.d xmm1, [rsp]
@@ -288,13 +268,13 @@ main:
     movss.d xmm0, [rsp]
     call test_f32
     mov r14, rax
-    movss.d xmm0, [rip + 0xd69]
+    movss.d xmm0, [rip + 0xd8d]
     movss.d xmm1, [rsp + 0x10]
     call test_f32
     mov r13, rax
-    movsd.q xmm0, [rip + 0xd55]
+    movsd.q xmm0, [rip + 0xd79]
     movsd.q [rsp + 0x10], xmm0
-    movsd.q xmm0, [rip + 0xd4d]
+    movsd.q xmm0, [rip + 0xd71]
     movsd.q [rsp], xmm0
     movsd.q xmm0, [rsp + 0x10]
     movsd.q xmm1, [rsp]
@@ -304,11 +284,11 @@ main:
     movsd.q xmm0, [rsp]
     call test_f64
     mov rbp, rax
-    movsd.q xmm0, [rip + 0xd1d]
+    movsd.q xmm0, [rip + 0xd41]
     movsd.q xmm1, [rsp + 0x10]
     call test_f64
     mov rbx, rax
-    movss.d xmm0, [rip + 0xd0d]
+    movss.d xmm0, [rip + 0xd31]
     call test_mixed_patterns
     mov rdx, rax
     mov rcx, r15
@@ -399,42 +379,32 @@ test_mixed_patterns:
     mov rax, 0x64
     mov rcx, 0xc8
     movss.d xmm1, [rsp + 0x10]
-    ucomiss xmm1, xmm0
-    sete dl
-    jnp 6
-    mov dl, 0
-6:
-    movzx edx, dl
-    xor ebx, ebx
-    test dl, dl
-    cmovne rbx, rcx
-    movss.d xmm1, [rsp + 0x10]
-    ucomiss xmm1, xmm0
-    setae cl
-    movzx ecx, cl
     xor edx, edx
-    test cl, cl
-    cmovne rdx, rbx
+    ucomiss xmm1, xmm0
+    jp 6
+    cmove rdx, rcx
+6:
+    movss.d xmm1, [rsp + 0x10]
+    xor ecx, ecx
+    ucomiss xmm1, xmm0
+    cmovae rcx, rdx
+    movss.d xmm1, [rsp + 0x10]
+    xor edx, edx
+    ucomiss xmm1, xmm0
+    cmova rdx, rcx
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm1, xmm0
-    seta cl
-    movzx ecx, cl
-    xor ebx, ebx
-    test cl, cl
-    cmovne rbx, rdx
-    movss.d xmm1, [rsp + 0x10]
-    ucomiss xmm1, xmm0
-    mov rcx, rbx
+    mov rcx, rdx
     cmovne rcx, rax
     cmovp rcx, rax
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm0, xmm1
-    mov rdx, rbx
-    cmovae rdx, rcx
+    mov rbx, rdx
+    cmovae rbx, rcx
     movss.d xmm1, [rsp + 0x10]
     ucomiss xmm0, xmm1
-    mov rax, rbx
-    cmova rax, rdx
+    mov rax, rdx
+    cmova rax, rbx
     add rsp, 0x20
     pop rbx
     ret
@@ -446,9 +416,9 @@ main:
     push r14
     push r15
     sub rsp, 0x28
-    movss.d xmm0, [rip + 0xd74]
+    movss.d xmm0, [rip + 0xd98]
     movss.d [rsp], xmm0
-    movss.d xmm0, [rip + 0xd69]
+    movss.d xmm0, [rip + 0xd8d]
     movss.d [rsp + 0x10], xmm0
     movss.d xmm0, [rsp]
     movss.d xmm1, [rsp + 0x10]
@@ -458,13 +428,13 @@ main:
     movss.d xmm0, [rsp + 0x10]
     call test_f32
     mov rbp, rax
-    movss.d xmm0, [rip + 0xd32]
+    movss.d xmm0, [rip + 0xd56]
     movss.d xmm1, [rsp]
     call test_f32
     mov r12, rax
-    movsd.q xmm0, [rip + 0xd1f]
+    movsd.q xmm0, [rip + 0xd43]
     movsd.q [rsp], xmm0
-    movsd.q xmm0, [rip + 0xd18]
+    movsd.q xmm0, [rip + 0xd3c]
     movsd.q [rsp + 0x10], xmm0
     movsd.q xmm0, [rsp]
     movsd.q xmm1, [rsp + 0x10]
@@ -474,11 +444,11 @@ main:
     movsd.q xmm0, [rsp + 0x10]
     call test_f64
     mov r14, rax
-    movsd.q xmm0, [rip + 0xce5]
+    movsd.q xmm0, [rip + 0xd09]
     movsd.q xmm1, [rsp]
     call test_f64
     mov r15, rax
-    movss.d xmm0, [rip + 0xcd6]
+    movss.d xmm0, [rip + 0xcfa]
     call test_mixed_patterns
     mov rcx, rbx
     add rcx, rbp
@@ -557,31 +527,21 @@ test_mixed_patterns:
     addss.d xmm0, [rip + 0xe66]
     call opaque32
     mov rsi, 0x64
-    mov rcx, 0xc8
+    mov rax, 0xc8
     movss.d xmm1, [rsp]
-    ucomiss xmm1, xmm0
-    sete al
-    jnp 6
-    mov al, 0
-6:
-    movzx eax, al
-    xor edx, edx
-    test al, al
-    cmovne rdx, rcx
-    movss.d xmm1, [rsp]
-    ucomiss xmm1, xmm0
-    setae al
-    movzx eax, al
     xor ecx, ecx
-    test al, al
-    cmovne rcx, rdx
-    movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    seta al
-    movzx eax, al
+    jp 6
+    cmove rcx, rax
+6:
+    movss.d xmm1, [rsp]
+    xor eax, eax
+    ucomiss xmm1, xmm0
+    cmovae rax, rcx
+    movss.d xmm1, [rsp]
     xor edx, edx
-    test al, al
-    cmovne rdx, rcx
+    ucomiss xmm1, xmm0
+    cmova rdx, rax
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
     mov rax, rdx
@@ -605,9 +565,9 @@ main:
     push r14
     push r15
     sub rsp, 0x28
-    movss.d xmm0, [rip + 0xda9]
+    movss.d xmm0, [rip + 0xdcd]
     movss.d [rsp + 0x10], xmm0
-    movss.d xmm0, [rip + 0xd9d]
+    movss.d xmm0, [rip + 0xdc1]
     movss.d [rsp], xmm0
     movss.d xmm0, [rsp + 0x10]
     movss.d xmm1, [rsp]
@@ -617,13 +577,13 @@ main:
     movss.d xmm0, [rsp]
     call test_f32
     mov r14, rax
-    movss.d xmm0, [rip + 0xd69]
+    movss.d xmm0, [rip + 0xd8d]
     movss.d xmm1, [rsp + 0x10]
     call test_f32
     mov r13, rax
-    movsd.q xmm0, [rip + 0xd55]
+    movsd.q xmm0, [rip + 0xd79]
     movsd.q [rsp + 0x10], xmm0
-    movsd.q xmm0, [rip + 0xd4d]
+    movsd.q xmm0, [rip + 0xd71]
     movsd.q [rsp], xmm0
     movsd.q xmm0, [rsp + 0x10]
     movsd.q xmm1, [rsp]
@@ -633,11 +593,11 @@ main:
     movsd.q xmm0, [rsp]
     call test_f64
     mov rbp, rax
-    movsd.q xmm0, [rip + 0xd1d]
+    movsd.q xmm0, [rip + 0xd41]
     movsd.q xmm1, [rsp + 0x10]
     call test_f64
     mov rbx, rax
-    movss.d xmm0, [rip + 0xd0d]
+    movss.d xmm0, [rip + 0xd31]
     call test_mixed_patterns
     mov rdx, rax
     mov rcx, r15
@@ -717,31 +677,21 @@ test_mixed_patterns:
     addss.d xmm0, [rip + 0xe66]
     call opaque32
     mov rsi, 0x64
-    mov rcx, 0xc8
+    mov rax, 0xc8
     movss.d xmm1, [rsp]
-    ucomiss xmm1, xmm0
-    sete al
-    jnp 6
-    mov al, 0
-6:
-    movzx eax, al
-    xor edx, edx
-    test al, al
-    cmovne rdx, rcx
-    movss.d xmm1, [rsp]
-    ucomiss xmm1, xmm0
-    setae al
-    movzx eax, al
     xor ecx, ecx
-    test al, al
-    cmovne rcx, rdx
-    movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
-    seta al
-    movzx eax, al
+    jp 6
+    cmove rcx, rax
+6:
+    movss.d xmm1, [rsp]
+    xor eax, eax
+    ucomiss xmm1, xmm0
+    cmovae rax, rcx
+    movss.d xmm1, [rsp]
     xor edx, edx
-    test al, al
-    cmovne rdx, rcx
+    ucomiss xmm1, xmm0
+    cmova rdx, rax
     movss.d xmm1, [rsp]
     ucomiss xmm1, xmm0
     mov rax, rdx
@@ -765,9 +715,9 @@ main:
     push r14
     push r15
     sub rsp, 0x28
-    movss.d xmm0, [rip + 0xda9]
+    movss.d xmm0, [rip + 0xdcd]
     movss.d [rsp + 0x10], xmm0
-    movss.d xmm0, [rip + 0xd9d]
+    movss.d xmm0, [rip + 0xdc1]
     movss.d [rsp], xmm0
     movss.d xmm0, [rsp + 0x10]
     movss.d xmm1, [rsp]
@@ -777,13 +727,13 @@ main:
     movss.d xmm0, [rsp]
     call test_f32
     mov r14, rax
-    movss.d xmm0, [rip + 0xd69]
+    movss.d xmm0, [rip + 0xd8d]
     movss.d xmm1, [rsp + 0x10]
     call test_f32
     mov r13, rax
-    movsd.q xmm0, [rip + 0xd55]
+    movsd.q xmm0, [rip + 0xd79]
     movsd.q [rsp + 0x10], xmm0
-    movsd.q xmm0, [rip + 0xd4d]
+    movsd.q xmm0, [rip + 0xd71]
     movsd.q [rsp], xmm0
     movsd.q xmm0, [rsp + 0x10]
     movsd.q xmm1, [rsp]
@@ -793,11 +743,11 @@ main:
     movsd.q xmm0, [rsp]
     call test_f64
     mov rbp, rax
-    movsd.q xmm0, [rip + 0xd1d]
+    movsd.q xmm0, [rip + 0xd41]
     movsd.q xmm1, [rsp + 0x10]
     call test_f64
     mov rbx, rax
-    movss.d xmm0, [rip + 0xd0d]
+    movss.d xmm0, [rip + 0xd31]
     call test_mixed_patterns
     mov rdx, rax
     mov rcx, r15

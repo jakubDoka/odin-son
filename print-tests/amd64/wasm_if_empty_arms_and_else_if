@@ -13,10 +13,8 @@ choose:
     mov.q [rsp], 1
     mov rax, rbx
     and rax, 1
-    cmp rax, 0
-    setne bpl
-    movzx ebp, bpl
-    test bpl, bpl
+    mov rbp, rax
+    cmp rbp, 0
     jne 2
     mov rsi, 2
     lea rdi, [rsp]
@@ -40,7 +38,7 @@ choose:
     and rax, 8
     cmp rax, 0
     jne 6
-    test bpl, bpl
+    cmp rbp, 0
     jne 5
     mov rsi, 7
     lea rdi, [rsp]
@@ -73,7 +71,7 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rax, [rip + 0xe11]
+    mov.q rax, [rip + 0xe15]
     sub rax, 1
     mov rcx, rax
     xor edx, edx
@@ -114,10 +112,8 @@ choose:
     mov.q [rsp], 1
     mov rax, rbx
     and rax, 1
-    cmp rax, 0
-    setne bpl
-    movzx ebp, bpl
-    test bpl, bpl
+    mov rbp, rax
+    cmp rbp, 0
     jne 2
     mov rsi, 2
     lea rdi, [rsp]
@@ -140,7 +136,7 @@ choose:
     and rbx, 8
     cmp rbx, 0
     jne 6
-    test bpl, bpl
+    cmp rbp, 0
     jne 5
     mov rsi, 7
     lea rdi, [rsp]
@@ -173,7 +169,7 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rax, [rip + 0xe31]
+    mov.q rax, [rip + 0xe35]
     sub rax, 1
     xor ebx, ebx
 10:
@@ -211,10 +207,8 @@ choose:
     mov.q [rsp], 1
     mov rax, rbx
     and rax, 1
-    cmp rax, 0
-    setne bpl
-    movzx ebp, bpl
-    test bpl, bpl
+    mov rbp, rax
+    cmp rbp, 0
     jne 2
     mov rsi, 2
     lea rdi, [rsp]
@@ -238,7 +232,7 @@ choose:
     and rax, 8
     cmp rax, 0
     jne 6
-    test bpl, bpl
+    cmp rbp, 0
     jne 5
     mov rsi, 7
     lea rdi, [rsp]
@@ -271,7 +265,7 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rax, [rip + 0xe11]
+    mov.q rax, [rip + 0xe15]
     sub rax, 1
     mov rcx, rax
     xor edx, edx
@@ -312,10 +306,8 @@ choose:
     mov.q [rsp], 1
     mov rax, rbx
     and rax, 1
-    cmp rax, 0
-    setne bpl
-    movzx ebp, bpl
-    test bpl, bpl
+    mov rbp, rax
+    cmp rbp, 0
     jne 2
     mov rsi, 2
     lea rdi, [rsp]
@@ -338,7 +330,7 @@ choose:
     and rbx, 8
     cmp rbx, 0
     jne 6
-    test bpl, bpl
+    cmp rbp, 0
     jne 5
     mov rsi, 7
     lea rdi, [rsp]
@@ -371,7 +363,7 @@ main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rax, [rip + 0xe31]
+    mov.q rax, [rip + 0xe35]
     sub rax, 1
     xor ebx, ebx
 10:
@@ -409,10 +401,8 @@ choose:
     mov.q [rsp], 1
     mov rax, rbx
     and rax, 1
-    cmp rax, 0
-    setne bpl
-    movzx ebp, bpl
-    test bpl, bpl
+    mov rbp, rax
+    cmp rbp, 0
     jne 2
     mov rsi, 2
     lea rdi, [rsp]
@@ -435,7 +425,7 @@ choose:
     and rbx, 8
     cmp rbx, 0
     jne 6
-    test bpl, bpl
+    cmp rbp, 0
     jne 5
     mov rsi, 7
     lea rdi, [rsp]
@@ -468,7 +458,7 @@ main:
     push rbx
     push rbp
     push r12
-    mov.q rdx, [rip + 0xe33]
+    mov.q rdx, [rip + 0xe37]
     sub rdx, 1
     mov rax, rdx
     add rax, 1
@@ -493,9 +483,10 @@ main:
     mov rdx, rbx
     mov rcx, rax
     jl 10
-    jmp +0x3
+    jmp 12
 11:
     xor eax, eax
+12:
     pop r12
     pop rbp
     pop rbx
@@ -509,53 +500,51 @@ main:
     add rcx, 1
     cmp rcx, 0x10
     jge 5
-    mov rcx, 1
+    mov r10, 1
+    mov rcx, rdx
 1:
-    mov r10, rdx
-    add r10, 1
-    mov rsi, r10
-    and rsi, 1
+    mov r9, rcx
+    add r9, 1
+    mov r8, r9
+    and r8, 1
+    cmp r8, 0
+    mov rdx, 0x12
+    cmovne rdx, r10
+    imul rdi, rdx, 0x10
+    add rdi, 3
+    mov rsi, r9
+    and rsi, 2
     cmp rsi, 0
-    setne r9b
-    movzx r9d, r9b
-    test r9b, r9b
-    mov rsi, 0x12
-    cmovne rsi, rcx
-    imul r8, rsi, 0x10
-    add r8, 3
-    mov rdi, r10
-    and rdi, 2
-    cmp rdi, 0
-    cmovne rsi, r8
-    imul rsi, rsi, 0x10
-    mov rdi, r10
-    and rdi, 4
-    cmp rdi, 0
+    cmovne rdx, rdi
+    imul rdx, rdx, 0x10
+    mov rsi, r9
+    and rsi, 4
+    cmp rsi, 0
     jne 3
-    mov rdi, r10
-    and rdi, 8
-    cmp rdi, 0
+    mov rsi, r9
+    and rsi, 8
+    cmp rsi, 0
     jne 2
-    mov rdi, rsi
-    add rdi, 6
-    add rsi, 7
-    test r9b, r9b
-    cmovne rsi, rdi
+    mov rsi, rdx
+    add rsi, 6
+    add rdx, 7
+    cmp r8, 0
+    cmovne rdx, rsi
     jmp 4
 2:
-    add rsi, 5
+    add rdx, 5
     jmp 4
 3:
-    add rsi, 4
+    add rdx, 4
 4:
     imul rax, rax, 0x101
-    imul rsi, rsi, 0x10
-    add rsi, 8
-    add rax, rsi
+    imul rdx, rdx, 0x10
+    add rdx, 8
+    add rax, rdx
     and rax, 0x7fffffff
-    add rdx, 2
-    cmp rdx, 0x10
-    mov rdx, r10
+    add rcx, 2
+    cmp rcx, 0x10
+    mov rcx, r9
     jl 1
 5:
     ret

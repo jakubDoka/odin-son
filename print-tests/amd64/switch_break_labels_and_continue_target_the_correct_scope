@@ -27,11 +27,9 @@ main:
     jg 8
     mov rbp, rbx
     add rbp, 0x64
-    cmp rdx, 1
-    sete sil
-    movzx esi, sil
-    test sil, sil
-    jne 5
+    mov rsi, rdx
+    cmp rsi, 1
+    je 5
     cmp rdx, 2
     je 4
     cmp rdx, 3
@@ -44,8 +42,8 @@ main:
 5:
     mov r9, rbx
     add r9, 0x14
-    test sil, sil
-    cmovne rbp, r9
+    cmp rsi, 1
+    cmove rbp, r9
     add rbp, 2
     mov rdi, rbp
 6:
@@ -104,11 +102,9 @@ main:
     jg 7
     mov rax, rbp
     add rax, 0x64
-    cmp rsi, 1
-    sete dl
-    movzx edx, dl
-    test dl, dl
-    jne 4
+    mov rdx, rsi
+    cmp rdx, 1
+    je 4
     cmp rsi, 2
     je 6
     cmp rsi, 3
@@ -117,8 +113,8 @@ main:
 4:
     mov rcx, rbp
     add rcx, 0x14
-    test dl, dl
-    cmovne rax, rcx
+    cmp rdx, 1
+    cmove rax, rcx
     add rax, 2
 5:
     add rax, 1
@@ -171,11 +167,9 @@ main:
     jg 8
     mov rbp, rbx
     add rbp, 0x64
-    cmp rdx, 1
-    sete sil
-    movzx esi, sil
-    test sil, sil
-    jne 5
+    mov rsi, rdx
+    cmp rsi, 1
+    je 5
     cmp rdx, 2
     je 4
     cmp rdx, 3
@@ -188,8 +182,8 @@ main:
 5:
     mov r9, rbx
     add r9, 0x14
-    test sil, sil
-    cmovne rbp, r9
+    cmp rsi, 1
+    cmove rbp, r9
     add rbp, 2
     mov rdi, rbp
 6:
@@ -248,11 +242,9 @@ main:
     jg 7
     mov rax, rbp
     add rax, 0x64
-    cmp rsi, 1
-    sete dl
-    movzx edx, dl
-    test dl, dl
-    jne 4
+    mov rdx, rsi
+    cmp rdx, 1
+    je 4
     cmp rsi, 2
     je 6
     cmp rsi, 3
@@ -261,8 +253,8 @@ main:
 4:
     mov rcx, rbp
     add rcx, 0x14
-    test dl, dl
-    cmovne rax, rcx
+    cmp rdx, 1
+    cmove rax, rcx
     add rax, 2
 5:
     add rax, 1
@@ -313,11 +305,9 @@ main:
     add rdx, 0x64
     mov rax, rcx
     add rax, 1
-    cmp rax, 1
-    sete dil
-    movzx edi, dil
-    test dil, dil
-    jne 4
+    mov rdi, rax
+    cmp rdi, 1
+    je 4
     cmp rax, 2
     je 6
     cmp rax, 3
@@ -325,8 +315,8 @@ main:
     jmp 5
 4:
     add rsi, 0x14
-    test dil, dil
-    cmovne rdx, rsi
+    cmp rdi, 1
+    cmove rdx, rsi
     add rdx, 2
 5:
     mov rsi, rdx
@@ -360,16 +350,13 @@ main:
 1:
     mov rdx, rcx
     add rdx, 0x64
-    mov rdi, rax
-    add rdi, 1
-    cmp rdi, 1
-    sete sil
-    movzx esi, sil
-    test sil, sil
-    jne 4
-    cmp rdi, 2
+    mov rsi, rax
+    add rsi, 1
+    cmp rsi, 1
+    je 4
+    cmp rsi, 2
     je 3
-    cmp rdi, 3
+    cmp rsi, 3
     je 2
     jmp 5
 2:
@@ -380,8 +367,8 @@ main:
     jmp 6
 4:
     add rcx, 0x14
-    test sil, sil
-    cmovne rdx, rcx
+    cmp rsi, 1
+    cmove rdx, rcx
     add rdx, 2
 5:
     add rdx, 1
@@ -389,7 +376,7 @@ main:
     add rax, 2
     cmp rax, 4
     mov rcx, rdx
-    mov rax, rdi
+    mov rax, rsi
     jle 1
     mov rax, rdx
 7:

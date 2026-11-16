@@ -233,53 +233,43 @@ main:
     cmovne rdx, rbx
     mov rbx, 0x40
     sub rbx, rdx
+    shrx rsi, rcx, rbx
+    mov rdi, rdx
+    sub rdi, 0x40
+    shlx r8, rcx, rdx
+    xor r9d, r9d
     cmp rdx, 0x40
-    setb sil
-    movzx esi, sil
-    shrx rdi, rcx, rbx
-    mov r8, rdx
-    sub r8, 0x40
-    shlx r9, rcx, rdx
-    xor r10d, r10d
-    test sil, sil
-    cmovne r10, r9
-    mov r9, r10
-    mov.q [rbp], r9
-    mov r9, rcx
-    sar r9, 0x3f
-    shlx rdx, r9, rdx
+    cmovb r9, r8
+    mov r8, r9
+    mov.q [rbp], r8
+    mov r8, rcx
+    sar r8, 0x3f
+    shlx r8, r8, rdx
     xor r9d, r9d
-    test sil, sil
-    cmovne r9, rdx
+    cmp rdx, 0x40
+    cmovb r9, r8
     mov rdx, r9
-    shlx rsi, rcx, r8
-    cmp rbx, 0x40
-    setb bl
-    movzx ebx, bl
+    shlx r8, rcx, rdi
     xor r9d, r9d
-    test bl, bl
-    cmovne r9, rdi
+    cmp rbx, 0x40
+    cmovb r9, rsi
     mov rbx, r9
     or rdx, rbx
-    cmp r8, 0x40
-    setb bl
-    movzx ebx, bl
-    xor edi, edi
-    test bl, bl
-    cmovne rdi, rsi
-    mov rbx, rdi
+    xor ebx, ebx
+    cmp rdi, 0x40
+    cmovb rbx, r8
     or rdx, rbx
     add rcx, 1
     mov.q [rbp + 0x8], rdx
     mov rax, rcx
     jmp 9
 10:
-    mov.q rdi, [rip + 0xaa1]
-    mov.q rsi, [rip + 0xaa2]
+    mov.q rdi, [rip + 0xac1]
+    mov.q rsi, [rip + 0xac2]
     call fold
     mov rbx, rax
-    mov.q rdi, [rip + 0xabb]
-    mov.q rsi, [rip + 0xabc]
+    mov.q rdi, [rip + 0xadb]
+    mov.q rsi, [rip + 0xadc]
     call fold
     mov rbp, rax
     movabs rsi, -0x123455789abcdf0
@@ -632,64 +622,55 @@ main:
     movups.x [rsp + 0xa1], xmm0
     xor ecx, ecx
 9:
-    mov r11, rcx
-    cmp r11, 4
+    mov r10, rcx
+    cmp r10, 4
     jge 10
-    imul rdx, r11, 0x28
-    imul rcx, r11, 0x10
+    imul rdx, r10, 0x28
+    imul rcx, r10, 0x10
     lea rax, [rsp + 0x81]
     add rax, rcx
     mov rcx, rdx
     sar rcx, 0x3f
     cmp rcx, 0
     mov rcx, -1
-    mov r10, rdx
-    cmovne r10, rcx
-    mov rsi, 0x40
-    sub rsi, r10
-    cmp r10, 0x40
-    setb r9b
-    movzx r9d, r9b
-    shrx rdx, r11, rsi
-    mov rcx, r10
+    mov r8, rdx
+    cmovne r8, rcx
+    mov rdx, 0x40
+    sub rdx, r8
+    shrx r9, r10, rdx
+    mov rcx, r8
     sub rcx, 0x40
-    shlx r8, r11, r10
-    xor edi, edi
-    test r9b, r9b
-    cmovne rdi, r8
-    mov.q [rax], rdi
-    mov rdi, r11
-    sar rdi, 0x3f
-    shlx r8, rdi, r10
-    xor edi, edi
-    test r9b, r9b
-    cmovne rdi, r8
-    shlx r9, r11, rcx
-    cmp rsi, 0x40
-    setb r8b
-    movzx r8d, r8b
+    shlx rdi, r10, r8
     xor esi, esi
-    test r8b, r8b
-    cmovne rsi, rdx
-    or rdi, rsi
+    cmp r8, 0x40
+    cmovb rsi, rdi
+    mov.q [rax], rsi
+    mov rsi, r10
+    sar rsi, 0x3f
+    shlx rdi, rsi, r8
+    xor esi, esi
+    cmp r8, 0x40
+    cmovb rsi, rdi
+    shlx r8, r10, rcx
+    xor edi, edi
+    cmp rdx, 0x40
+    cmovb rdi, r9
+    or rsi, rdi
+    xor edx, edx
     cmp rcx, 0x40
-    setb dl
-    movzx edx, dl
-    xor ecx, ecx
-    test dl, dl
-    cmovne rcx, r9
-    or rdi, rcx
-    mov rcx, r11
+    cmovb rdx, r8
+    or rsi, rdx
+    mov rcx, r10
     add rcx, 1
-    mov.q [rax + 0x8], rdi
+    mov.q [rax + 0x8], rsi
     jmp 9
 10:
-    mov.q rdi, [rip + 0xac6]
-    mov.q rsi, [rip + 0xac7]
+    mov.q rdi, [rip + 0xae3]
+    mov.q rsi, [rip + 0xae4]
     call fold
     mov.q [rsp + 0xe9], rax
-    mov.q rdi, [rip + 0xadb]
-    mov.q rsi, [rip + 0xadc]
+    mov.q rdi, [rip + 0xaf8]
+    mov.q rsi, [rip + 0xaf9]
     call fold
     mov.q [rsp + 0xe1], rax
     movabs rsi, -0x123455789abcdf0
@@ -1057,53 +1038,43 @@ main:
     cmovne rdx, rbx
     mov rbx, 0x40
     sub rbx, rdx
+    shrx rsi, rcx, rbx
+    mov rdi, rdx
+    sub rdi, 0x40
+    shlx r8, rcx, rdx
+    xor r9d, r9d
     cmp rdx, 0x40
-    setb sil
-    movzx esi, sil
-    shrx rdi, rcx, rbx
-    mov r8, rdx
-    sub r8, 0x40
-    shlx r9, rcx, rdx
-    xor r10d, r10d
-    test sil, sil
-    cmovne r10, r9
-    mov r9, r10
-    mov.q [rbp], r9
-    mov r9, rcx
-    sar r9, 0x3f
-    shlx rdx, r9, rdx
+    cmovb r9, r8
+    mov r8, r9
+    mov.q [rbp], r8
+    mov r8, rcx
+    sar r8, 0x3f
+    shlx r8, r8, rdx
     xor r9d, r9d
-    test sil, sil
-    cmovne r9, rdx
+    cmp rdx, 0x40
+    cmovb r9, r8
     mov rdx, r9
-    shlx rsi, rcx, r8
-    cmp rbx, 0x40
-    setb bl
-    movzx ebx, bl
+    shlx r8, rcx, rdi
     xor r9d, r9d
-    test bl, bl
-    cmovne r9, rdi
+    cmp rbx, 0x40
+    cmovb r9, rsi
     mov rbx, r9
     or rdx, rbx
-    cmp r8, 0x40
-    setb bl
-    movzx ebx, bl
-    xor edi, edi
-    test bl, bl
-    cmovne rdi, rsi
-    mov rbx, rdi
+    xor ebx, ebx
+    cmp rdi, 0x40
+    cmovb rbx, r8
     or rdx, rbx
     add rcx, 1
     mov.q [rbp + 0x8], rdx
     mov rax, rcx
     jmp 9
 10:
-    mov.q rdi, [rip + 0xaa1]
-    mov.q rsi, [rip + 0xaa2]
+    mov.q rdi, [rip + 0xac1]
+    mov.q rsi, [rip + 0xac2]
     call fold
     mov rbx, rax
-    mov.q rdi, [rip + 0xabb]
-    mov.q rsi, [rip + 0xabc]
+    mov.q rdi, [rip + 0xadb]
+    mov.q rsi, [rip + 0xadc]
     call fold
     mov rbp, rax
     movabs rsi, -0x123455789abcdf0
@@ -1456,64 +1427,55 @@ main:
     movups.x [rsp + 0xb1], xmm0
     xor ecx, ecx
 9:
-    mov r11, rcx
-    cmp r11, 4
+    mov r10, rcx
+    cmp r10, 4
     jge 10
-    imul rdx, r11, 0x28
-    imul rcx, r11, 0x10
+    imul rdx, r10, 0x28
+    imul rcx, r10, 0x10
     lea rax, [rsp + 0x81]
     add rax, rcx
     mov rcx, rdx
     sar rcx, 0x3f
     cmp rcx, 0
     mov rcx, -1
-    mov r10, rdx
-    cmovne r10, rcx
-    mov rsi, 0x40
-    sub rsi, r10
-    cmp r10, 0x40
-    setb r9b
-    movzx r9d, r9b
-    shrx rdx, r11, rsi
-    mov rcx, r10
+    mov r8, rdx
+    cmovne r8, rcx
+    mov rdx, 0x40
+    sub rdx, r8
+    shrx r9, r10, rdx
+    mov rcx, r8
     sub rcx, 0x40
-    shlx r8, r11, r10
-    xor edi, edi
-    test r9b, r9b
-    cmovne rdi, r8
-    mov.q [rax], rdi
-    mov rdi, r11
-    sar rdi, 0x3f
-    shlx r8, rdi, r10
-    xor edi, edi
-    test r9b, r9b
-    cmovne rdi, r8
-    shlx r9, r11, rcx
-    cmp rsi, 0x40
-    setb r8b
-    movzx r8d, r8b
+    shlx rdi, r10, r8
     xor esi, esi
-    test r8b, r8b
-    cmovne rsi, rdx
-    or rdi, rsi
+    cmp r8, 0x40
+    cmovb rsi, rdi
+    mov.q [rax], rsi
+    mov rsi, r10
+    sar rsi, 0x3f
+    shlx rdi, rsi, r8
+    xor esi, esi
+    cmp r8, 0x40
+    cmovb rsi, rdi
+    shlx r8, r10, rcx
+    xor edi, edi
+    cmp rdx, 0x40
+    cmovb rdi, r9
+    or rsi, rdi
+    xor edx, edx
     cmp rcx, 0x40
-    setb dl
-    movzx edx, dl
-    xor ecx, ecx
-    test dl, dl
-    cmovne rcx, r9
-    or rdi, rcx
-    mov rcx, r11
+    cmovb rdx, r8
+    or rsi, rdx
+    mov rcx, r10
     add rcx, 1
-    mov.q [rax + 0x8], rdi
+    mov.q [rax + 0x8], rsi
     jmp 9
 10:
-    mov.q rdi, [rip + 0xac6]
-    mov.q rsi, [rip + 0xac7]
+    mov.q rdi, [rip + 0xae3]
+    mov.q rsi, [rip + 0xae4]
     call fold
     mov.q [rsp + 0xe9], rax
-    mov.q rdi, [rip + 0xadb]
-    mov.q rsi, [rip + 0xadc]
+    mov.q rdi, [rip + 0xaf8]
+    mov.q rsi, [rip + 0xaf9]
     call fold
     mov.q [rsp + 0xe1], rax
     movabs rsi, -0x123455789abcdf0
@@ -1860,63 +1822,54 @@ main:
     movups.x [rsp + 0x91], xmm0
     xor eax, eax
 9:
-    mov r11, rax
-    imul rcx, r11, 0x10
+    mov r10, rax
+    imul rcx, r10, 0x10
     lea rax, [rsp + 0x61]
     add rax, rcx
-    imul rsi, r11, 0x28
+    imul rsi, r10, 0x28
     mov rcx, rsi
     sar rcx, 0x3f
     cmp rcx, 0
     mov rdx, -1
     mov rcx, rsi
     cmovne rcx, rdx
-    cmp rcx, 0x40
-    setb r10b
-    movzx r10d, r10b
     mov rdx, 0x40
     sub rdx, rcx
-    mov rsi, r11
+    mov rsi, r10
     sar rsi, 0x3f
     shlx rdi, rsi, rcx
     xor esi, esi
-    test r10b, r10b
-    cmovne rsi, rdi
-    mov r9, rsi
-    shrx rsi, r11, rdx
-    shlx r8, r11, rcx
-    xor edi, edi
-    test r10b, r10b
-    cmovne rdi, r8
-    mov.q [rax], rdi
-    sub rcx, 0x40
-    cmp rdx, 0x40
-    setb dl
-    movzx edx, dl
-    xor edi, edi
-    test dl, dl
-    cmovne rdi, rsi
-    mov rdx, r9
-    or rdx, rdi
-    shlx rdi, r11, rcx
     cmp rcx, 0x40
-    setb sil
-    movzx esi, sil
-    xor ecx, ecx
-    test sil, sil
-    cmovne rcx, rdi
-    or rdx, rcx
+    cmovb rsi, rdi
+    mov r9, rsi
+    shrx r8, r10, rdx
+    shlx rdi, r10, rcx
+    xor esi, esi
+    cmp rcx, 0x40
+    cmovb rsi, rdi
+    mov.q [rax], rsi
+    sub rcx, 0x40
+    xor esi, esi
+    cmp rdx, 0x40
+    cmovb rsi, r8
+    mov rdx, r9
+    or rdx, rsi
+    shlx rdi, r10, rcx
+    xor esi, esi
+    cmp rcx, 0x40
+    cmovb rsi, rdi
+    or rdx, rsi
     mov.q [rax + 0x8], rdx
-    mov.q rdi, [rip + 0xb22]
-    mov.q rsi, [rip + 0xb23]
-    mov rax, r11
+    mov.q rdi, [rip + 0xb3f]
+    mov.q rsi, [rip + 0xb40]
+    mov rax, r10
     add rax, 1
     cmp rax, 4
     jl 9
     call fold
     mov.q [rsp + 0xc9], rax
-    mov.q rdi, [rip + 0xb20]
-    mov.q rsi, [rip + 0xb21]
+    mov.q rdi, [rip + 0xb3d]
+    mov.q rsi, [rip + 0xb3e]
     call fold
     mov.q [rsp + 0xc1], rax
     movabs rsi, -0x123455789abcdf0
@@ -2144,55 +2097,44 @@ main:
     mov rdx, rsi
     sar rdx, 0x3f
     cmp rdx, 0
-    mov rdi, rsi
-    cmovne rdi, rax
-    cmp rdi, 0x40
-    setb bl
-    movzx ebx, bl
+    cmovne rsi, rax
     mov rdx, rbp
     sar rdx, 0x3f
-    shlx rdx, rdx, rdi
-    xor r11d, r11d
-    test bl, bl
-    cmovne r11, rdx
-    mov r8, 0x40
-    sub r8, rdi
-    mov rsi, rdi
-    sub rsi, 0x40
-    shrx r10, rbp, r8
-    shlx rdx, rbp, rsi
-    cmp r8, 0x40
-    setb r9b
-    movzx r9d, r9b
-    xor r8d, r8d
-    test r9b, r9b
-    cmovne r8, r10
-    mov r9, r11
-    or r9, r8
-    shlx r8, rbp, rdi
-    xor edi, edi
-    test bl, bl
-    cmovne rdi, r8
-    mov.q [rcx], rdi
+    shlx rdx, rdx, rsi
+    xor ebx, ebx
     cmp rsi, 0x40
-    setb dil
-    movzx edi, dil
+    cmovb rbx, rdx
+    mov r11, 0x40
+    sub r11, rsi
+    mov rdx, rsi
+    sub rdx, 0x40
+    shrx r9, rbp, r11
+    shlx r10, rbp, rdx
+    xor r8d, r8d
+    cmp r11, 0x40
+    cmovb r8, r9
+    mov rdi, rbx
+    or rdi, r8
+    shlx r9, rbp, rsi
+    xor r8d, r8d
+    cmp rsi, 0x40
+    cmovb r8, r9
+    mov.q [rcx], r8
     xor esi, esi
-    test dil, dil
-    cmovne rsi, rdx
-    mov rdx, r9
-    or rdx, rsi
-    mov.q [rcx + 0x8], rdx
-    mov.q rsi, [rip + 0xd19]
-    mov.q rdi, [rip + 0xd0a]
+    cmp rdx, 0x40
+    cmovb rsi, r10
+    or rdi, rsi
+    mov.q [rcx + 0x8], rdi
+    mov.q rsi, [rip + 0xd3c]
+    mov.q rdi, [rip + 0xd2d]
     mov rcx, rbp
     add rcx, 1
     cmp rcx, 4
     jl 3
     call fold
     mov.q [rsp + 0xa8], rax
-    mov.q rdi, [rip + 0xd0f]
-    mov.q rsi, [rip + 0xd10]
+    mov.q rdi, [rip + 0xd32]
+    mov.q rsi, [rip + 0xd33]
     call fold
     mov.q [rsp + 0xa0], rax
     movabs rsi, -0x123455789abcdf0

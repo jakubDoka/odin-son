@@ -634,27 +634,24 @@ main:
     call -0x186
     mov.q rax, [rsp + 0xa0]
     imul rbx, rbp
-    lea rsi, [rbx + rax + 0x3]
-    add.q rsi, [rsp + 0xa8]
+    lea rdx, [rbx + rax + 0x3]
+    add.q rdx, [rsp + 0xa8]
     mov.q [rsp + 0xc0], 1
     mov.q [rsp + 0xc8], 2
     mov.q [rsp + 0xd0], 3
     mov.q [rsp + 0xd8], 4
     xor eax, eax
 5:
-    mov rdx, rax
-    add rdx, 1
-    cmp rdx, 4
-    setge cl
-    movzx ecx, cl
-    add.q rsi, [rsp + rax*8 + 0xc0]
-    test cl, cl
-    mov rax, rdx
-    je 5
+    mov rcx, rax
+    add rcx, 1
+    add.q rdx, [rsp + rax*8 + 0xc0]
+    cmp rcx, 4
+    mov rax, rcx
+    jl 5
     mov.q rcx, [rsp + 0xc8]
     mov rax, rcx
     add rax, 4
-    lea rbp, [rsi + rax + 0xb]
+    lea rbp, [rdx + rax + 0xb]
     add rbp, rcx
     lea rax, [rsp]
     cmp rax, 0
@@ -681,7 +678,7 @@ main:
     lea rdi, [rsp + 0x58]
     mov rdx, 0x28
     lea rsi, [rsp + 0x30]
-    call -0x2b6
+    call -0x2ab
     mov.q rbx, [rsp + 0x78]
     mov rsi, 1
     mov rdi, 3
@@ -716,22 +713,19 @@ main:
     mov.q [rsp + 0x80], 2
     mov.q [rsp + 0x88], 3
     mov.q [rsp + 0x90], 4
-    mov rsi, 0x16
+    mov rdx, 0x16
     xor eax, eax
 1:
-    mov rdx, rax
-    add rdx, 1
-    cmp rdx, 4
-    setge cl
-    movzx ecx, cl
-    add.q rsi, [rsp + rax*8 + 0x78]
-    test cl, cl
-    mov rax, rdx
-    je 1
+    mov rcx, rax
+    add rcx, 1
+    add.q rdx, [rsp + rax*8 + 0x78]
+    cmp rcx, 4
+    mov rax, rcx
+    jl 1
     mov.q rcx, [rsp + 0x80]
     mov rax, rcx
     add rax, 4
-    lea rbx, [rsi + rax + 0xb]
+    lea rbx, [rdx + rax + 0xb]
     add rbx, rcx
     lea rax, [rsp + 0x50]
     cmp rax, 0
@@ -766,7 +760,7 @@ main:
     mov.q [rsp + 0x60], rax
     lea rsi, [rsp]
     mov rdx, 0x28
-    call -0x1ef
+    call -0x1e4
     movups.x xmm0, [rsp + 0x58]
     mov.q rcx, [rsp + 0x48]
     paddd xmm0, xmm0

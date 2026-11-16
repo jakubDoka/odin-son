@@ -508,56 +508,54 @@ main:
     mov rcx, rdx
     add rcx, 1
     cmp rcx, 0x10
-    jge 6
-    mov r10, 1
-    mov rcx, rdx
+    jge 5
+    mov rcx, 1
 1:
-    mov r9, rcx
-    add r9, 1
-    mov rdx, r9
-    and rdx, 1
-    cmp rdx, 0
-    setne r8b
-    movzx r8d, r8b
-    test r8b, r8b
-    mov rdx, 0x12
-    cmovne rdx, r10
-    imul rdi, rdx, 0x10
-    add rdi, 3
-    mov rsi, r9
-    and rsi, 2
+    mov r10, rdx
+    add r10, 1
+    mov rsi, r10
+    and rsi, 1
     cmp rsi, 0
-    cmovne rdx, rdi
-    imul rsi, rdx, 0x10
-    mov rdx, r9
-    and rdx, 4
-    cmp rdx, 0
-    jne 4
-    mov rdx, r9
-    and rdx, 8
-    cmp rdx, 0
+    setne r9b
+    movzx r9d, r9b
+    test r9b, r9b
+    mov rsi, 0x12
+    cmovne rsi, rcx
+    imul r8, rsi, 0x10
+    add r8, 3
+    mov rdi, r10
+    and rdi, 2
+    cmp rdi, 0
+    cmovne rsi, r8
+    imul rsi, rsi, 0x10
+    mov rdi, r10
+    and rdi, 4
+    cmp rdi, 0
     jne 3
-    test r8b, r8b
+    mov rdi, r10
+    and rdi, 8
+    cmp rdi, 0
     jne 2
+    mov rdi, rsi
+    add rdi, 6
     add rsi, 7
-    jmp 5
+    test r9b, r9b
+    cmovne rsi, rdi
+    jmp 4
 2:
-    add rsi, 6
-    jmp 5
-3:
     add rsi, 5
-    jmp 5
-4:
+    jmp 4
+3:
     add rsi, 4
-5:
+4:
     imul rax, rax, 0x101
-    imul rdx, rsi, 0x10
-    add rdx, 8
-    add rax, rdx
+    imul rsi, rsi, 0x10
+    add rsi, 8
+    add rax, rsi
     and rax, 0x7fffffff
-    add rcx, 2
-    cmp rcx, 0x10
-    mov rcx, r9
+    add rdx, 2
+    cmp rdx, 0x10
+    mov rdx, r10
     jl 1
-6:
+5:
     ret

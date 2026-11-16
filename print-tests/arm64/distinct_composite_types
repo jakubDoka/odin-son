@@ -37,18 +37,15 @@ mk:
     add x1, x1, x0
     ret
 which:
-    movz x2, #1
-    cmp x2, x1
-    b.eq 0x28
-    movz x2, #2
-    cmp x2, x1
-    b.eq 0x20
-    movn x0, #0
-    b 0x28
-5:
-    movz x1, #16
-    madd x0, x1, x0, xzr
-6:
+    movz x2, #16
+    madd x2, x2, x0, xzr
+    movn x3, #0
+    movz x4, #2
+    cmp x4, x1
+    csel x2, x2, x3, eq
+    movz x3, #1
+    cmp x3, x1
+    csel x0, x0, x2, eq
     ret
 main:
     sub sp, sp, #320
@@ -64,7 +61,7 @@ main:
     add x0, sp, #216
     str q8, [x0]
     movz x0, #3
-    bl 0xffffffc8
+    bl 0xffffffcc
     mov x19, x0
     mov x20, x1
     add x21, sp, #280
@@ -78,7 +75,7 @@ main:
     add x1, sp, #216
     add x0, sp, #232
     movz x2, #16
-    bl 0xfffffeb4
+    bl 0xfffffeb8
     add x0, x21, x22
     add x1, sp, #232
     add x1, x1, x22
@@ -103,7 +100,7 @@ main:
     add x3, x6, x3
     add x1, x3, x1
     movz x3, #0
-8:
+6:
     cmp x3, x5
     b.ge 0xf8
     madd x6, x3, x22, xzr
@@ -114,7 +111,7 @@ main:
     add x1, x1, x6
     mov x3, x7
     b 0xd0
-9:
+7:
     add x3, sp, #192
     ldr x0, [x0]
     ldr x2, [x2]
@@ -129,10 +126,10 @@ main:
     b.ne 0x130
     add x19, x0, x22
     b 0x138
-10:
+8:
     movz x1, #9
     add x19, x1, x0
-11:
+9:
     add x0, sp, #200
     add x1, sp, #72
     add x2, sp, #264
@@ -176,13 +173,13 @@ main:
     movz x2, #5
     str x2, [x0]
     add x0, sp, #112
-    bl 0xffffff50
+    bl 0xffffff54
     add x23, sp, #248
     add x22, x23, x22
     movz x2, #40
     add x1, sp, #112
     add x0, sp, #152
-    bl 0xfffffeb4
+    bl 0xfffffeb8
     ldr x21, [x21]
     str x24, [x23]
     movz x0, #64
@@ -190,11 +187,11 @@ main:
     ldr x22, [x22]
     movz x0, #3
     movz x1, #1
-    bl 0xffffffd4
+    bl 0xffffffd8
     mov x23, x0
     movz x0, #2
     movz x1, #2
-    bl 0xffffffd4
+    bl 0xffffffd8
     add x1, x19, x20
     movz x2, #47
     add x1, x1, x2
@@ -253,18 +250,15 @@ mk:
     add x1, x1, x0
     ret
 which:
-    movz x2, #1
-    cmp x2, x1
-    b.eq 0x28
+    movz x2, #16
+    madd x4, x2, x0, xzr
+    movn x3, #0
     movz x2, #2
     cmp x2, x1
-    b.eq 0x20
-    movn x0, #0
-    b 0x28
-5:
-    movz x1, #16
-    madd x0, x1, x0, xzr
-6:
+    csel x3, x4, x3, eq
+    movz x2, #1
+    cmp x2, x1
+    csel x0, x0, x3, eq
     ret
 main:
     sub sp, sp, #320
@@ -281,7 +275,7 @@ main:
     add x0, sp, #224
     str q8, [x0]
     movz x0, #3
-    bl 0xffffffc8
+    bl 0xffffffcc
     mov x24, x0
     mov x23, x1
     add x21, sp, #288
@@ -295,7 +289,7 @@ main:
     add x1, sp, #224
     add x0, sp, #240
     movz x2, #16
-    bl 0xfffffed0
+    bl 0xfffffed4
     add x2, x21, x22
     add x0, sp, #240
     add x0, x0, x22
@@ -320,7 +314,7 @@ main:
     add x3, x3, x5
     add x4, x3, x6
     movz x3, #0
-8:
+6:
     cmp x3, x0
     b.ge 0xf8
     madd x5, x3, x22, xzr
@@ -330,7 +324,7 @@ main:
     add x3, x5, x3
     add x4, x4, x6
     b 0xd4
-9:
+7:
     add x6, sp, #200
     ldr x3, [x2]
     ldr x2, [x7]
@@ -345,10 +339,10 @@ main:
     b.ne 0x130
     add x24, x2, x22
     b 0x138
-10:
+8:
     movz x1, #9
     add x24, x1, x2
-11:
+9:
     add x5, sp, #208
     add x1, sp, #80
     add x4, sp, #272
@@ -392,13 +386,13 @@ main:
     movz x0, #5
     str x0, [x4]
     add x0, sp, #120
-    bl 0xffffff50
+    bl 0xffffff54
     add x26, sp, #256
     add x19, x26, x22
     movz x2, #40
     add x1, sp, #120
     add x0, sp, #160
-    bl 0xfffffed0
+    bl 0xfffffed4
     ldr x22, [x25]
     str x20, [x26]
     movz x0, #64
@@ -406,11 +400,11 @@ main:
     ldr x19, [x19]
     movz x0, #3
     movz x1, #1
-    bl 0xffffffd4
+    bl 0xffffffd8
     mov x20, x0
     movz x0, #2
     movz x1, #2
-    bl 0xffffffd4
+    bl 0xffffffd8
     add x2, x24, x23
     movz x1, #47
     add x2, x2, x1
@@ -470,18 +464,15 @@ mk:
     add x1, x1, x0
     ret
 which:
-    movz x2, #1
-    cmp x2, x1
-    b.eq 0x28
-    movz x2, #2
-    cmp x2, x1
-    b.eq 0x20
-    movn x0, #0
-    b 0x28
-5:
-    movz x1, #16
-    madd x0, x1, x0, xzr
-6:
+    movz x2, #16
+    madd x2, x2, x0, xzr
+    movn x3, #0
+    movz x4, #2
+    cmp x4, x1
+    csel x2, x2, x3, eq
+    movz x3, #1
+    cmp x3, x1
+    csel x0, x0, x2, eq
     ret
 main:
     sub sp, sp, #304
@@ -496,7 +487,7 @@ main:
     add x0, sp, #208
     str q8, [x0]
     movz x0, #3
-    bl 0xffffffc8
+    bl 0xffffffcc
     mov x19, x0
     mov x20, x1
     add x21, sp, #272
@@ -510,7 +501,7 @@ main:
     add x1, sp, #208
     add x0, sp, #224
     movz x2, #16
-    bl 0xfffffeb4
+    bl 0xfffffeb8
     add x0, x21, x22
     add x1, sp, #224
     add x1, x1, x22
@@ -535,7 +526,7 @@ main:
     add x2, x4, x2
     add x1, x2, x1
     movz x2, #0
-8:
+6:
     cmp x2, x3
     b.ge 0xf4
     madd x4, x2, x22, xzr
@@ -546,7 +537,7 @@ main:
     add x1, x1, x4
     mov x2, x5
     b 0xcc
-9:
+7:
     add x2, sp, #184
     ldr x0, [x0]
     movz x4, #11
@@ -558,10 +549,10 @@ main:
     b.ne 0x120
     add x19, x0, x22
     b 0x128
-10:
+8:
     movz x1, #9
     add x19, x1, x0
-11:
+9:
     add x0, sp, #192
     add x1, sp, #64
     add x4, sp, #256
@@ -604,13 +595,13 @@ main:
     movz x2, #5
     str x2, [x0]
     add x0, sp, #104
-    bl 0xffffff50
+    bl 0xffffff54
     add x23, sp, #240
     add x22, x23, x22
     movz x2, #40
     add x1, sp, #104
     add x0, sp, #144
-    bl 0xfffffeb4
+    bl 0xfffffeb8
     ldr x20, [x20]
     str x24, [x23]
     movz x0, #64
@@ -618,11 +609,11 @@ main:
     ldr x22, [x22]
     movz x0, #3
     movz x1, #1
-    bl 0xffffffd4
+    bl 0xffffffd8
     mov x23, x0
     movz x0, #2
     movz x1, #2
-    bl 0xffffffd4
+    bl 0xffffffd8
     movz x1, #55
     add x1, x19, x1
     sxtw x2, w21
@@ -679,18 +670,15 @@ mk:
     add x1, x1, x0
     ret
 which:
-    movz x2, #1
-    cmp x2, x1
-    b.eq 0x28
+    movz x2, #16
+    madd x4, x2, x0, xzr
+    movn x3, #0
     movz x2, #2
     cmp x2, x1
-    b.eq 0x20
-    movn x0, #0
-    b 0x28
-5:
-    movz x1, #16
-    madd x0, x1, x0, xzr
-6:
+    csel x3, x4, x3, eq
+    movz x2, #1
+    cmp x2, x1
+    csel x0, x0, x3, eq
     ret
 main:
     sub sp, sp, #320
@@ -706,7 +694,7 @@ main:
     add x0, sp, #216
     str q8, [x0]
     movz x0, #3
-    bl 0xffffffc8
+    bl 0xffffffcc
     mov x23, x0
     mov x20, x1
     add x19, sp, #280
@@ -720,7 +708,7 @@ main:
     add x1, sp, #216
     add x0, sp, #232
     movz x2, #16
-    bl 0xfffffed0
+    bl 0xfffffed4
     add x1, x19, x21
     add x0, sp, #232
     add x0, x0, x21
@@ -745,7 +733,7 @@ main:
     add x2, x2, x4
     add x4, x2, x5
     movz x2, #0
-8:
+6:
     cmp x2, x0
     b.ge 0xf4
     madd x3, x2, x21, xzr
@@ -755,7 +743,7 @@ main:
     add x2, x3, x2
     add x4, x4, x5
     b 0xd0
-9:
+7:
     add x6, sp, #192
     ldr x3, [x1]
     movz x1, #11
@@ -767,10 +755,10 @@ main:
     b.ne 0x120
     add x20, x2, x21
     b 0x128
-10:
+8:
     movz x1, #9
     add x20, x1, x2
-11:
+9:
     add x5, sp, #200
     add x1, sp, #72
     add x4, sp, #264
@@ -813,13 +801,13 @@ main:
     movz x0, #5
     str x0, [x4]
     add x0, sp, #112
-    bl 0xffffff50
+    bl 0xffffff54
     add x25, sp, #248
     add x24, x25, x21
     movz x2, #40
     add x1, sp, #112
     add x0, sp, #152
-    bl 0xfffffed0
+    bl 0xfffffed4
     ldr x21, [x23]
     str x22, [x25]
     movz x0, #64
@@ -827,11 +815,11 @@ main:
     ldr x23, [x24]
     movz x0, #3
     movz x1, #1
-    bl 0xffffffd4
+    bl 0xffffffd8
     mov x22, x0
     movz x0, #2
     movz x1, #2
-    bl 0xffffffd4
+    bl 0xffffffd8
     movz x1, #55
     add x2, x20, x1
     sxtw x1, w19
@@ -887,18 +875,15 @@ mk:
     add x1, x1, x0
     ret
 which:
-    movz x2, #1
-    cmp x2, x1
-    b.eq 0x28
+    movz x2, #16
+    madd x4, x2, x0, xzr
+    movn x3, #0
     movz x2, #2
     cmp x2, x1
-    b.eq 0x20
-    movn x0, #0
-    b 0x28
-4:
-    movz x1, #16
-    madd x0, x1, x0, xzr
-5:
+    csel x3, x4, x3, eq
+    movz x2, #1
+    cmp x2, x1
+    csel x0, x0, x3, eq
     ret
 main:
     sub sp, sp, #288
@@ -912,7 +897,7 @@ main:
     add x0, sp, #200
     str q8, [x0]
     movz x0, #3
-    bl 0xffffffc8
+    bl 0xffffffcc
     mov x23, x0
     mov x22, x1
     add x20, sp, #248
@@ -926,7 +911,7 @@ main:
     add x1, sp, #200
     add x0, sp, #216
     movz x2, #16
-    bl 0xfffffed4
+    bl 0xfffffed8
     add x1, x20, x21
     add x0, sp, #216
     add x0, x0, x21
@@ -951,7 +936,7 @@ main:
     add x3, x3, x5
     add x6, x3, x6
     movz x3, #0
-7:
+5:
     madd x4, x3, x21, xzr
     add x4, x4, x20
     ldr x5, [x4]
@@ -971,10 +956,10 @@ main:
     b.ne 0x114
     add x20, x3, x21
     b 0x11c
-8:
+6:
     movz x1, #9
     add x20, x1, x3
-9:
+7:
     add x1, sp, #64
     str x21, [x5]
     movz x5, #32
@@ -1002,19 +987,19 @@ main:
     movz x0, #5
     str x0, [x3]
     add x0, sp, #104
-    bl 0xffffff54
+    bl 0xffffff58
     movz x2, #40
     add x1, sp, #104
     add x0, sp, #144
-    bl 0xfffffed4
+    bl 0xfffffed8
     ldr x19, [x22]
     movz x0, #3
     movz x1, #1
-    bl 0xffffffd4
+    bl 0xffffffd8
     mov x22, x0
     movz x0, #2
     movz x1, #2
-    bl 0xffffffd4
+    bl 0xffffffd8
     add x5, sp, #184
     add x4, sp, #232
     movz x1, #1

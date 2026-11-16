@@ -364,42 +364,44 @@ main:
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    mov.q rax, [rip + 0xf5b]
-    sub rax, 1
-    mov rcx, rax
-    add rcx, 1
-    cmp rcx, 0x10
-    jge 7
+    mov.q rcx, [rip + 0xf5b]
+    sub rcx, 1
+    mov rax, rcx
+    add rax, 1
+    cmp rax, 0x10
+    jge 6
+    mov rax, rcx
     xor ecx, ecx
 1:
     mov rdx, -1
-    xor edi, edi
+    xor esi, esi
 2:
-    lea rsi, [rax + rdi + 0x1]
-    mov r8, rsi
-    and r8, 3
-    cmp r8, 1
-    jne 3
-    and rsi, 0xe
-    cmp rsi, 0
-    je 6
-    jmp 4
-3:
-    cmp r8, 0
-    je 5
-4:
-    imul rdi, rdi, 3
+    lea r8, [rax + rsi + 0x1]
+    mov r9, r8
+    and r9, 3
+    imul rdi, rsi, 3
     add rdi, 0x43
     and rdi, 0xffff
-5:
+    cmp r9, 1
+    jne 3
+    and r8, 0xe
+    cmp r8, 0
+    je 5
+    jmp 4
+3:
+    cmp r9, 0
+    cmove rdi, rsi
+4:
     mov rsi, rdx
     add rsi, 2
     add rdx, 1
     cmp rsi, 2
+    mov rsi, rdi
     jl 2
-6:
+    mov rsi, rdi
+5:
     imul rdx, rcx, 0x101
-    add rdx, rdi
+    add rdx, rsi
     and rdx, 0x7fffffff
     mov rcx, rax
     add rcx, 2
@@ -408,9 +410,9 @@ main:
     mov rcx, rdx
     jl 1
     mov rax, rdx
-    add rax, rdi
-    jmp 8
-7:
+    add rax, rsi
+    jmp 7
+6:
     xor eax, eax
-8:
+7:
     ret

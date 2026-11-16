@@ -51,36 +51,31 @@ main:
     ret
 imm_cmps:
     movss.d xmm0, [rdi]
-    pxor xmm1, xmm1
     mov rax, 1
-    xor ecx, ecx
+    pxor xmm1, xmm1
     ucomiss xmm0, xmm1
-    jp 2
-    cmove rcx, rax
+    sete cl
+    jnp 2
+    mov cl, 0
 2:
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rdx
+    add rax, 2
     ucomiss xmm0, xmm1
-    jp 3
-    jne 3
+    mov rcx, rdx
+    cmovne rcx, rax
+    cmovp rcx, rax
     mov rax, rcx
-    jmp 4
-3:
-    add rcx, 2
-    mov rax, rcx
-4:
-    movss.d xmm0, [rdi]
-    mov rcx, rax
-    add rcx, 4
+    add rax, 4
     ucomiss xmm1, xmm0
-    cmovae rax, rcx
-    ucomiss xmm0, xmm1
-    jae 5
-    mov rcx, rax
-    jmp 6
-5:
+    cmovae rcx, rax
+    mov rax, rcx
     add rax, 8
-    mov rcx, rax
-6:
-    movss.d xmm0, [rdi]
+    ucomiss xmm0, xmm1
+    cmovae rcx, rax
     mov rax, rcx
     add rax, 0x10
     ucomiss xmm1, xmm0
@@ -94,34 +89,29 @@ imm_cmps:
 cmps:
     movss.d xmm1, [rdi]
     mov rax, 1
-    xor ecx, ecx
     ucomiss xmm0, xmm1
-    jp 8
-    cmove rcx, rax
-8:
+    sete cl
+    jnp 4
+    mov cl, 0
+4:
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rdx
+    add rax, 2
     ucomiss xmm0, xmm1
-    jp 9
-    jne 9
+    mov rcx, rdx
+    cmovne rcx, rax
+    cmovp rcx, rax
     mov rax, rcx
-    jmp 10
-9:
-    add rcx, 2
-    mov rax, rcx
-10:
-    movss.d xmm1, [rdi]
-    mov rcx, rax
-    add rcx, 4
+    add rax, 4
     ucomiss xmm0, xmm1
-    cmovae rax, rcx
-    ucomiss xmm1, xmm0
-    jae 11
-    mov rcx, rax
-    jmp 12
-11:
+    cmovae rcx, rax
+    mov rax, rcx
     add rax, 8
-    mov rcx, rax
-12:
-    movss.d xmm1, [rdi]
+    ucomiss xmm1, xmm0
+    cmovae rcx, rax
     mov rax, rcx
     add rax, 0x10
     ucomiss xmm0, xmm1
@@ -185,78 +175,72 @@ main:
     pop rbx
     ret
 imm_cmps:
-    movss.d xmm0, [rdi]
-    pxor xmm1, xmm1
-    mov rax, 1
-    xor edx, edx
-    ucomiss xmm0, xmm1
-    jp 2
-    cmove rdx, rax
+    movss.d xmm1, [rdi]
+    mov rdx, 1
+    pxor xmm0, xmm0
+    ucomiss xmm1, xmm0
+    sete cl
+    jnp 2
+    mov cl, 0
 2:
-    ucomiss xmm0, xmm1
-    jp 3
-    jne 3
-    jmp 4
-3:
-    add rdx, 2
-4:
-    movss.d xmm0, [rdi]
-    mov rax, rdx
-    add rax, 4
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomiss xmm1, xmm0
-    cmovae rdx, rax
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 4
     ucomiss xmm0, xmm1
-    jae 5
-    jmp 6
-5:
-    add rdx, 8
-6:
-    movss.d xmm0, [rdi]
-    mov rax, rdx
-    add rax, 0x10
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 8
     ucomiss xmm1, xmm0
-    cmova rdx, rax
-    mov rcx, rdx
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 0x10
+    ucomiss xmm0, xmm1
+    cmova rax, rcx
+    mov rcx, rax
     add rcx, 0x20
-    ucomiss xmm0, xmm1
-    mov rax, rdx
+    ucomiss xmm1, xmm0
     cmova rax, rcx
     ret
 cmps:
     movss.d xmm1, [rdi]
-    mov rax, 1
-    xor edx, edx
+    mov rdx, 1
     ucomiss xmm0, xmm1
-    jp 8
-    cmove rdx, rax
-8:
+    sete cl
+    jnp 4
+    mov cl, 0
+4:
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomiss xmm0, xmm1
-    jp 9
-    jne 9
-    jmp 10
-9:
-    add rdx, 2
-10:
-    movss.d xmm1, [rdi]
-    mov rax, rdx
-    add rax, 4
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 4
     ucomiss xmm0, xmm1
-    cmovae rdx, rax
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 8
     ucomiss xmm1, xmm0
-    jae 11
-    jmp 12
-11:
-    add rdx, 8
-12:
-    movss.d xmm1, [rdi]
-    mov rax, rdx
-    add rax, 0x10
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 0x10
     ucomiss xmm0, xmm1
-    cmova rdx, rax
-    mov rcx, rdx
+    cmova rax, rcx
+    mov rcx, rax
     add rcx, 0x20
     ucomiss xmm1, xmm0
-    mov rax, rdx
     cmova rax, rcx
     ret
 =========== OPT LEVEL: moderate-quick ===========
@@ -312,36 +296,31 @@ main:
     ret
 imm_cmps:
     movss.d xmm0, [rdi]
-    pxor xmm1, xmm1
     mov rax, 1
-    xor ecx, ecx
+    pxor xmm1, xmm1
     ucomiss xmm0, xmm1
-    jp 2
-    cmove rcx, rax
+    sete cl
+    jnp 2
+    mov cl, 0
 2:
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rdx
+    add rax, 2
     ucomiss xmm0, xmm1
-    jp 3
-    jne 3
+    mov rcx, rdx
+    cmovne rcx, rax
+    cmovp rcx, rax
     mov rax, rcx
-    jmp 4
-3:
-    add rcx, 2
-    mov rax, rcx
-4:
-    movss.d xmm0, [rdi]
-    mov rcx, rax
-    add rcx, 4
+    add rax, 4
     ucomiss xmm1, xmm0
-    cmovae rax, rcx
-    ucomiss xmm0, xmm1
-    jae 5
-    mov rcx, rax
-    jmp 6
-5:
+    cmovae rcx, rax
+    mov rax, rcx
     add rax, 8
-    mov rcx, rax
-6:
-    movss.d xmm0, [rdi]
+    ucomiss xmm0, xmm1
+    cmovae rcx, rax
     mov rax, rcx
     add rax, 0x10
     ucomiss xmm1, xmm0
@@ -355,34 +334,29 @@ imm_cmps:
 cmps:
     movss.d xmm1, [rdi]
     mov rax, 1
-    xor ecx, ecx
     ucomiss xmm0, xmm1
-    jp 8
-    cmove rcx, rax
-8:
+    sete cl
+    jnp 4
+    mov cl, 0
+4:
+    movzx ecx, cl
+    xor edx, edx
+    test cl, cl
+    cmovne rdx, rax
+    mov rax, rdx
+    add rax, 2
     ucomiss xmm0, xmm1
-    jp 9
-    jne 9
+    mov rcx, rdx
+    cmovne rcx, rax
+    cmovp rcx, rax
     mov rax, rcx
-    jmp 10
-9:
-    add rcx, 2
-    mov rax, rcx
-10:
-    movss.d xmm1, [rdi]
-    mov rcx, rax
-    add rcx, 4
+    add rax, 4
     ucomiss xmm0, xmm1
-    cmovae rax, rcx
-    ucomiss xmm1, xmm0
-    jae 11
-    mov rcx, rax
-    jmp 12
-11:
+    cmovae rcx, rax
+    mov rax, rcx
     add rax, 8
-    mov rcx, rax
-12:
-    movss.d xmm1, [rdi]
+    ucomiss xmm1, xmm0
+    cmovae rcx, rax
     mov rax, rcx
     add rax, 0x10
     ucomiss xmm0, xmm1
@@ -446,78 +420,72 @@ main:
     pop rbx
     ret
 imm_cmps:
-    movss.d xmm0, [rdi]
-    pxor xmm1, xmm1
-    mov rax, 1
-    xor edx, edx
-    ucomiss xmm0, xmm1
-    jp 2
-    cmove rdx, rax
+    movss.d xmm1, [rdi]
+    mov rdx, 1
+    pxor xmm0, xmm0
+    ucomiss xmm1, xmm0
+    sete cl
+    jnp 2
+    mov cl, 0
 2:
-    ucomiss xmm0, xmm1
-    jp 3
-    jne 3
-    jmp 4
-3:
-    add rdx, 2
-4:
-    movss.d xmm0, [rdi]
-    mov rax, rdx
-    add rax, 4
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomiss xmm1, xmm0
-    cmovae rdx, rax
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 4
     ucomiss xmm0, xmm1
-    jae 5
-    jmp 6
-5:
-    add rdx, 8
-6:
-    movss.d xmm0, [rdi]
-    mov rax, rdx
-    add rax, 0x10
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 8
     ucomiss xmm1, xmm0
-    cmova rdx, rax
-    mov rcx, rdx
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 0x10
+    ucomiss xmm0, xmm1
+    cmova rax, rcx
+    mov rcx, rax
     add rcx, 0x20
-    ucomiss xmm0, xmm1
-    mov rax, rdx
+    ucomiss xmm1, xmm0
     cmova rax, rcx
     ret
 cmps:
     movss.d xmm1, [rdi]
-    mov rax, 1
-    xor edx, edx
+    mov rdx, 1
     ucomiss xmm0, xmm1
-    jp 8
-    cmove rdx, rax
-8:
+    sete cl
+    jnp 4
+    mov cl, 0
+4:
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomiss xmm0, xmm1
-    jp 9
-    jne 9
-    jmp 10
-9:
-    add rdx, 2
-10:
-    movss.d xmm1, [rdi]
-    mov rax, rdx
-    add rax, 4
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 4
     ucomiss xmm0, xmm1
-    cmovae rdx, rax
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 8
     ucomiss xmm1, xmm0
-    jae 11
-    jmp 12
-11:
-    add rdx, 8
-12:
-    movss.d xmm1, [rdi]
-    mov rax, rdx
-    add rax, 0x10
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 0x10
     ucomiss xmm0, xmm1
-    cmova rdx, rax
-    mov rcx, rdx
+    cmova rax, rcx
+    mov rcx, rax
     add rcx, 0x20
     ucomiss xmm1, xmm0
-    mov rax, rdx
     cmova rax, rcx
     ret
 =========== OPT LEVEL: all ===========
@@ -573,78 +541,72 @@ main:
     pop rbx
     ret
 imm_cmps:
-    movss.d xmm0, [rdi]
-    pxor xmm1, xmm1
-    mov rax, 1
-    xor edx, edx
-    ucomiss xmm0, xmm1
-    jp 2
-    cmove rdx, rax
+    movss.d xmm1, [rdi]
+    mov rdx, 1
+    pxor xmm0, xmm0
+    ucomiss xmm1, xmm0
+    sete cl
+    jnp 2
+    mov cl, 0
 2:
-    ucomiss xmm0, xmm1
-    jp 3
-    jne 3
-    jmp 4
-3:
-    add rdx, 2
-4:
-    movss.d xmm0, [rdi]
-    mov rax, rdx
-    add rax, 4
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomiss xmm1, xmm0
-    cmovae rdx, rax
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 4
     ucomiss xmm0, xmm1
-    jae 5
-    jmp 6
-5:
-    add rdx, 8
-6:
-    movss.d xmm0, [rdi]
-    mov rax, rdx
-    add rax, 0x10
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 8
     ucomiss xmm1, xmm0
-    cmova rdx, rax
-    mov rcx, rdx
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 0x10
+    ucomiss xmm0, xmm1
+    cmova rax, rcx
+    mov rcx, rax
     add rcx, 0x20
-    ucomiss xmm0, xmm1
-    mov rax, rdx
+    ucomiss xmm1, xmm0
     cmova rax, rcx
     ret
 cmps:
     movss.d xmm1, [rdi]
-    mov rax, 1
-    xor edx, edx
+    mov rdx, 1
     ucomiss xmm0, xmm1
-    jp 8
-    cmove rdx, rax
-8:
+    sete cl
+    jnp 4
+    mov cl, 0
+4:
+    movzx ecx, cl
+    xor eax, eax
+    test cl, cl
+    cmovne rax, rdx
+    mov rcx, rax
+    add rcx, 2
     ucomiss xmm0, xmm1
-    jp 9
-    jne 9
-    jmp 10
-9:
-    add rdx, 2
-10:
-    movss.d xmm1, [rdi]
-    mov rax, rdx
-    add rax, 4
+    cmovne rax, rcx
+    cmovp rax, rcx
+    mov rcx, rax
+    add rcx, 4
     ucomiss xmm0, xmm1
-    cmovae rdx, rax
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 8
     ucomiss xmm1, xmm0
-    jae 11
-    jmp 12
-11:
-    add rdx, 8
-12:
-    movss.d xmm1, [rdi]
-    mov rax, rdx
-    add rax, 0x10
+    cmovae rax, rcx
+    mov rcx, rax
+    add rcx, 0x10
     ucomiss xmm0, xmm1
-    cmova rdx, rax
-    mov rcx, rdx
+    cmova rax, rcx
+    mov rcx, rax
     add rcx, 0x20
     ucomiss xmm1, xmm0
-    mov rax, rdx
     cmova rax, rcx
     ret
 =========== OPT LEVEL: aggresive ===========

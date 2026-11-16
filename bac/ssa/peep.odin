@@ -633,6 +633,38 @@ peep :: proc(
 			}
 		}
 
+		cursor := 0
+		collapse: for {
+			d := diamond_next(ctx, id, id, &cursor) or_break
+			node = expand_node(ctx, id)
+
+			for out in node.outs {
+				onode := expand_node(ctx, out.id)
+				if onode.itype == .Phi &&
+				   onode.inps[1 + d.then_idx] != onode.inps[1 + d.else_idx] {
+					continue collapse
+				}
+			}
+
+			// The kept slot must hold the If control before the heads die,
+			// otherwise the control chain above the If can be killed with them.
+			lo, hi := min(d.then_idx, d.else_idx), max(d.then_idx, d.else_idx)
+			bac.set_input(ctx, id, lo, bac.get_inputs(ctx, d.if_)[0])
+
+			node = expand_node(ctx, id)
+			ordered_remove(ctx, &node, hi)
+			for out in node.outs {
+				onode := expand_node(ctx, out.id)
+				if onode.itype == .Phi {
+					ordered_remove(ctx, &onode, hi + 1)
+					bac.worklist_add(ctx, ctx.worklist, out.id)
+				}
+			}
+
+			node = expand_node(ctx, id)
+			cursor = 0
+		}
+
 		if len(node.inps) == 0 {
 			return 0
 		}
@@ -649,35 +681,16 @@ peep :: proc(
 			return node.inps[0]
 		}
 
-		if if_, ok := select_diamond(ctx, id, id); ok {
-			has_phis := false
-			// TODO: this will be falsely flagged as alive if only the debug phy is
-			// present, although, maybe thats correct
-			for out in node.outs {
-				has_phis |= get_node(ctx, out.id).itype == .Phi
-			}
-			if !has_phis do return bac.get_inputs(ctx, if_)[0]
-		}
-
-		phi_count := 0
-		for out in node.outs {
-			onode := expand_node(ctx, out.id)
-			phi_count += int(onode.itype == .Phi)
-		}
-
-		changed := true
-
-		for changed {
-			changed = false
-
+		for {
 			node = expand_node(ctx, id)
+
+			changed := false
 
 			// TODO: remove this redundant clone
 			merge: #reverse for inp, i in slice.clone(node.inps) {
 				inode := expand_node(ctx, inp)
 				if inode.itype != .Region do continue
 
-				not_covered_count := phi_count
 				for out in inode.outs {
 					onode := expand_node(ctx, out.id)
 					if onode.itype == .Region do continue
@@ -697,12 +710,6 @@ peep :: proc(
 					if bac.get_inputs(ctx, onode.outs[0].id)[0] != id {
 						continue merge
 					}
-
-					not_covered_count -= 1
-				}
-
-				if not_covered_count != 0 {
-					continue
 				}
 
 				for iinp in inode.inps[1:] {
@@ -713,14 +720,19 @@ peep :: proc(
 					onode := expand_node(ctx, out.id)
 					if onode.itype != .Phi do continue
 
-					to_merge := expand_node(ctx, onode.inps[1 + i])
-					assert(to_merge.itype == .Phi)
+					val := onode.inps[1 + i]
+					to_merge := expand_node(ctx, val)
+					if to_merge.itype == .Phi && to_merge.inps[0] == inp {
+						for iinp in to_merge.inps[2:] {
+							bac.connect(ctx, out.id, iinp)
+						}
 
-					for iinp in to_merge.inps[2:] {
-						bac.connect(ctx, out.id, iinp)
+						bac.set_input(ctx, out.id, 1 + i, to_merge.inps[1])
+					} else {
+						for _ in inode.inps[1:] {
+							bac.connect(ctx, out.id, val)
+						}
 					}
-
-					bac.set_input(ctx, out.id, 1 + i, to_merge.inps[1])
 
 					bac.worklist_add(ctx, ctx.worklist, out.id)
 				}
@@ -730,6 +742,8 @@ peep :: proc(
 				node = expand_node(ctx, id)
 				changed = true
 			}
+
+			if !changed do break
 		}
 
 		if !ODIN_DISABLE_ASSERT {
@@ -759,41 +773,55 @@ peep :: proc(
 		}
 
 		if node.dt in ctx.select_types {
-			region := expand_node(ctx, node.inps[0])
-			if if_, ok := select_diamond(ctx, node.inps[0], id); ok {
+			changed := false
+			cursor := 0
+			for d in diamond_next(ctx, node.inps[0], id, &cursor) {
+				then_val := node.inps[1 + d.then_idx]
+				else_val := node.inps[1 + d.else_idx]
+				if then_val == else_val do continue
+
 				budget := 64
-				if !can_speculate_select_value(ctx, id, node.inps[1], &budget) ||
-				   !can_speculate_select_value(ctx, id, node.inps[2], &budget) {
+				if !can_speculate_select_value(ctx, id, then_val, &budget) ||
+				   !can_speculate_select_value(ctx, id, else_val, &budget) {
 
 					budget = 64
 					can_speculate_select_value(
 						ctx,
 						id,
-						node.inps[1],
+						then_val,
 						&budget,
 						collect_triggers = true,
 					)
 					can_speculate_select_value(
 						ctx,
 						id,
-						node.inps[2],
+						else_val,
 						&budget,
 						collect_triggers = true,
 					)
 
-					break match
+					continue
 				}
-				first_is_then := get_node(ctx, region.inps[0]).itype == .Then
+
 				sel := bac.add_select(
 					ctx,
 					"phisel",
 					node.dt,
-					node.inps[1 + int(!first_is_then)],
-					node.inps[1 + int(first_is_then)],
-					bac.get_inputs(ctx, if_)[1],
+					then_val,
+					else_val,
+					bac.get_inputs(ctx, d.if_)[1],
 				)
 				bac.worklist_add(ctx, ctx.worklist, sel)
-				return sel
+				bac.set_input(ctx, id, 1 + d.then_idx, sel)
+				bac.set_input(ctx, id, 1 + d.else_idx, sel)
+				changed = true
+			}
+
+			// The region collapses the diamond once every phi agrees on both slots.
+			if changed {
+				bac.worklist_add(ctx, ctx.worklist, node.inps[0])
+				bac.worklist_add(ctx, ctx.worklist, id)
+				return id
 			}
 		}
 	case .Select:
@@ -1477,35 +1505,60 @@ peep :: proc(
 	return nil
 }
 
-select_diamond :: proc(
+Diamond :: struct {
+	if_:      Node_ID,
+	then_idx: int,
+	else_idx: int,
+}
+
+diamond_next :: proc(
 	ctx: bac.Peep_Ctx,
 	region, root: Node_ID,
+	cursor: ^int,
 ) -> (
-	Node_ID,
-	bool,
+	d: Diamond,
+	ok: bool,
 ) {
 	rnode := expand_node(ctx, region)
-	if rnode.itype != .Region || len(rnode.inps) != 2 do return 0, false
-	lhs := expand_node(ctx, rnode.inps[0])
-	rhs := expand_node(ctx, rnode.inps[1])
-	if !((lhs.itype == .Then && rhs.itype == .Else) ||
-		   (lhs.itype == .Else && rhs.itype == .Then)) {
-		bac.peep_ctx_add_trigger(ctx, rnode.inps[0], root)
-		bac.peep_ctx_add_trigger(ctx, rnode.inps[1], root)
-		return 0, false
-	}
-	if lhs.inps[0] != rhs.inps[0] do return 0, false
-	if get_node(ctx, lhs.inps[0]).itype != .If do return 0, false
-	// Branch-pinned memory operations must not become speculative select operands.
-	for head in rnode.inps {
-		for out in bac.get_outputs(ctx, head) {
-			if out.id != region {
-				bac.peep_ctx_add_trigger(ctx, out.id, root)
-				return 0, false
+	if rnode.itype != .Region do return
+
+	HEADS :: bit_set[bac.Node_Type]{.Then, .Else}
+
+	scan: for i in cursor^ ..< len(rnode.inps) {
+		head := expand_node(ctx, rnode.inps[i])
+		if head.itype not_in HEADS {
+			bac.peep_ctx_add_trigger(ctx, rnode.inps[i], root)
+			continue
+		}
+		if get_node(ctx, head.inps[0]).itype != .If do continue
+
+		for j in i + 1 ..< len(rnode.inps) {
+			other := expand_node(ctx, rnode.inps[j])
+			if other.itype not_in HEADS ||
+			   other.itype == head.itype ||
+			   other.inps[0] != head.inps[0] {
+				continue
 			}
+
+			// Branch-pinned memory operations must not become speculative select operands.
+			for h in ([2]Node_ID{rnode.inps[i], rnode.inps[j]}) {
+				for out in bac.get_outputs(ctx, h) {
+					if out.id != region {
+						bac.peep_ctx_add_trigger(ctx, out.id, root)
+						continue scan
+					}
+				}
+			}
+
+			cursor^ = i + 1
+			d = {head.inps[0], i, j}
+			if head.itype == .Else do d.then_idx, d.else_idx = j, i
+			return d, true
 		}
 	}
-	return lhs.inps[0], true
+
+	cursor^ = len(rnode.inps)
+	return
 }
 
 can_speculate_select_value :: proc(

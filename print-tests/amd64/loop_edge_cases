@@ -26,54 +26,60 @@ main:
     cmp rcx, 0
     je 3
     mov rax, rcx
-    jmp 8
+    jmp 6
 3:
     xor edx, edx
 4:
     mov rbx, rdx
     add rbx, 1
     cmp rbx, 3
-    je 7
-    cmp rbx, 2
     je 5
     cmp rbx, 1
-    je 5
-    mov rbp, rdx
-    add rbp, 2
-    mov rsi, 2
-    jmp 6
-5:
-    mov rsi, rcx
-    mov rbp, rbx
-6:
-    mov rcx, rsi
+    sete bpl
+    movzx ebp, bpl
+    cmp rbx, 2
+    sete sil
+    movzx esi, sil
+    test bpl, bpl
+    mov rdi, 2
+    cmovne rdi, rcx
+    mov r8, rdx
+    add r8, 2
+    test bpl, bpl
+    mov rbp, r8
+    cmovne rbp, rbx
+    test sil, sil
+    cmovne rdi, rcx
+    test sil, sil
+    cmovne rbp, rbx
+    mov rcx, rdi
     mov rdx, rbp
     jmp 4
-7:
+5:
     mov rax, rcx
-8:
+6:
     cmp rax, 0
-    jne 9
-    jmp 13
-9:
+    jne 7
+    jmp 11
+7:
     xor ecx, ecx
-10:
+8:
     mov rdx, rcx
     add rdx, 1
     cmp rdx, 3
-    je 12
+    je 10
     mov rdx, rcx
     add rdx, 2
     cmp rdx, 4
-    je 11
+    je 9
     mov rcx, rdx
-    jmp 10
-11:
+    jmp 8
+9:
     mov rax, 3
-    jmp 13
-12:
+    jmp 11
+10:
     mov rax, 1
-13:
+11:
     pop rbp
     pop rbx
     ret
@@ -100,46 +106,53 @@ main:
 2:
     cmp rax, 0
     je 3
-    jmp 7
+    jmp 5
 3:
     xor ecx, ecx
 4:
-    mov rdx, rcx
-    add rdx, 1
-    cmp rdx, 3
-    je 7
-    cmp rdx, 2
+    mov r8, rcx
+    add r8, 1
+    cmp r8, 3
     je 5
-    cmp rdx, 1
-    je 5
+    cmp r8, 1
+    sete dil
+    movzx edi, dil
+    cmp r8, 2
+    sete sil
+    movzx esi, sil
+    test dil, dil
+    mov rdx, 2
+    cmovne rdx, rax
     add rcx, 2
-    mov rax, 2
-    jmp 6
-5:
-    mov rcx, rdx
-6:
+    test dil, dil
+    cmovne rcx, r8
+    test sil, sil
+    cmovne rdx, rax
+    test sil, sil
+    cmovne rcx, r8
+    mov rax, rdx
     jmp 4
-7:
+5:
     cmp rax, 0
-    jne 8
-    jmp 12
-8:
+    jne 6
+    jmp 10
+6:
     xor eax, eax
-9:
+7:
     mov rcx, rax
     add rcx, 1
     cmp rcx, 3
-    je 11
+    je 9
     add rax, 2
     cmp rax, 4
-    je 10
-    jmp 9
-10:
+    je 8
+    jmp 7
+8:
     mov rax, 3
-    jmp 12
-11:
+    jmp 10
+9:
     mov rax, 1
-12:
+10:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
@@ -169,54 +182,60 @@ main:
     cmp rcx, 0
     je 3
     mov rax, rcx
-    jmp 8
+    jmp 6
 3:
     xor edx, edx
 4:
     mov rbx, rdx
     add rbx, 1
     cmp rbx, 3
-    je 7
-    cmp rbx, 2
     je 5
     cmp rbx, 1
-    je 5
-    mov rbp, rdx
-    add rbp, 2
-    mov rsi, 2
-    jmp 6
-5:
-    mov rsi, rcx
-    mov rbp, rbx
-6:
-    mov rcx, rsi
+    sete bpl
+    movzx ebp, bpl
+    cmp rbx, 2
+    sete sil
+    movzx esi, sil
+    test bpl, bpl
+    mov rdi, 2
+    cmovne rdi, rcx
+    mov r8, rdx
+    add r8, 2
+    test bpl, bpl
+    mov rbp, r8
+    cmovne rbp, rbx
+    test sil, sil
+    cmovne rdi, rcx
+    test sil, sil
+    cmovne rbp, rbx
+    mov rcx, rdi
     mov rdx, rbp
     jmp 4
-7:
+5:
     mov rax, rcx
-8:
+6:
     cmp rax, 0
-    jne 9
-    jmp 13
-9:
+    jne 7
+    jmp 11
+7:
     xor ecx, ecx
-10:
+8:
     mov rdx, rcx
     add rdx, 1
     cmp rdx, 3
-    je 12
+    je 10
     mov rdx, rcx
     add rdx, 2
     cmp rdx, 4
-    je 11
+    je 9
     mov rcx, rdx
-    jmp 10
-11:
+    jmp 8
+9:
     mov rax, 3
-    jmp 13
-12:
+    jmp 11
+10:
     mov rax, 1
-13:
+11:
     pop rbp
     pop rbx
     ret
@@ -243,112 +262,126 @@ main:
 2:
     cmp rax, 0
     je 3
-    jmp 7
+    jmp 5
 3:
     xor ecx, ecx
 4:
-    mov rdx, rcx
-    add rdx, 1
-    cmp rdx, 3
-    je 7
-    cmp rdx, 2
-    je 5
-    cmp rdx, 1
-    je 5
-    add rcx, 2
-    mov rax, 2
-    jmp 6
-5:
-    mov rcx, rdx
-6:
-    jmp 4
-7:
-    cmp rax, 0
-    jne 8
-    jmp 12
-8:
-    xor eax, eax
-9:
-    mov rcx, rax
-    add rcx, 1
-    cmp rcx, 3
-    je 11
-    add rax, 2
-    cmp rax, 4
-    je 10
-    jmp 9
-10:
-    mov rax, 3
-    jmp 12
-11:
-    mov rax, 1
-12:
-    ret
-=========== OPT LEVEL: all ===========
-main:
-    xor ecx, ecx
-    xor edx, edx
-1:
-    mov rax, rdx
     mov r8, rcx
     add r8, 1
+    cmp r8, 3
+    je 5
     cmp r8, 1
     sete dil
     movzx edi, dil
-    add rcx, 2
     cmp r8, 2
     sete sil
     movzx esi, sil
     test dil, dil
-    mov rdx, 1
+    mov rdx, 2
     cmovne rdx, rax
+    add rcx, 2
     test dil, dil
     cmovne rcx, r8
     test sil, sil
-    je 1
-    cmp rax, 0
-    je 2
-    jmp 6
-2:
-    xor ecx, ecx
-3:
-    mov rsi, rcx
-    add rsi, 1
-    cmp rsi, 2
-    je 4
-    cmp rsi, 1
-    je 4
-    add rcx, 2
-    mov rdx, 2
-    jmp 5
-4:
-    mov rdx, rax
-    mov rcx, rsi
+    cmovne rdx, rax
+    test sil, sil
+    cmovne rcx, r8
+    mov rax, rdx
+    jmp 4
 5:
-    mov rax, rcx
-    add rax, 1
-    cmp rax, 3
-    mov rax, rdx
-    jne 3
-    mov rax, rdx
-6:
     cmp rax, 0
-    jne 7
+    jne 6
     jmp 10
-7:
+6:
     xor eax, eax
-8:
+7:
     mov rcx, rax
     add rcx, 1
     cmp rcx, 3
     je 9
     add rax, 2
     cmp rax, 4
-    jne 8
+    je 8
+    jmp 7
+8:
     mov rax, 3
     jmp 10
 9:
     mov rax, 1
 10:
+    ret
+=========== OPT LEVEL: all ===========
+main:
+    xor eax, eax
+    xor edx, edx
+1:
+    mov rcx, rdx
+    mov r8, rax
+    add r8, 1
+    cmp r8, 1
+    sete dil
+    movzx edi, dil
+    add rax, 2
+    cmp r8, 2
+    sete sil
+    movzx esi, sil
+    test dil, dil
+    mov rdx, 1
+    cmovne rdx, rcx
+    test dil, dil
+    cmovne rax, r8
+    test sil, sil
+    je 1
+    cmp rcx, 0
+    je 2
+    jmp 4
+2:
+    xor eax, eax
+3:
+    mov r8, rcx
+    mov rdi, rax
+    add rdi, 1
+    cmp rdi, 1
+    sete dl
+    movzx edx, dl
+    cmp rdi, 2
+    sete sil
+    movzx esi, sil
+    test dl, dl
+    mov rcx, 2
+    cmovne rcx, r8
+    add rax, 2
+    test dl, dl
+    cmovne rax, rdi
+    cmp rdi, 3
+    sete dl
+    movzx edx, dl
+    test sil, sil
+    cmovne rcx, r8
+    test sil, sil
+    cmovne rax, rdi
+    test dl, dl
+    je 3
+    mov rcx, r8
+4:
+    cmp rcx, 0
+    jne 5
+    mov rax, rcx
+    jmp 8
+5:
+    xor eax, eax
+6:
+    mov rcx, rax
+    add rcx, 1
+    cmp rcx, 3
+    je 7
+    add rax, 2
+    cmp rax, 4
+    jne 6
+    mov rax, 3
+    jmp 8
+7:
+    mov rax, 1
+8:
     ret
 =========== OPT LEVEL: aggresive ===========

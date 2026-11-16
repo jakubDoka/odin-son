@@ -11,198 +11,117 @@
     end
   )
   (func $test_f32 (type 1) (param f32 f32) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f32.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f32.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f32.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f32.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f32.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f32.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 6
-                local.set 2
-                br 5
-              end
-              i64.const 5
-              local.set 2
-              br 4
-            end
-            i64.const 4
-            local.set 2
-            br 3
-          end
-          i64.const 3
-          local.set 2
-          br 2
-        end
-        i64.const 2
-        local.set 2
-        br 1
-      end
-      i64.const 1
-      local.set 2
-    end
-    local.get 2
+    i64.const 1
+    i64.const 2
+    i64.const 3
+    i64.const 4
+    i64.const 5
+    i64.const 6
+    i64.const 0
+    local.get 0
+    local.get 1
+    f32.le
+    select
+    local.get 0
+    local.get 1
+    f32.gt
+    select
+    local.get 0
+    local.get 1
+    f32.ge
+    select
+    local.get 0
+    local.get 1
+    f32.lt
+    select
+    local.get 0
+    local.get 1
+    f32.ne
+    select
+    local.get 0
+    local.get 1
+    f32.eq
+    select
     return
     end
   )
   (func $test_f64 (type 2) (param f64 f64) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f64.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f64.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f64.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f64.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f64.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f64.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 60
-                local.set 2
-                br 5
-              end
-              i64.const 50
-              local.set 2
-              br 4
-            end
-            i64.const 40
-            local.set 2
-            br 3
-          end
-          i64.const 30
-          local.set 2
-          br 2
-        end
-        i64.const 20
-        local.set 2
-        br 1
-      end
-      i64.const 10
-      local.set 2
-    end
-    local.get 2
+    i64.const 10
+    i64.const 20
+    i64.const 30
+    i64.const 40
+    i64.const 50
+    i64.const 60
+    i64.const 0
+    local.get 0
+    local.get 1
+    f64.le
+    select
+    local.get 0
+    local.get 1
+    f64.gt
+    select
+    local.get 0
+    local.get 1
+    f64.ge
+    select
+    local.get 0
+    local.get 1
+    f64.lt
+    select
+    local.get 0
+    local.get 1
+    f64.ne
+    select
+    local.get 0
+    local.get 1
+    f64.eq
+    select
     return
     end
   )
   (func $test_mixed_patterns (type 3) (param f32) (result i64)
     (local i64 f32)
-    block
-      block
-        block
-          block
-            local.get 0
-            call $opaque32
-            local.set 2
-            local.get 0
-            f32.const +1
-            f32.add
-            call $opaque32
-            local.set 0
-            local.get 2
-            local.get 0
-            f32.lt
-            br_if 0
-            br 1
-          end
-          block
-            local.get 2
-            local.get 0
-            f32.le
-            br_if 0
-            br 1
-          end
-          local.get 2
-          local.get 0
-          f32.ne
-          br_if 1
-        end
-        block
-          block
-            block
-              local.get 2
-              local.get 0
-              f32.gt
-              br_if 0
-              br 1
-            end
-            block
-              local.get 2
-              local.get 0
-              f32.ge
-              br_if 0
-              br 1
-            end
-            local.get 2
-            local.get 0
-            f32.eq
-            br_if 1
-          end
-          i64.const 0
-          local.set 1
-          br 2
-        end
-        i64.const 200
-        local.set 1
-        br 1
-      end
-      i64.const 100
-      local.set 1
-    end
+    local.get 0
+    call $opaque32
+    local.set 2
+    local.get 0
+    f32.const +1
+    f32.add
+    call $opaque32
+    local.set 0
+    i64.const 100
+    i64.const 200
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.eq
+    select
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.ge
+    select
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.gt
+    select
+    local.tee 1
+    local.get 2
+    local.get 0
+    f32.ne
+    select
     local.get 1
+    local.get 2
+    local.get 0
+    f32.le
+    select
+    local.get 1
+    local.get 2
+    local.get 0
+    f32.lt
+    select
     return
     end
   )
@@ -280,198 +199,117 @@
     end
   )
   (func $test_f32 (type 1) (param f32 f32) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f32.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f32.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f32.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f32.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f32.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f32.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 6
-                local.set 2
-                br 5
-              end
-              i64.const 5
-              local.set 2
-              br 4
-            end
-            i64.const 4
-            local.set 2
-            br 3
-          end
-          i64.const 3
-          local.set 2
-          br 2
-        end
-        i64.const 2
-        local.set 2
-        br 1
-      end
-      i64.const 1
-      local.set 2
-    end
-    local.get 2
+    i64.const 1
+    i64.const 2
+    i64.const 3
+    i64.const 4
+    i64.const 5
+    i64.const 6
+    i64.const 0
+    local.get 0
+    local.get 1
+    f32.le
+    select
+    local.get 0
+    local.get 1
+    f32.gt
+    select
+    local.get 0
+    local.get 1
+    f32.ge
+    select
+    local.get 0
+    local.get 1
+    f32.lt
+    select
+    local.get 0
+    local.get 1
+    f32.ne
+    select
+    local.get 0
+    local.get 1
+    f32.eq
+    select
     return
     end
   )
   (func $test_f64 (type 2) (param f64 f64) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f64.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f64.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f64.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f64.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f64.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f64.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 60
-                local.set 2
-                br 5
-              end
-              i64.const 50
-              local.set 2
-              br 4
-            end
-            i64.const 40
-            local.set 2
-            br 3
-          end
-          i64.const 30
-          local.set 2
-          br 2
-        end
-        i64.const 20
-        local.set 2
-        br 1
-      end
-      i64.const 10
-      local.set 2
-    end
-    local.get 2
+    i64.const 10
+    i64.const 20
+    i64.const 30
+    i64.const 40
+    i64.const 50
+    i64.const 60
+    i64.const 0
+    local.get 0
+    local.get 1
+    f64.le
+    select
+    local.get 0
+    local.get 1
+    f64.gt
+    select
+    local.get 0
+    local.get 1
+    f64.ge
+    select
+    local.get 0
+    local.get 1
+    f64.lt
+    select
+    local.get 0
+    local.get 1
+    f64.ne
+    select
+    local.get 0
+    local.get 1
+    f64.eq
+    select
     return
     end
   )
   (func $test_mixed_patterns (type 3) (param f32) (result i64)
     (local i64 f32)
-    block
-      block
-        block
-          block
-            local.get 0
-            call $opaque32
-            local.set 2
-            local.get 0
-            f32.const +1
-            f32.add
-            call $opaque32
-            local.set 0
-            local.get 2
-            local.get 0
-            f32.lt
-            br_if 0
-            br 1
-          end
-          block
-            local.get 2
-            local.get 0
-            f32.le
-            br_if 0
-            br 1
-          end
-          local.get 2
-          local.get 0
-          f32.ne
-          br_if 1
-        end
-        block
-          block
-            block
-              local.get 2
-              local.get 0
-              f32.gt
-              br_if 0
-              br 1
-            end
-            block
-              local.get 2
-              local.get 0
-              f32.ge
-              br_if 0
-              br 1
-            end
-            local.get 2
-            local.get 0
-            f32.eq
-            br_if 1
-          end
-          i64.const 0
-          local.set 1
-          br 2
-        end
-        i64.const 200
-        local.set 1
-        br 1
-      end
-      i64.const 100
-      local.set 1
-    end
+    local.get 0
+    call $opaque32
+    local.set 2
+    local.get 0
+    f32.const +1
+    f32.add
+    call $opaque32
+    local.set 0
+    i64.const 100
+    i64.const 200
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.eq
+    select
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.ge
+    select
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.gt
+    select
+    local.tee 1
+    local.get 2
+    local.get 0
+    f32.ne
+    select
     local.get 1
+    local.get 2
+    local.get 0
+    f32.le
+    select
+    local.get 1
+    local.get 2
+    local.get 0
+    f32.lt
+    select
     return
     end
   )
@@ -549,198 +387,117 @@
     end
   )
   (func $test_f32 (type 1) (param f32 f32) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f32.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f32.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f32.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f32.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f32.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f32.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 6
-                local.set 2
-                br 5
-              end
-              i64.const 5
-              local.set 2
-              br 4
-            end
-            i64.const 4
-            local.set 2
-            br 3
-          end
-          i64.const 3
-          local.set 2
-          br 2
-        end
-        i64.const 2
-        local.set 2
-        br 1
-      end
-      i64.const 1
-      local.set 2
-    end
-    local.get 2
+    i64.const 1
+    i64.const 2
+    i64.const 3
+    i64.const 4
+    i64.const 5
+    i64.const 6
+    i64.const 0
+    local.get 0
+    local.get 1
+    f32.le
+    select
+    local.get 0
+    local.get 1
+    f32.gt
+    select
+    local.get 0
+    local.get 1
+    f32.ge
+    select
+    local.get 0
+    local.get 1
+    f32.lt
+    select
+    local.get 0
+    local.get 1
+    f32.ne
+    select
+    local.get 0
+    local.get 1
+    f32.eq
+    select
     return
     end
   )
   (func $test_f64 (type 2) (param f64 f64) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f64.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f64.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f64.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f64.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f64.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f64.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 60
-                local.set 2
-                br 5
-              end
-              i64.const 50
-              local.set 2
-              br 4
-            end
-            i64.const 40
-            local.set 2
-            br 3
-          end
-          i64.const 30
-          local.set 2
-          br 2
-        end
-        i64.const 20
-        local.set 2
-        br 1
-      end
-      i64.const 10
-      local.set 2
-    end
-    local.get 2
+    i64.const 10
+    i64.const 20
+    i64.const 30
+    i64.const 40
+    i64.const 50
+    i64.const 60
+    i64.const 0
+    local.get 0
+    local.get 1
+    f64.le
+    select
+    local.get 0
+    local.get 1
+    f64.gt
+    select
+    local.get 0
+    local.get 1
+    f64.ge
+    select
+    local.get 0
+    local.get 1
+    f64.lt
+    select
+    local.get 0
+    local.get 1
+    f64.ne
+    select
+    local.get 0
+    local.get 1
+    f64.eq
+    select
     return
     end
   )
   (func $test_mixed_patterns (type 3) (param f32) (result i64)
     (local i64 f32)
-    block
-      block
-        block
-          block
-            local.get 0
-            call $opaque32
-            local.set 2
-            local.get 0
-            f32.const +1
-            f32.add
-            call $opaque32
-            local.set 0
-            local.get 2
-            local.get 0
-            f32.lt
-            br_if 0
-            br 1
-          end
-          block
-            local.get 2
-            local.get 0
-            f32.le
-            br_if 0
-            br 1
-          end
-          local.get 2
-          local.get 0
-          f32.ne
-          br_if 1
-        end
-        block
-          block
-            block
-              local.get 2
-              local.get 0
-              f32.gt
-              br_if 0
-              br 1
-            end
-            block
-              local.get 2
-              local.get 0
-              f32.ge
-              br_if 0
-              br 1
-            end
-            local.get 2
-            local.get 0
-            f32.eq
-            br_if 1
-          end
-          i64.const 0
-          local.set 1
-          br 2
-        end
-        i64.const 200
-        local.set 1
-        br 1
-      end
-      i64.const 100
-      local.set 1
-    end
+    local.get 0
+    call $opaque32
+    local.set 2
+    local.get 0
+    f32.const +1
+    f32.add
+    call $opaque32
+    local.set 0
+    i64.const 100
+    i64.const 200
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.eq
+    select
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.ge
+    select
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.gt
+    select
+    local.tee 1
+    local.get 2
+    local.get 0
+    f32.ne
+    select
     local.get 1
+    local.get 2
+    local.get 0
+    f32.le
+    select
+    local.get 1
+    local.get 2
+    local.get 0
+    f32.lt
+    select
     return
     end
   )
@@ -818,198 +575,117 @@
     end
   )
   (func $test_f32 (type 1) (param f32 f32) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f32.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f32.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f32.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f32.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f32.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f32.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 6
-                local.set 2
-                br 5
-              end
-              i64.const 5
-              local.set 2
-              br 4
-            end
-            i64.const 4
-            local.set 2
-            br 3
-          end
-          i64.const 3
-          local.set 2
-          br 2
-        end
-        i64.const 2
-        local.set 2
-        br 1
-      end
-      i64.const 1
-      local.set 2
-    end
-    local.get 2
+    i64.const 1
+    i64.const 2
+    i64.const 3
+    i64.const 4
+    i64.const 5
+    i64.const 6
+    i64.const 0
+    local.get 0
+    local.get 1
+    f32.le
+    select
+    local.get 0
+    local.get 1
+    f32.gt
+    select
+    local.get 0
+    local.get 1
+    f32.ge
+    select
+    local.get 0
+    local.get 1
+    f32.lt
+    select
+    local.get 0
+    local.get 1
+    f32.ne
+    select
+    local.get 0
+    local.get 1
+    f32.eq
+    select
     return
     end
   )
   (func $test_f64 (type 2) (param f64 f64) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f64.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f64.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f64.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f64.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f64.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f64.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 60
-                local.set 2
-                br 5
-              end
-              i64.const 50
-              local.set 2
-              br 4
-            end
-            i64.const 40
-            local.set 2
-            br 3
-          end
-          i64.const 30
-          local.set 2
-          br 2
-        end
-        i64.const 20
-        local.set 2
-        br 1
-      end
-      i64.const 10
-      local.set 2
-    end
-    local.get 2
+    i64.const 10
+    i64.const 20
+    i64.const 30
+    i64.const 40
+    i64.const 50
+    i64.const 60
+    i64.const 0
+    local.get 0
+    local.get 1
+    f64.le
+    select
+    local.get 0
+    local.get 1
+    f64.gt
+    select
+    local.get 0
+    local.get 1
+    f64.ge
+    select
+    local.get 0
+    local.get 1
+    f64.lt
+    select
+    local.get 0
+    local.get 1
+    f64.ne
+    select
+    local.get 0
+    local.get 1
+    f64.eq
+    select
     return
     end
   )
   (func $test_mixed_patterns (type 3) (param f32) (result i64)
     (local i64 f32)
-    block
-      block
-        block
-          block
-            local.get 0
-            call $opaque32
-            local.set 2
-            local.get 0
-            f32.const +1
-            f32.add
-            call $opaque32
-            local.set 0
-            local.get 2
-            local.get 0
-            f32.lt
-            br_if 0
-            br 1
-          end
-          block
-            local.get 2
-            local.get 0
-            f32.le
-            br_if 0
-            br 1
-          end
-          local.get 2
-          local.get 0
-          f32.ne
-          br_if 1
-        end
-        block
-          block
-            block
-              local.get 2
-              local.get 0
-              f32.gt
-              br_if 0
-              br 1
-            end
-            block
-              local.get 2
-              local.get 0
-              f32.ge
-              br_if 0
-              br 1
-            end
-            local.get 2
-            local.get 0
-            f32.eq
-            br_if 1
-          end
-          i64.const 0
-          local.set 1
-          br 2
-        end
-        i64.const 200
-        local.set 1
-        br 1
-      end
-      i64.const 100
-      local.set 1
-    end
+    local.get 0
+    call $opaque32
+    local.set 2
+    local.get 0
+    f32.const +1
+    f32.add
+    call $opaque32
+    local.set 0
+    i64.const 100
+    i64.const 200
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.eq
+    select
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.ge
+    select
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.gt
+    select
+    local.tee 1
+    local.get 2
+    local.get 0
+    f32.ne
+    select
     local.get 1
+    local.get 2
+    local.get 0
+    f32.le
+    select
+    local.get 1
+    local.get 2
+    local.get 0
+    f32.lt
+    select
     return
     end
   )
@@ -1087,198 +763,117 @@
     end
   )
   (func $test_f32 (type 1) (param f32 f32) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f32.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f32.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f32.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f32.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f32.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f32.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 6
-                local.set 2
-                br 5
-              end
-              i64.const 5
-              local.set 2
-              br 4
-            end
-            i64.const 4
-            local.set 2
-            br 3
-          end
-          i64.const 3
-          local.set 2
-          br 2
-        end
-        i64.const 2
-        local.set 2
-        br 1
-      end
-      i64.const 1
-      local.set 2
-    end
-    local.get 2
+    i64.const 1
+    i64.const 2
+    i64.const 3
+    i64.const 4
+    i64.const 5
+    i64.const 6
+    i64.const 0
+    local.get 0
+    local.get 1
+    f32.le
+    select
+    local.get 0
+    local.get 1
+    f32.gt
+    select
+    local.get 0
+    local.get 1
+    f32.ge
+    select
+    local.get 0
+    local.get 1
+    f32.lt
+    select
+    local.get 0
+    local.get 1
+    f32.ne
+    select
+    local.get 0
+    local.get 1
+    f32.eq
+    select
     return
     end
   )
   (func $test_f64 (type 2) (param f64 f64) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f64.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f64.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f64.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f64.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f64.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f64.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 60
-                local.set 2
-                br 5
-              end
-              i64.const 50
-              local.set 2
-              br 4
-            end
-            i64.const 40
-            local.set 2
-            br 3
-          end
-          i64.const 30
-          local.set 2
-          br 2
-        end
-        i64.const 20
-        local.set 2
-        br 1
-      end
-      i64.const 10
-      local.set 2
-    end
-    local.get 2
+    i64.const 10
+    i64.const 20
+    i64.const 30
+    i64.const 40
+    i64.const 50
+    i64.const 60
+    i64.const 0
+    local.get 0
+    local.get 1
+    f64.le
+    select
+    local.get 0
+    local.get 1
+    f64.gt
+    select
+    local.get 0
+    local.get 1
+    f64.ge
+    select
+    local.get 0
+    local.get 1
+    f64.lt
+    select
+    local.get 0
+    local.get 1
+    f64.ne
+    select
+    local.get 0
+    local.get 1
+    f64.eq
+    select
     return
     end
   )
   (func $test_mixed_patterns (type 3) (param f32) (result i64)
     (local i64 f32)
-    block
-      block
-        block
-          block
-            local.get 0
-            call $opaque32
-            local.set 2
-            local.get 0
-            f32.const +1
-            f32.add
-            call $opaque32
-            local.set 0
-            local.get 2
-            local.get 0
-            f32.lt
-            br_if 0
-            br 1
-          end
-          block
-            local.get 2
-            local.get 0
-            f32.le
-            br_if 0
-            br 1
-          end
-          local.get 2
-          local.get 0
-          f32.ne
-          br_if 1
-        end
-        block
-          block
-            block
-              local.get 2
-              local.get 0
-              f32.gt
-              br_if 0
-              br 1
-            end
-            block
-              local.get 2
-              local.get 0
-              f32.ge
-              br_if 0
-              br 1
-            end
-            local.get 2
-            local.get 0
-            f32.eq
-            br_if 1
-          end
-          i64.const 0
-          local.set 1
-          br 2
-        end
-        i64.const 200
-        local.set 1
-        br 1
-      end
-      i64.const 100
-      local.set 1
-    end
+    local.get 0
+    call $opaque32
+    local.set 2
+    local.get 0
+    f32.const +1
+    f32.add
+    call $opaque32
+    local.set 0
+    i64.const 100
+    i64.const 200
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.eq
+    select
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.ge
+    select
+    i64.const 0
+    local.get 2
+    local.get 0
+    f32.gt
+    select
+    local.tee 1
+    local.get 2
+    local.get 0
+    f32.ne
+    select
     local.get 1
+    local.get 2
+    local.get 0
+    f32.le
+    select
+    local.get 1
+    local.get 2
+    local.get 0
+    f32.lt
+    select
     return
     end
   )
@@ -1349,130 +944,72 @@
   (type (;1;) (func (param f64 f64) (result i64)))
   (type (;2;) (func (result i64)))
   (func $test_f32 (type 0) (param f32 f32) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f32.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f32.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f32.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f32.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f32.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f32.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 6
-                local.set 2
-                br 5
-              end
-              i64.const 5
-              local.set 2
-              br 4
-            end
-            i64.const 4
-            local.set 2
-            br 3
-          end
-          i64.const 3
-          local.set 2
-          br 2
-        end
-        i64.const 2
-        local.set 2
-        br 1
-      end
-      i64.const 1
-      local.set 2
-    end
-    local.get 2
+    i64.const 1
+    i64.const 2
+    i64.const 3
+    i64.const 4
+    i64.const 5
+    i64.const 6
+    i64.const 0
+    local.get 0
+    local.get 1
+    f32.le
+    select
+    local.get 0
+    local.get 1
+    f32.gt
+    select
+    local.get 0
+    local.get 1
+    f32.ge
+    select
+    local.get 0
+    local.get 1
+    f32.lt
+    select
+    local.get 0
+    local.get 1
+    f32.ne
+    select
+    local.get 0
+    local.get 1
+    f32.eq
+    select
     return
     end
   )
   (func $test_f64 (type 1) (param f64 f64) (result i64)
-    (local i64)
-    block
-      block
-        local.get 0
-        local.get 1
-        f64.eq
-        br_if 0
-        block
-          local.get 0
-          local.get 1
-          f64.ne
-          br_if 0
-          block
-            local.get 0
-            local.get 1
-            f64.lt
-            br_if 0
-            block
-              local.get 0
-              local.get 1
-              f64.ge
-              br_if 0
-              block
-                local.get 0
-                local.get 1
-                f64.gt
-                br_if 0
-                block
-                  local.get 0
-                  local.get 1
-                  f64.le
-                  br_if 0
-                  i64.const 0
-                  local.set 2
-                  br 6
-                end
-                i64.const 60
-                local.set 2
-                br 5
-              end
-              i64.const 50
-              local.set 2
-              br 4
-            end
-            i64.const 40
-            local.set 2
-            br 3
-          end
-          i64.const 30
-          local.set 2
-          br 2
-        end
-        i64.const 20
-        local.set 2
-        br 1
-      end
-      i64.const 10
-      local.set 2
-    end
-    local.get 2
+    i64.const 10
+    i64.const 20
+    i64.const 30
+    i64.const 40
+    i64.const 50
+    i64.const 60
+    i64.const 0
+    local.get 0
+    local.get 1
+    f64.le
+    select
+    local.get 0
+    local.get 1
+    f64.gt
+    select
+    local.get 0
+    local.get 1
+    f64.ge
+    select
+    local.get 0
+    local.get 1
+    f64.lt
+    select
+    local.get 0
+    local.get 1
+    f64.ne
+    select
+    local.get 0
+    local.get 1
+    f64.eq
+    select
     return
     end
   )

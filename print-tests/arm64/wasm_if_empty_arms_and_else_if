@@ -635,7 +635,7 @@ main:
     movz x11, #0
     add x0, x14, x13
     cmp x0, x12
-    b.ge 6
+    b.ge 5
     movz x10, #65535
     movk x10, #32767, lsl #16
     movz x9, #2
@@ -649,39 +649,38 @@ main:
     movz x1, #8
     movz x15, #0
 1:
+    mov x19, x15
     add x0, x14, x13
-    and x16, x0, x13
-    cmp x16, x11
-    cset w19, ne
-    cmp w19, #0
-    csel x18, x13, x7, ne
-    madd x16, x18, x12, xzr
-    add x17, x16, x6
-    and x16, x0, x9
-    cmp x16, x11
-    csel x16, x17, x18, ne
-    madd x17, x16, x12, xzr
-    and x16, x0, x5
-    cmp x16, x11
-    b.ne 4
-    and x16, x0, x1
-    cmp x16, x11
-    b.ne 3
-    cmp w19, #0
-    b.ne 2
-    add x17, x2, x17
-    b 5
-2:
-    add x17, x3, x17
-    b 5
-3:
-    add x17, x4, x17
-    b 5
-4:
-    add x17, x17, x5
-5:
-    madd x16, x15, x8, xzr
+    and x15, x0, x13
+    cmp x15, x11
+    cset w18, ne
+    cmp w18, #0
+    csel x17, x13, x7, ne
     madd x15, x17, x12, xzr
+    add x16, x15, x6
+    and x15, x0, x9
+    cmp x15, x11
+    csel x15, x16, x17, ne
+    madd x17, x15, x12, xzr
+    and x15, x0, x5
+    cmp x15, x11
+    b.ne 3
+    and x15, x0, x1
+    cmp x15, x11
+    b.ne 2
+    add x16, x3, x17
+    add x15, x2, x17
+    cmp w18, #0
+    csel x15, x16, x15, ne
+    b 4
+2:
+    add x15, x4, x17
+    b 4
+3:
+    add x15, x17, x5
+4:
+    madd x16, x19, x8, xzr
+    madd x15, x15, x12, xzr
     add x15, x15, x1
     add x15, x16, x15
     and x16, x15, x10
@@ -691,10 +690,10 @@ main:
     mov x14, x0
     b.lt 1
     mov x0, x16
-    b 7
-6:
+    b 6
+5:
     movz x0, #0
-7:
+6:
     ldr x19, [xzr]
     add sp, sp, #16
     ret

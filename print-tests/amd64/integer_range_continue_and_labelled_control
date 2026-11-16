@@ -2,15 +2,15 @@
 main:
     push rbx
     push rbp
-    movabs rax, 0x7fffffffffffffff
-    xor ecx, ecx
+    movabs rcx, 0x7fffffffffffffff
+    xor eax, eax
     xor edx, edx
     mov rbx, 2
 1:
     cmp rbx, 6
     jge 7
     imul rbp, rdx, 0xa
-    mov rsi, rcx
+    mov rsi, rax
     xor edi, edi
 2:
     cmp rdi, 3
@@ -21,7 +21,7 @@ main:
     add r8, rdi
     add r8, rbp
     add r8, rsi
-    cmp rdi, rax
+    cmp rdi, rcx
     je 3
     mov r9, rdi
     add r9, 1
@@ -41,41 +41,46 @@ main:
     add rsi, 1
     mov rdi, rdx
     add rdi, 1
-    mov rcx, rbp
+    mov rax, rbp
     mov rdx, rdi
     mov rbx, rsi
     jmp 1
 7:
     xor edx, edx
     xor ebx, ebx
+    mov rbp, rax
 8:
     cmp rdx, 5
-    jg 12
+    jg 13
     cmp rdx, 1
-    je 9
+    je 10
     cmp rdx, 4
-    je 12
-    mov rbp, rdx
-    add rbp, rbx
-    add rbp, rcx
-    jmp 10
+    je 9
+    mov rax, rdx
+    add rax, rbx
+    add rax, rbp
+    mov rsi, rax
+    jmp 11
 9:
-    mov rbp, rcx
-10:
-    cmp rdx, rax
-    je 11
-    mov rsi, rbx
-    add rsi, 1
-    add rdx, 1
-    mov rbx, rsi
-    mov rcx, rbp
-    jmp 8
-11:
     mov rax, rbp
-    jmp 13
+    jmp 14
+10:
+    mov rsi, rbp
+11:
+    cmp rdx, rcx
+    je 12
+    mov rdi, rbx
+    add rdi, 1
+    add rdx, 1
+    mov rbx, rdi
+    mov rbp, rsi
+    jmp 8
 12:
-    mov rax, rcx
+    mov rax, rsi
+    jmp 14
 13:
+    mov rax, rbp
+14:
     pop rbp
     pop rbx
     ret
@@ -119,44 +124,47 @@ main:
     xor eax, eax
 7:
     cmp rcx, 5
-    jg 11
+    jg 12
     cmp rcx, 1
-    je 8
+    je 9
     cmp rcx, 4
-    je 11
+    je 8
     mov rdx, rcx
     add rdx, rax
     add rdx, rdi
-    jmp 9
+    jmp 10
 8:
-    mov rdx, rdi
+    mov rax, rdi
+    jmp 13
 9:
+    mov rdx, rdi
+10:
     cmp rcx, r9
-    je 10
+    je 11
     add rax, 1
     add rcx, 1
     mov rdi, rdx
     jmp 7
-10:
-    mov rax, rdx
-    jmp 12
 11:
-    mov rax, rdi
+    mov rax, rdx
+    jmp 13
 12:
+    mov rax, rdi
+13:
     ret
 =========== OPT LEVEL: moderate-quick ===========
 main:
     push rbx
     push rbp
-    movabs rax, 0x7fffffffffffffff
-    xor ecx, ecx
+    movabs rcx, 0x7fffffffffffffff
+    xor eax, eax
     xor edx, edx
     mov rbx, 2
 1:
     cmp rbx, 6
     jge 7
     imul rbp, rdx, 0xa
-    mov rsi, rcx
+    mov rsi, rax
     xor edi, edi
 2:
     cmp rdi, 3
@@ -167,7 +175,7 @@ main:
     add r8, rdi
     add r8, rbp
     add r8, rsi
-    cmp rdi, rax
+    cmp rdi, rcx
     je 3
     mov r9, rdi
     add r9, 1
@@ -187,41 +195,46 @@ main:
     add rsi, 1
     mov rdi, rdx
     add rdi, 1
-    mov rcx, rbp
+    mov rax, rbp
     mov rdx, rdi
     mov rbx, rsi
     jmp 1
 7:
     xor edx, edx
     xor ebx, ebx
+    mov rbp, rax
 8:
     cmp rdx, 5
-    jg 12
+    jg 13
     cmp rdx, 1
-    je 9
+    je 10
     cmp rdx, 4
-    je 12
-    mov rbp, rdx
-    add rbp, rbx
-    add rbp, rcx
-    jmp 10
+    je 9
+    mov rax, rdx
+    add rax, rbx
+    add rax, rbp
+    mov rsi, rax
+    jmp 11
 9:
-    mov rbp, rcx
-10:
-    cmp rdx, rax
-    je 11
-    mov rsi, rbx
-    add rsi, 1
-    add rdx, 1
-    mov rbx, rsi
-    mov rcx, rbp
-    jmp 8
-11:
     mov rax, rbp
-    jmp 13
+    jmp 14
+10:
+    mov rsi, rbp
+11:
+    cmp rdx, rcx
+    je 12
+    mov rdi, rbx
+    add rdi, 1
+    add rdx, 1
+    mov rbx, rdi
+    mov rbp, rsi
+    jmp 8
 12:
-    mov rax, rcx
+    mov rax, rsi
+    jmp 14
 13:
+    mov rax, rbp
+14:
     pop rbp
     pop rbx
     ret
@@ -265,30 +278,33 @@ main:
     xor eax, eax
 7:
     cmp rcx, 5
-    jg 11
+    jg 12
     cmp rcx, 1
-    je 8
+    je 9
     cmp rcx, 4
-    je 11
+    je 8
     mov rdx, rcx
     add rdx, rax
     add rdx, rdi
-    jmp 9
+    jmp 10
 8:
-    mov rdx, rdi
+    mov rax, rdi
+    jmp 13
 9:
+    mov rdx, rdi
+10:
     cmp rcx, r9
-    je 10
+    je 11
     add rax, 1
     add rcx, 1
     mov rdi, rdx
     jmp 7
-10:
-    mov rax, rdx
-    jmp 12
 11:
-    mov rax, rdi
+    mov rax, rdx
+    jmp 13
 12:
+    mov rax, rdi
+13:
     ret
 =========== OPT LEVEL: all ===========
 main:
@@ -330,18 +346,21 @@ main:
     xor eax, eax
 6:
     cmp rcx, 5
-    jg 9
+    jg 10
     cmp rcx, 1
-    je 7
+    je 8
     cmp rcx, 4
-    je 9
+    je 7
     mov rsi, rcx
     add rsi, rax
     add rsi, rdi
-    jmp 8
+    jmp 9
 7:
-    mov rsi, rdi
+    mov rax, rdi
+    jmp 11
 8:
+    mov rsi, rdi
+9:
     mov rdx, rcx
     add rdx, 1
     add rax, 1
@@ -350,9 +369,9 @@ main:
     mov rcx, rdx
     jne 6
     mov rax, rsi
-    jmp 10
-9:
-    mov rax, rdi
+    jmp 11
 10:
+    mov rax, rdi
+11:
     ret
 =========== OPT LEVEL: aggresive ===========

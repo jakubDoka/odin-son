@@ -6,51 +6,49 @@ next:
     ret
 classify:
     push rbx
-    imul rcx, rdi, 3
-    cmp rcx, 0x30
-    jg 4
-    mov rdx, rcx
+    push rbp
+    imul rax, rdi, 3
+    mov rcx, rax
+    sub rcx, 0x30
+    mov rdx, rax
     add rdx, rdi
-    cmp rdx, 0x10
-    jg 3
     mov rbx, rdx
-    sub rbx, 1
-    cmp rbx, 0
-    jl 2
-    mov rax, rcx
-    add rax, rdx
-    add rax, rbx
-    jmp 5
-2:
-    mov rax, rbx
-    imul rax, rcx
-    jmp 5
-3:
+    add rbx, rax
+    mov rbp, rdx
+    sub rbp, 1
+    mov rsi, rbp
+    imul rsi, rax
+    mov rdi, rax
+    add rdi, rdx
+    add rdi, rbp
+    cmp rbp, 0
+    mov rbp, rdi
+    cmovl rbp, rsi
+    cmp rdx, 0x10
+    mov rdx, rbp
+    cmovg rdx, rbx
+    cmp rax, 0x30
     mov rax, rdx
-    add rax, rcx
-    jmp 5
-4:
-    mov rax, rcx
-    sub rax, 0x30
-5:
+    cmovg rax, rcx
+    pop rbp
     pop rbx
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rax, [rip + 0xeb6]
+    mov.q rax, [rip + 0xebe]
     sub rax, 2
     mov rcx, rax
     xor edx, edx
-7:
+3:
     mov rbx, rdx
     mov rbp, rcx
-    mov.q rsi, [rip + 0xe9c]
+    mov.q rsi, [rip + 0xea4]
     mov rax, rsi
     add rax, 0x14
     cmp rbp, rax
-    jge 8
+    jge 4
     mov rdi, rbp
     call classify
     mov rdi, rbx
@@ -59,19 +57,19 @@ main:
     add rbp, 1
     mov rcx, rbp
     mov rdx, rax
-    jmp 7
-8:
+    jmp 3
+4:
     mov rax, rsi
     add rax, 5
     cmp rax, 0
-    jne 9
+    jne 5
     mov rcx, rbx
-    jmp 10
-9:
+    jmp 6
+5:
     mov rdx, rbx
     add rdx, rax
     mov rcx, rdx
-10:
+6:
     mov rbx, rcx
     mov.q [rsp], rsi
     lea rdi, [rsp]
@@ -81,7 +79,7 @@ main:
     lea rdi, [rsp]
     call next
     mov.q rax, [rsp]
-    mov.q rcx, [rip + 0xe13]
+    mov.q rcx, [rip + 0xe1b]
     mov rdx, rbx
     add rdx, 0x1100
     add rbx, 0x100
@@ -97,30 +95,30 @@ main:
     add rdx, rax
     mov rax, rdx
     cmp rsi, 0
-    jg 11
+    jg 7
     mov rdx, rax
-    jmp 15
-11:
+    jmp 11
+7:
     imul rbx, rsi, 2
     cmp rbx, 2
-    je 12
+    je 8
     mov rdx, rax
-    jmp 15
-12:
+    jmp 11
+8:
     add rbx, 0x40
     cmp rbx, 0x42
-    je 13
+    je 9
     mov rbp, rax
-    jmp 14
-13:
+    jmp 10
+9:
     add rax, rbx
     mov rbp, rax
-14:
+10:
     mov rax, rbp
     lea rcx, [rcx + rsi*2 + 0x1]
     add rax, rcx
     mov rdx, rax
-15:
+11:
     mov rax, rdx
     add rsp, 8
     pop rbp
@@ -133,64 +131,58 @@ next:
     mov.q [rdi], rax
     ret
 classify:
-    imul rcx, rdi, 3
-    cmp rcx, 0x30
-    jg 4
-    mov rax, rcx
-    add rax, rdi
-    cmp rax, 0x10
-    jg 3
-    mov rdx, rax
+    imul r10, rdi, 3
+    mov r9, r10
+    sub r9, 0x30
+    mov r8, r10
+    add r8, rdi
+    mov rsi, r8
+    add rsi, r10
+    mov rdx, r8
     sub rdx, 1
-    cmp rdx, 0
-    jl 2
-    add rcx, rax
-    mov rax, rcx
+    mov rcx, rdx
+    imul rcx, r10
+    mov rax, r10
+    add rax, r8
     add rax, rdx
-    jmp 5
-2:
-    mov rax, rdx
-    imul rax, rcx
-    jmp 5
-3:
-    add rax, rcx
-    jmp 5
-4:
-    mov rax, rcx
-    sub rax, 0x30
-5:
+    cmp rdx, 0
+    cmovl rax, rcx
+    cmp r8, 0x10
+    cmovg rax, rsi
+    cmp r10, 0x30
+    cmovg rax, r9
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rax, [rip + 0xeda]
+    mov.q rax, [rip + 0xeec]
     sub rax, 2
     xor ecx, ecx
-7:
+3:
     mov rbp, rcx
     mov rbx, rax
-    mov.q rdx, [rip + 0xec3]
+    mov.q rdx, [rip + 0xed5]
     mov rcx, rdx
     add rcx, 0x14
     cmp rbx, rcx
-    jge 8
+    jge 4
     mov rdi, rbx
     call classify
     mov rcx, rbp
     add rcx, rax
     mov rax, rbx
     add rax, 1
-    jmp 7
-8:
+    jmp 3
+4:
     mov rcx, rdx
     add rcx, 5
     cmp rcx, 0
-    jne 9
-    jmp 10
-9:
+    jne 5
+    jmp 6
+5:
     add rbp, rcx
-10:
+6:
     mov.q [rsp], rdx
     lea rdi, [rsp]
     call next
@@ -199,7 +191,7 @@ main:
     lea rdi, [rsp]
     call next
     mov.q r8, [rsp]
-    mov.q rdi, [rip + 0xe4c]
+    mov.q rdi, [rip + 0xe5e]
     mov rcx, rbp
     add rcx, 0x1100
     mov rax, rbp
@@ -214,24 +206,24 @@ main:
     cmove rax, rcx
     add rax, r8
     cmp rsi, 0
-    jg 11
-    jmp 15
-11:
+    jg 7
+    jmp 11
+7:
     imul rcx, rsi, 2
     cmp rcx, 2
-    je 12
-    jmp 15
-12:
+    je 8
+    jmp 11
+8:
     add rcx, 0x40
     cmp rcx, 0x42
-    je 13
-    jmp 14
-13:
+    je 9
+    jmp 10
+9:
     add rax, rcx
-14:
+10:
     lea rcx, [rdi + rsi*2 + 0x1]
     add rax, rcx
-15:
+11:
     add rsp, 8
     pop rbp
     pop rbx
@@ -244,51 +236,49 @@ next:
     ret
 classify:
     push rbx
-    imul rcx, rdi, 3
-    cmp rcx, 0x30
-    jg 4
-    mov rdx, rcx
+    push rbp
+    imul rax, rdi, 3
+    mov rcx, rax
+    sub rcx, 0x30
+    mov rdx, rax
     add rdx, rdi
-    cmp rdx, 0x10
-    jg 3
     mov rbx, rdx
-    sub rbx, 1
-    cmp rbx, 0
-    jl 2
-    mov rax, rcx
-    add rax, rdx
-    add rax, rbx
-    jmp 5
-2:
-    mov rax, rbx
-    imul rax, rcx
-    jmp 5
-3:
+    add rbx, rax
+    mov rbp, rdx
+    sub rbp, 1
+    mov rsi, rbp
+    imul rsi, rax
+    mov rdi, rax
+    add rdi, rdx
+    add rdi, rbp
+    cmp rbp, 0
+    mov rbp, rdi
+    cmovl rbp, rsi
+    cmp rdx, 0x10
+    mov rdx, rbp
+    cmovg rdx, rbx
+    cmp rax, 0x30
     mov rax, rdx
-    add rax, rcx
-    jmp 5
-4:
-    mov rax, rcx
-    sub rax, 0x30
-5:
+    cmovg rax, rcx
+    pop rbp
     pop rbx
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rax, [rip + 0xeb6]
+    mov.q rax, [rip + 0xebe]
     sub rax, 2
     mov rcx, rax
     xor edx, edx
-7:
+3:
     mov rbx, rdx
     mov rbp, rcx
-    mov.q rsi, [rip + 0xe9c]
+    mov.q rsi, [rip + 0xea4]
     mov rax, rsi
     add rax, 0x14
     cmp rbp, rax
-    jge 8
+    jge 4
     mov rdi, rbp
     call classify
     mov rdi, rbx
@@ -297,19 +287,19 @@ main:
     add rbp, 1
     mov rcx, rbp
     mov rdx, rax
-    jmp 7
-8:
+    jmp 3
+4:
     mov rax, rsi
     add rax, 5
     cmp rax, 0
-    jne 9
+    jne 5
     mov rcx, rbx
-    jmp 10
-9:
+    jmp 6
+5:
     mov rdx, rbx
     add rdx, rax
     mov rcx, rdx
-10:
+6:
     mov rbx, rcx
     mov.q [rsp], rsi
     lea rdi, [rsp]
@@ -319,7 +309,7 @@ main:
     lea rdi, [rsp]
     call next
     mov.q rax, [rsp]
-    mov.q rcx, [rip + 0xe13]
+    mov.q rcx, [rip + 0xe1b]
     mov rdx, rbx
     add rdx, 0x1100
     add rbx, 0x100
@@ -335,30 +325,30 @@ main:
     add rdx, rax
     mov rax, rdx
     cmp rsi, 0
-    jg 11
+    jg 7
     mov rdx, rax
-    jmp 15
-11:
+    jmp 11
+7:
     imul rbx, rsi, 2
     cmp rbx, 2
-    je 12
+    je 8
     mov rdx, rax
-    jmp 15
-12:
+    jmp 11
+8:
     add rbx, 0x40
     cmp rbx, 0x42
-    je 13
+    je 9
     mov rbp, rax
-    jmp 14
-13:
+    jmp 10
+9:
     add rax, rbx
     mov rbp, rax
-14:
+10:
     mov rax, rbp
     lea rcx, [rcx + rsi*2 + 0x1]
     add rax, rcx
     mov rdx, rax
-15:
+11:
     mov rax, rdx
     add rsp, 8
     pop rbp
@@ -371,64 +361,58 @@ next:
     mov.q [rdi], rax
     ret
 classify:
-    imul rcx, rdi, 3
-    cmp rcx, 0x30
-    jg 4
-    mov rax, rcx
-    add rax, rdi
-    cmp rax, 0x10
-    jg 3
-    mov rdx, rax
+    imul r10, rdi, 3
+    mov r9, r10
+    sub r9, 0x30
+    mov r8, r10
+    add r8, rdi
+    mov rsi, r8
+    add rsi, r10
+    mov rdx, r8
     sub rdx, 1
-    cmp rdx, 0
-    jl 2
-    add rcx, rax
-    mov rax, rcx
+    mov rcx, rdx
+    imul rcx, r10
+    mov rax, r10
+    add rax, r8
     add rax, rdx
-    jmp 5
-2:
-    mov rax, rdx
-    imul rax, rcx
-    jmp 5
-3:
-    add rax, rcx
-    jmp 5
-4:
-    mov rax, rcx
-    sub rax, 0x30
-5:
+    cmp rdx, 0
+    cmovl rax, rcx
+    cmp r8, 0x10
+    cmovg rax, rsi
+    cmp r10, 0x30
+    cmovg rax, r9
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rax, [rip + 0xeda]
+    mov.q rax, [rip + 0xeec]
     sub rax, 2
     xor ecx, ecx
-7:
+3:
     mov rbp, rcx
     mov rbx, rax
-    mov.q rdx, [rip + 0xec3]
+    mov.q rdx, [rip + 0xed5]
     mov rcx, rdx
     add rcx, 0x14
     cmp rbx, rcx
-    jge 8
+    jge 4
     mov rdi, rbx
     call classify
     mov rcx, rbp
     add rcx, rax
     mov rax, rbx
     add rax, 1
-    jmp 7
-8:
+    jmp 3
+4:
     mov rcx, rdx
     add rcx, 5
     cmp rcx, 0
-    jne 9
-    jmp 10
-9:
+    jne 5
+    jmp 6
+5:
     add rbp, rcx
-10:
+6:
     mov.q [rsp], rdx
     lea rdi, [rsp]
     call next
@@ -437,7 +421,7 @@ main:
     lea rdi, [rsp]
     call next
     mov.q r8, [rsp]
-    mov.q rdi, [rip + 0xe4c]
+    mov.q rdi, [rip + 0xe5e]
     mov rcx, rbp
     add rcx, 0x1100
     mov rax, rbp
@@ -452,24 +436,24 @@ main:
     cmove rax, rcx
     add rax, r8
     cmp rsi, 0
-    jg 11
-    jmp 15
-11:
+    jg 7
+    jmp 11
+7:
     imul rcx, rsi, 2
     cmp rcx, 2
-    je 12
-    jmp 15
-12:
+    je 8
+    jmp 11
+8:
     add rcx, 0x40
     cmp rcx, 0x42
-    je 13
-    jmp 14
-13:
+    je 9
+    jmp 10
+9:
     add rax, rcx
-14:
+10:
     lea rcx, [rdi + rsi*2 + 0x1]
     add rax, rcx
-15:
+11:
     add rsp, 8
     pop rbp
     pop rbx
@@ -481,64 +465,58 @@ next:
     mov.q [rdi], rax
     ret
 classify:
-    imul rcx, rdi, 3
-    cmp rcx, 0x30
-    jg 4
-    mov rax, rcx
-    add rax, rdi
-    cmp rax, 0x10
-    jg 3
-    mov rdx, rax
+    imul r10, rdi, 3
+    mov r9, r10
+    sub r9, 0x30
+    mov r8, r10
+    add r8, rdi
+    mov rsi, r8
+    add rsi, r10
+    mov rdx, r8
     sub rdx, 1
-    cmp rdx, 0
-    jl 2
-    add rcx, rax
-    mov rax, rcx
+    mov rcx, rdx
+    imul rcx, r10
+    mov rax, r10
+    add rax, r8
     add rax, rdx
-    jmp 5
-2:
-    mov rax, rdx
-    imul rax, rcx
-    jmp 5
-3:
-    add rax, rcx
-    jmp 5
-4:
-    mov rax, rcx
-    sub rax, 0x30
-5:
+    cmp rdx, 0
+    cmovl rax, rcx
+    cmp r8, 0x10
+    cmovg rax, rsi
+    cmp r10, 0x30
+    cmovg rax, r9
     ret
 main:
     push rbx
     push rbp
     sub rsp, 8
-    mov.q rax, [rip + 0xeda]
+    mov.q rax, [rip + 0xeec]
     sub rax, 2
     xor ecx, ecx
-7:
+3:
     mov rbp, rcx
     mov rbx, rax
-    mov.q rdx, [rip + 0xec3]
+    mov.q rdx, [rip + 0xed5]
     mov rcx, rdx
     add rcx, 0x14
     cmp rbx, rcx
-    jge 8
+    jge 4
     mov rdi, rbx
     call classify
     mov rcx, rbp
     add rcx, rax
     mov rax, rbx
     add rax, 1
-    jmp 7
-8:
+    jmp 3
+4:
     mov rcx, rdx
     add rcx, 5
     cmp rcx, 0
-    jne 9
-    jmp 10
-9:
+    jne 5
+    jmp 6
+5:
     add rbp, rcx
-10:
+6:
     mov.q [rsp], rdx
     lea rdi, [rsp]
     call next
@@ -547,7 +525,7 @@ main:
     lea rdi, [rsp]
     call next
     mov.q r8, [rsp]
-    mov.q rdi, [rip + 0xe4c]
+    mov.q rdi, [rip + 0xe5e]
     mov rcx, rbp
     add rcx, 0x1100
     mov rax, rbp
@@ -562,119 +540,112 @@ main:
     cmove rax, rcx
     add rax, r8
     cmp rsi, 0
-    jg 11
-    jmp 15
-11:
+    jg 7
+    jmp 11
+7:
     imul rcx, rsi, 2
     cmp rcx, 2
-    je 12
-    jmp 15
-12:
+    je 8
+    jmp 11
+8:
     add rcx, 0x40
     cmp rcx, 0x42
-    je 13
-    jmp 14
-13:
+    je 9
+    jmp 10
+9:
     add rax, rcx
-14:
+10:
     lea rcx, [rdi + rsi*2 + 0x1]
     add rax, rcx
-15:
+11:
     add rsp, 8
     pop rbp
     pop rbx
     ret
 =========== OPT LEVEL: aggresive ===========
 main:
-    mov.q rax, [rip + 0xf5b]
-    mov rcx, rax
-    sub rcx, 2
-    mov r11, rax
-    add r11, 0x14
-    mov r10, rax
-    add r10, 5
-    cmp rcx, r11
-    jge 6
-    xor esi, esi
+    push rbx
+    push rbp
+    mov.q rcx, [rip + 0xf57]
+    mov rax, rcx
+    sub rax, 2
+    mov rbp, rcx
+    add rbp, 0x14
+    mov rsi, rax
+    xor edx, edx
 1:
-    imul r9, rcx, 3
-    cmp r9, 0x30
-    jg 4
-    mov r8, r9
-    add r8, rcx
-    cmp r8, 0x10
-    jg 3
-    mov rdx, r8
-    sub rdx, 1
+    mov rax, rdx
+    imul rbx, rsi, 3
+    mov r11, rbx
+    sub r11, 0x30
+    mov r10, rbx
+    add r10, rsi
+    mov r9, r10
+    add r9, rbx
+    mov rdi, r10
+    sub rdi, 1
+    mov rdx, rdi
+    imul rdx, rbx
+    mov r8, rbx
+    add r8, r10
+    add r8, rdi
+    cmp rdi, 0
+    cmovl r8, rdx
+    cmp r10, 0x10
+    cmovg r8, r9
+    cmp rbx, 0x30
+    cmovg r8, r11
+    cmp rsi, rbp
+    setge dil
+    movzx edi, dil
+    mov rdx, rax
+    add rdx, r8
+    add rsi, 1
+    test dil, dil
+    je 1
+    mov rdx, rcx
+    add rdx, 5
     cmp rdx, 0
-    jl 2
-    mov rdi, r9
-    add rdi, r8
-    add rdi, rdx
-    jmp 5
+    jne 2
+    jmp 3
 2:
-    mov rdi, rdx
-    imul rdi, r9
-    jmp 5
+    add rax, rdx
 3:
-    mov rdi, r8
-    add rdi, r9
-    jmp 5
+    mov r8, rcx
+    add r8, 0x20
+    mov rdi, rcx
+    add rdi, 1
+    mov rsi, rax
+    add rsi, 0x1100
+    add rax, 0x100
+    mov rdx, rcx
+    add rdx, 0x10
+    cmp rdx, 0x10
+    cmove rax, rsi
+    mov rdx, rax
+    add rdx, 0x2000
+    cmp r8, 0x20
+    cmove rax, rdx
+    add rax, r8
+    cmp rdi, 0
+    jg 4
+    jmp 8
 4:
-    mov rdi, r9
-    sub rdi, 0x30
+    imul rdx, rdi, 2
+    cmp rdx, 2
+    je 5
+    jmp 8
 5:
-    add rcx, 1
-    mov rdx, rsi
-    add rdx, rdi
-    cmp rcx, r11
-    mov rsi, rdx
-    jl 1
-    mov rcx, rdx
-    add rcx, r10
+    add rdx, 0x40
+    cmp rdx, 0x42
+    je 6
     jmp 7
 6:
-    mov rcx, r10
-    xor edx, edx
+    add rax, rdx
 7:
-    mov r8, rax
-    add r8, 0x20
-    mov rdi, rax
-    add rdi, 1
-    cmp r10, 0
-    cmovne rdx, rcx
-    mov rsi, rdx
-    add rsi, 0x1100
-    add rdx, 0x100
-    mov rcx, rax
-    add rcx, 0x10
-    cmp rcx, 0x10
-    cmove rdx, rsi
-    mov rcx, rdx
-    add rcx, 0x2000
-    cmp r8, 0x20
-    cmove rdx, rcx
-    add rdx, r8
-    cmp rdi, 0
-    jg 8
-    mov rax, rdx
-    jmp 12
-8:
-    imul rcx, rdi, 2
-    cmp rcx, 2
-    je 9
-    mov rax, rdx
-    jmp 12
-9:
-    add rcx, 0x40
-    cmp rcx, 0x42
-    je 10
-    jmp 11
-10:
-    add rdx, rcx
-11:
-    lea rcx, [rax + rdi*2 + 0x1]
-    mov rax, rdx
+    lea rcx, [rcx + rdi*2 + 0x1]
     add rax, rcx
-12:
+8:
+    pop rbp
+    pop rbx
     ret

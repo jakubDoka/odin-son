@@ -2,111 +2,73 @@
 opaque32:
     ret
 test_f32:
-    fcmp s0, s1
-    b.eq 0x60
-    fcmp s0, s1
-    b.ne 0x58
-    fcmp s0, s1
-    b.mi 0x50
-    fcmp s0, s1
-    b.ge 0x48
-    fcmp s0, s1
-    b.gt 0x40
-    fcmp s0, s1
-    b.ls 0x38
-    movz x0, #0
-    b 7
-2:
-    movz x0, #6
-    b 7
-3:
-    movz x0, #5
-    b 7
-4:
-    movz x0, #4
-    b 7
-5:
-    movz x0, #3
-    b 7
-6:
-    movz x0, #2
-    b 7
-7:
     movz x0, #1
-8:
+    movz x1, #2
+    movz x2, #3
+    movz x3, #6
+    movz x4, #4
+    movz x5, #5
+    movz x6, #0
+    fcmp s0, s1
+    csel x3, x3, x6, ls
+    fcmp s0, s1
+    csel x3, x5, x3, gt
+    fcmp s0, s1
+    csel x3, x4, x3, ge
+    fcmp s0, s1
+    csel x2, x2, x3, mi
+    fcmp s0, s1
+    csel x1, x1, x2, ne
+    fcmp s0, s1
+    csel x0, x0, x1, eq
     ret
 test_f64:
-    fcmp d0, d1
-    b.eq 0x60
-    fcmp d0, d1
-    b.ne 0x58
-    fcmp d0, d1
-    b.mi 0x50
-    fcmp d0, d1
-    b.ge 0x48
-    fcmp d0, d1
-    b.gt 0x40
-    fcmp d0, d1
-    b.ls 0x38
-    movz x0, #0
-    b 7
-10:
-    movz x0, #60
-    b 7
-11:
-    movz x0, #50
-    b 7
-12:
-    movz x0, #40
-    b 7
-13:
-    movz x0, #30
-    b 7
-14:
-    movz x0, #20
-    b 7
-15:
     movz x0, #10
+    movz x1, #20
+    movz x2, #30
+    movz x3, #60
+    movz x4, #40
+    movz x5, #50
+    movz x6, #0
+    fcmp d0, d1
+    csel x3, x3, x6, ls
+    fcmp d0, d1
+    csel x3, x5, x3, gt
+    fcmp d0, d1
+    csel x3, x4, x3, ge
+    fcmp d0, d1
+    csel x2, x2, x3, mi
+    fcmp d0, d1
+    csel x1, x1, x2, ne
+    fcmp d0, d1
+    csel x0, x0, x1, eq
     ret
 test_mixed_patterns:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     orr v8.16b, v0.16b, v0.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xffffff2c
+    bl 0xffffff5c
     orr v9.16b, v0.16b, v0.16b
-    adr x0, 0xe90
+    adr x0, 0xec0
     ldr s0, [x0]
     fadd s0, s0, s8
-    bl 0xffffff2c
-    fcmp s9, s0
-    b.mi 0x34
-    b 0x48
-17:
-    fcmp s9, s0
-    b.ls 0x40
-    b 0x48
-18:
-    fcmp s9, s0
-    b.ne 0x78
-19:
-    fcmp s9, s0
-    b.gt 5
-    b 8
-    fcmp s9, s0
-    b.ge 0x60
-    b 8
-20:
-    fcmp s9, s0
-    b.eq 0x70
-    movz x0, #0
-    b 0x7c
-21:
-    movz x0, #200
-    b 0x7c
-22:
+    bl 0xffffff5c
     movz x0, #100
-23:
+    movz x1, #200
+    movz x2, #0
+    fcmp s9, s0
+    csel x1, x1, x2, eq
+    fcmp s9, s0
+    csel x1, x1, x2, ge
+    fcmp s9, s0
+    csel x1, x1, x2, gt
+    fcmp s9, s0
+    csel x0, x0, x1, ne
+    fcmp s9, s0
+    csel x0, x0, x1, ls
+    fcmp s9, s0
+    csel x0, x0, x1, mi
     ldp x29, x30, [xzr]
     add sp, sp, #16
     ret
@@ -119,47 +81,47 @@ main:
     str x23, [xzr, #32]
     str x24, [xzr, #40]
     stp x29, x30, [xzr, #48]
-    adr x0, 0xe0c
+    adr x0, 0xe54
     ldr s0, [x0]
     orr v8.16b, v0.16b, v0.16b
-    adr x0, 0xe10
+    adr x0, 0xe58
     ldr s0, [x0]
     orr v9.16b, v0.16b, v0.16b
     orr v0.16b, v8.16b, v8.16b
     orr v1.16b, v9.16b, v9.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x19, x0
     orr v1.16b, v9.16b, v9.16b
     orr v0.16b, v9.16b, v9.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x20, x0
-    adr x0, 0xe14
+    adr x0, 0xe5c
     ldr s0, [x0]
     orr v1.16b, v8.16b, v8.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x21, x0
-    adr x0, 0xe18
+    adr x0, 0xe60
     ldr d0, [x0]
     orr v8.16b, v0.16b, v0.16b
-    adr x0, 0xe20
+    adr x0, 0xe68
     ldr d0, [x0]
     orr v9.16b, v0.16b, v0.16b
     orr v0.16b, v8.16b, v8.16b
     orr v1.16b, v9.16b, v9.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x22, x0
     orr v1.16b, v9.16b, v9.16b
     orr v0.16b, v9.16b, v9.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x23, x0
-    adr x0, 0xe28
+    adr x0, 0xe70
     ldr d0, [x0]
     orr v1.16b, v8.16b, v8.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x24, x0
-    adr x0, 0xe30
+    adr x0, 0xe78
     ldr s0, [x0]
-    bl 0xffffff78
+    bl 0xffffff90
     add x1, x19, x20
     add x1, x1, x21
     add x1, x1, x22
@@ -179,111 +141,73 @@ main:
 opaque32:
     ret
 test_f32:
-    fcmp s0, s1
-    b.eq 0x60
-    fcmp s0, s1
-    b.ne 0x58
-    fcmp s0, s1
-    b.mi 0x50
-    fcmp s0, s1
-    b.ge 0x48
-    fcmp s0, s1
-    b.gt 0x40
-    fcmp s0, s1
-    b.ls 0x38
+    movz x6, #1
+    movz x5, #2
+    movz x4, #3
+    movz x3, #6
+    movz x2, #4
+    movz x1, #5
     movz x0, #0
-    b 7
-2:
-    movz x0, #6
-    b 7
-3:
-    movz x0, #5
-    b 7
-4:
-    movz x0, #4
-    b 7
-5:
-    movz x0, #3
-    b 7
-6:
-    movz x0, #2
-    b 7
-7:
-    movz x0, #1
-8:
+    fcmp s0, s1
+    csel x0, x3, x0, ls
+    fcmp s0, s1
+    csel x0, x1, x0, gt
+    fcmp s0, s1
+    csel x0, x2, x0, ge
+    fcmp s0, s1
+    csel x0, x4, x0, mi
+    fcmp s0, s1
+    csel x0, x5, x0, ne
+    fcmp s0, s1
+    csel x0, x6, x0, eq
     ret
 test_f64:
-    fcmp d0, d1
-    b.eq 0x60
-    fcmp d0, d1
-    b.ne 0x58
-    fcmp d0, d1
-    b.mi 0x50
-    fcmp d0, d1
-    b.ge 0x48
-    fcmp d0, d1
-    b.gt 0x40
-    fcmp d0, d1
-    b.ls 0x38
+    movz x6, #10
+    movz x5, #20
+    movz x4, #30
+    movz x3, #60
+    movz x2, #40
+    movz x1, #50
     movz x0, #0
-    b 7
-10:
-    movz x0, #60
-    b 7
-11:
-    movz x0, #50
-    b 7
-12:
-    movz x0, #40
-    b 7
-13:
-    movz x0, #30
-    b 7
-14:
-    movz x0, #20
-    b 7
-15:
-    movz x0, #10
+    fcmp d0, d1
+    csel x0, x3, x0, ls
+    fcmp d0, d1
+    csel x0, x1, x0, gt
+    fcmp d0, d1
+    csel x0, x2, x0, ge
+    fcmp d0, d1
+    csel x0, x4, x0, mi
+    fcmp d0, d1
+    csel x0, x5, x0, ne
+    fcmp d0, d1
+    csel x0, x6, x0, eq
     ret
 test_mixed_patterns:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     orr v8.16b, v0.16b, v0.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xffffff2c
+    bl 0xffffff5c
     orr v9.16b, v0.16b, v0.16b
-    adr x0, 0xeac
+    adr x0, 0xedc
     ldr s0, [x0]
     fadd s0, s0, s8
-    bl 0xffffff2c
-    fcmp s9, s0
-    b.mi 0x34
-    b 0x48
-17:
-    fcmp s9, s0
-    b.ls 0x40
-    b 0x48
-18:
-    fcmp s9, s0
-    b.ne 0x78
-19:
-    fcmp s9, s0
-    b.gt 5
-    b 8
-    fcmp s9, s0
-    b.ge 0x60
-    b 8
-20:
-    fcmp s9, s0
-    b.eq 0x70
-    movz x0, #0
-    b 0x7c
-21:
+    bl 0xffffff5c
+    movz x2, #100
     movz x0, #200
-    b 0x7c
-22:
-    movz x0, #100
-23:
+    movz x1, #0
+    fcmp s9, s0
+    csel x0, x0, x1, eq
+    fcmp s9, s0
+    csel x0, x0, x1, ge
+    fcmp s9, s0
+    csel x1, x0, x1, gt
+    fcmp s9, s0
+    csel x0, x2, x1, ne
+    fcmp s9, s0
+    csel x0, x0, x1, ls
+    fcmp s9, s0
+    csel x0, x0, x1, mi
     ldp x29, x30, [xzr]
     add sp, sp, #16
     ret
@@ -296,43 +220,43 @@ main:
     str x23, [xzr, #32]
     str x24, [xzr, #40]
     stp x29, x30, [xzr, #48]
-    adr x0, 0xe28
+    adr x0, 0xe70
     ldr s9, [x0]
-    adr x0, 0xe2c
+    adr x0, 0xe74
     ldr s8, [x0]
     orr v0.16b, v9.16b, v9.16b
     orr v1.16b, v8.16b, v8.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x24, x0
     orr v1.16b, v8.16b, v8.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x23, x0
-    adr x0, 0xe30
+    adr x0, 0xe78
     ldr s0, [x0]
     orr v1.16b, v9.16b, v9.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x22, x0
-    adr x0, 0xe34
+    adr x0, 0xe7c
     ldr d9, [x0]
-    adr x0, 0xe3c
+    adr x0, 0xe84
     ldr d8, [x0]
     orr v0.16b, v9.16b, v9.16b
     orr v1.16b, v8.16b, v8.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x21, x0
     orr v1.16b, v8.16b, v8.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x20, x0
-    adr x0, 0xe44
+    adr x0, 0xe8c
     ldr d0, [x0]
     orr v1.16b, v9.16b, v9.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x19, x0
-    adr x0, 0xe4c
+    adr x0, 0xe94
     ldr s0, [x0]
-    bl 0xffffff78
+    bl 0xffffff90
     add x2, x24, x23
     add x2, x2, x22
     add x2, x2, x21
@@ -352,111 +276,73 @@ main:
 opaque32:
     ret
 test_f32:
-    fcmp s0, s1
-    b.eq 0x60
-    fcmp s0, s1
-    b.ne 0x58
-    fcmp s0, s1
-    b.mi 0x50
-    fcmp s0, s1
-    b.ge 0x48
-    fcmp s0, s1
-    b.gt 0x40
-    fcmp s0, s1
-    b.ls 0x38
-    movz x0, #0
-    b 7
-2:
-    movz x0, #6
-    b 7
-3:
-    movz x0, #5
-    b 7
-4:
-    movz x0, #4
-    b 7
-5:
-    movz x0, #3
-    b 7
-6:
-    movz x0, #2
-    b 7
-7:
     movz x0, #1
-8:
+    movz x1, #2
+    movz x2, #3
+    movz x3, #6
+    movz x4, #4
+    movz x5, #5
+    movz x6, #0
+    fcmp s0, s1
+    csel x3, x3, x6, ls
+    fcmp s0, s1
+    csel x3, x5, x3, gt
+    fcmp s0, s1
+    csel x3, x4, x3, ge
+    fcmp s0, s1
+    csel x2, x2, x3, mi
+    fcmp s0, s1
+    csel x1, x1, x2, ne
+    fcmp s0, s1
+    csel x0, x0, x1, eq
     ret
 test_f64:
-    fcmp d0, d1
-    b.eq 0x60
-    fcmp d0, d1
-    b.ne 0x58
-    fcmp d0, d1
-    b.mi 0x50
-    fcmp d0, d1
-    b.ge 0x48
-    fcmp d0, d1
-    b.gt 0x40
-    fcmp d0, d1
-    b.ls 0x38
-    movz x0, #0
-    b 7
-10:
-    movz x0, #60
-    b 7
-11:
-    movz x0, #50
-    b 7
-12:
-    movz x0, #40
-    b 7
-13:
-    movz x0, #30
-    b 7
-14:
-    movz x0, #20
-    b 7
-15:
     movz x0, #10
+    movz x1, #20
+    movz x2, #30
+    movz x3, #60
+    movz x4, #40
+    movz x5, #50
+    movz x6, #0
+    fcmp d0, d1
+    csel x3, x3, x6, ls
+    fcmp d0, d1
+    csel x3, x5, x3, gt
+    fcmp d0, d1
+    csel x3, x4, x3, ge
+    fcmp d0, d1
+    csel x2, x2, x3, mi
+    fcmp d0, d1
+    csel x1, x1, x2, ne
+    fcmp d0, d1
+    csel x0, x0, x1, eq
     ret
 test_mixed_patterns:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     orr v8.16b, v0.16b, v0.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xffffff2c
+    bl 0xffffff5c
     orr v9.16b, v0.16b, v0.16b
-    adr x0, 0xe90
+    adr x0, 0xec0
     ldr s0, [x0]
     fadd s0, s0, s8
-    bl 0xffffff2c
-    fcmp s9, s0
-    b.mi 0x34
-    b 0x48
-17:
-    fcmp s9, s0
-    b.ls 0x40
-    b 0x48
-18:
-    fcmp s9, s0
-    b.ne 0x78
-19:
-    fcmp s9, s0
-    b.gt 5
-    b 8
-    fcmp s9, s0
-    b.ge 0x60
-    b 8
-20:
-    fcmp s9, s0
-    b.eq 0x70
-    movz x0, #0
-    b 0x7c
-21:
-    movz x0, #200
-    b 0x7c
-22:
+    bl 0xffffff5c
     movz x0, #100
-23:
+    movz x1, #200
+    movz x2, #0
+    fcmp s9, s0
+    csel x1, x1, x2, eq
+    fcmp s9, s0
+    csel x1, x1, x2, ge
+    fcmp s9, s0
+    csel x1, x1, x2, gt
+    fcmp s9, s0
+    csel x0, x0, x1, ne
+    fcmp s9, s0
+    csel x0, x0, x1, ls
+    fcmp s9, s0
+    csel x0, x0, x1, mi
     ldp x29, x30, [xzr]
     add sp, sp, #16
     ret
@@ -469,47 +355,47 @@ main:
     str x23, [xzr, #32]
     str x24, [xzr, #40]
     stp x29, x30, [xzr, #48]
-    adr x0, 0xe0c
+    adr x0, 0xe54
     ldr s0, [x0]
     orr v8.16b, v0.16b, v0.16b
-    adr x0, 0xe10
+    adr x0, 0xe58
     ldr s0, [x0]
     orr v9.16b, v0.16b, v0.16b
     orr v0.16b, v8.16b, v8.16b
     orr v1.16b, v9.16b, v9.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x19, x0
     orr v1.16b, v9.16b, v9.16b
     orr v0.16b, v9.16b, v9.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x20, x0
-    adr x0, 0xe14
+    adr x0, 0xe5c
     ldr s0, [x0]
     orr v1.16b, v8.16b, v8.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x21, x0
-    adr x0, 0xe18
+    adr x0, 0xe60
     ldr d0, [x0]
     orr v8.16b, v0.16b, v0.16b
-    adr x0, 0xe20
+    adr x0, 0xe68
     ldr d0, [x0]
     orr v9.16b, v0.16b, v0.16b
     orr v0.16b, v8.16b, v8.16b
     orr v1.16b, v9.16b, v9.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x22, x0
     orr v1.16b, v9.16b, v9.16b
     orr v0.16b, v9.16b, v9.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x23, x0
-    adr x0, 0xe28
+    adr x0, 0xe70
     ldr d0, [x0]
     orr v1.16b, v8.16b, v8.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x24, x0
-    adr x0, 0xe30
+    adr x0, 0xe78
     ldr s0, [x0]
-    bl 0xffffff78
+    bl 0xffffff90
     add x1, x19, x20
     add x1, x1, x21
     add x1, x1, x22
@@ -529,111 +415,73 @@ main:
 opaque32:
     ret
 test_f32:
-    fcmp s0, s1
-    b.eq 0x60
-    fcmp s0, s1
-    b.ne 0x58
-    fcmp s0, s1
-    b.mi 0x50
-    fcmp s0, s1
-    b.ge 0x48
-    fcmp s0, s1
-    b.gt 0x40
-    fcmp s0, s1
-    b.ls 0x38
+    movz x6, #1
+    movz x5, #2
+    movz x4, #3
+    movz x3, #6
+    movz x2, #4
+    movz x1, #5
     movz x0, #0
-    b 7
-2:
-    movz x0, #6
-    b 7
-3:
-    movz x0, #5
-    b 7
-4:
-    movz x0, #4
-    b 7
-5:
-    movz x0, #3
-    b 7
-6:
-    movz x0, #2
-    b 7
-7:
-    movz x0, #1
-8:
+    fcmp s0, s1
+    csel x0, x3, x0, ls
+    fcmp s0, s1
+    csel x0, x1, x0, gt
+    fcmp s0, s1
+    csel x0, x2, x0, ge
+    fcmp s0, s1
+    csel x0, x4, x0, mi
+    fcmp s0, s1
+    csel x0, x5, x0, ne
+    fcmp s0, s1
+    csel x0, x6, x0, eq
     ret
 test_f64:
-    fcmp d0, d1
-    b.eq 0x60
-    fcmp d0, d1
-    b.ne 0x58
-    fcmp d0, d1
-    b.mi 0x50
-    fcmp d0, d1
-    b.ge 0x48
-    fcmp d0, d1
-    b.gt 0x40
-    fcmp d0, d1
-    b.ls 0x38
+    movz x6, #10
+    movz x5, #20
+    movz x4, #30
+    movz x3, #60
+    movz x2, #40
+    movz x1, #50
     movz x0, #0
-    b 7
-10:
-    movz x0, #60
-    b 7
-11:
-    movz x0, #50
-    b 7
-12:
-    movz x0, #40
-    b 7
-13:
-    movz x0, #30
-    b 7
-14:
-    movz x0, #20
-    b 7
-15:
-    movz x0, #10
+    fcmp d0, d1
+    csel x0, x3, x0, ls
+    fcmp d0, d1
+    csel x0, x1, x0, gt
+    fcmp d0, d1
+    csel x0, x2, x0, ge
+    fcmp d0, d1
+    csel x0, x4, x0, mi
+    fcmp d0, d1
+    csel x0, x5, x0, ne
+    fcmp d0, d1
+    csel x0, x6, x0, eq
     ret
 test_mixed_patterns:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     orr v8.16b, v0.16b, v0.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xffffff2c
+    bl 0xffffff5c
     orr v9.16b, v0.16b, v0.16b
-    adr x0, 0xeac
+    adr x0, 0xedc
     ldr s0, [x0]
     fadd s0, s0, s8
-    bl 0xffffff2c
-    fcmp s9, s0
-    b.mi 0x34
-    b 0x48
-17:
-    fcmp s9, s0
-    b.ls 0x40
-    b 0x48
-18:
-    fcmp s9, s0
-    b.ne 0x78
-19:
-    fcmp s9, s0
-    b.gt 5
-    b 8
-    fcmp s9, s0
-    b.ge 0x60
-    b 8
-20:
-    fcmp s9, s0
-    b.eq 0x70
-    movz x0, #0
-    b 0x7c
-21:
+    bl 0xffffff5c
+    movz x2, #100
     movz x0, #200
-    b 0x7c
-22:
-    movz x0, #100
-23:
+    movz x1, #0
+    fcmp s9, s0
+    csel x0, x0, x1, eq
+    fcmp s9, s0
+    csel x0, x0, x1, ge
+    fcmp s9, s0
+    csel x1, x0, x1, gt
+    fcmp s9, s0
+    csel x0, x2, x1, ne
+    fcmp s9, s0
+    csel x0, x0, x1, ls
+    fcmp s9, s0
+    csel x0, x0, x1, mi
     ldp x29, x30, [xzr]
     add sp, sp, #16
     ret
@@ -646,43 +494,43 @@ main:
     str x23, [xzr, #32]
     str x24, [xzr, #40]
     stp x29, x30, [xzr, #48]
-    adr x0, 0xe28
+    adr x0, 0xe70
     ldr s9, [x0]
-    adr x0, 0xe2c
+    adr x0, 0xe74
     ldr s8, [x0]
     orr v0.16b, v9.16b, v9.16b
     orr v1.16b, v8.16b, v8.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x24, x0
     orr v1.16b, v8.16b, v8.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x23, x0
-    adr x0, 0xe30
+    adr x0, 0xe78
     ldr s0, [x0]
     orr v1.16b, v9.16b, v9.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x22, x0
-    adr x0, 0xe34
+    adr x0, 0xe7c
     ldr d9, [x0]
-    adr x0, 0xe3c
+    adr x0, 0xe84
     ldr d8, [x0]
     orr v0.16b, v9.16b, v9.16b
     orr v1.16b, v8.16b, v8.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x21, x0
     orr v1.16b, v8.16b, v8.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x20, x0
-    adr x0, 0xe44
+    adr x0, 0xe8c
     ldr d0, [x0]
     orr v1.16b, v9.16b, v9.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x19, x0
-    adr x0, 0xe4c
+    adr x0, 0xe94
     ldr s0, [x0]
-    bl 0xffffff78
+    bl 0xffffff90
     add x2, x24, x23
     add x2, x2, x22
     add x2, x2, x21
@@ -702,111 +550,73 @@ main:
 opaque32:
     ret
 test_f32:
-    fcmp s0, s1
-    b.eq 0x60
-    fcmp s0, s1
-    b.ne 0x58
-    fcmp s0, s1
-    b.mi 0x50
-    fcmp s0, s1
-    b.ge 0x48
-    fcmp s0, s1
-    b.gt 0x40
-    fcmp s0, s1
-    b.ls 0x38
+    movz x6, #1
+    movz x5, #2
+    movz x4, #3
+    movz x3, #6
+    movz x2, #4
+    movz x1, #5
     movz x0, #0
-    b 7
-2:
-    movz x0, #6
-    b 7
-3:
-    movz x0, #5
-    b 7
-4:
-    movz x0, #4
-    b 7
-5:
-    movz x0, #3
-    b 7
-6:
-    movz x0, #2
-    b 7
-7:
-    movz x0, #1
-8:
+    fcmp s0, s1
+    csel x0, x3, x0, ls
+    fcmp s0, s1
+    csel x0, x1, x0, gt
+    fcmp s0, s1
+    csel x0, x2, x0, ge
+    fcmp s0, s1
+    csel x0, x4, x0, mi
+    fcmp s0, s1
+    csel x0, x5, x0, ne
+    fcmp s0, s1
+    csel x0, x6, x0, eq
     ret
 test_f64:
-    fcmp d0, d1
-    b.eq 0x60
-    fcmp d0, d1
-    b.ne 0x58
-    fcmp d0, d1
-    b.mi 0x50
-    fcmp d0, d1
-    b.ge 0x48
-    fcmp d0, d1
-    b.gt 0x40
-    fcmp d0, d1
-    b.ls 0x38
+    movz x6, #10
+    movz x5, #20
+    movz x4, #30
+    movz x3, #60
+    movz x2, #40
+    movz x1, #50
     movz x0, #0
-    b 7
-10:
-    movz x0, #60
-    b 7
-11:
-    movz x0, #50
-    b 7
-12:
-    movz x0, #40
-    b 7
-13:
-    movz x0, #30
-    b 7
-14:
-    movz x0, #20
-    b 7
-15:
-    movz x0, #10
+    fcmp d0, d1
+    csel x0, x3, x0, ls
+    fcmp d0, d1
+    csel x0, x1, x0, gt
+    fcmp d0, d1
+    csel x0, x2, x0, ge
+    fcmp d0, d1
+    csel x0, x4, x0, mi
+    fcmp d0, d1
+    csel x0, x5, x0, ne
+    fcmp d0, d1
+    csel x0, x6, x0, eq
     ret
 test_mixed_patterns:
     sub sp, sp, #16
     stp x29, x30, [xzr]
     orr v8.16b, v0.16b, v0.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xffffff2c
+    bl 0xffffff5c
     orr v9.16b, v0.16b, v0.16b
-    adr x0, 0xeac
+    adr x0, 0xedc
     ldr s0, [x0]
     fadd s0, s0, s8
-    bl 0xffffff2c
-    fcmp s9, s0
-    b.mi 0x34
-    b 0x48
-17:
-    fcmp s9, s0
-    b.ls 0x40
-    b 0x48
-18:
-    fcmp s9, s0
-    b.ne 0x78
-19:
-    fcmp s9, s0
-    b.gt 5
-    b 8
-    fcmp s9, s0
-    b.ge 0x60
-    b 8
-20:
-    fcmp s9, s0
-    b.eq 0x70
-    movz x0, #0
-    b 0x7c
-21:
+    bl 0xffffff5c
+    movz x2, #100
     movz x0, #200
-    b 0x7c
-22:
-    movz x0, #100
-23:
+    movz x1, #0
+    fcmp s9, s0
+    csel x0, x0, x1, eq
+    fcmp s9, s0
+    csel x0, x0, x1, ge
+    fcmp s9, s0
+    csel x1, x0, x1, gt
+    fcmp s9, s0
+    csel x0, x2, x1, ne
+    fcmp s9, s0
+    csel x0, x0, x1, ls
+    fcmp s9, s0
+    csel x0, x0, x1, mi
     ldp x29, x30, [xzr]
     add sp, sp, #16
     ret
@@ -819,43 +629,43 @@ main:
     str x23, [xzr, #32]
     str x24, [xzr, #40]
     stp x29, x30, [xzr, #48]
-    adr x0, 0xe28
+    adr x0, 0xe70
     ldr s9, [x0]
-    adr x0, 0xe2c
+    adr x0, 0xe74
     ldr s8, [x0]
     orr v0.16b, v9.16b, v9.16b
     orr v1.16b, v8.16b, v8.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x24, x0
     orr v1.16b, v8.16b, v8.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x23, x0
-    adr x0, 0xe30
+    adr x0, 0xe78
     ldr s0, [x0]
     orr v1.16b, v9.16b, v9.16b
-    bl 0xfffffea8
+    bl 0xfffffef0
     mov x22, x0
-    adr x0, 0xe34
+    adr x0, 0xe7c
     ldr d9, [x0]
-    adr x0, 0xe3c
+    adr x0, 0xe84
     ldr d8, [x0]
     orr v0.16b, v9.16b, v9.16b
     orr v1.16b, v8.16b, v8.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x21, x0
     orr v1.16b, v8.16b, v8.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x20, x0
-    adr x0, 0xe44
+    adr x0, 0xe8c
     ldr d0, [x0]
     orr v1.16b, v9.16b, v9.16b
-    bl 0xffffff10
+    bl 0xffffff40
     mov x19, x0
-    adr x0, 0xe4c
+    adr x0, 0xe94
     ldr s0, [x0]
-    bl 0xffffff78
+    bl 0xffffff90
     add x2, x24, x23
     add x2, x2, x22
     add x2, x2, x21
@@ -873,65 +683,46 @@ main:
     ret
 =========== OPT LEVEL: aggresive ===========
 test_f32:
-    fcmp s0, s1
-    b.eq 6
-    fcmp s0, s1
-    b.ne 5
-    fcmp s0, s1
-    b.mi 4
-    fcmp s0, s1
-    b.ge 3
-    fcmp s0, s1
-    b.gt 2
-    fcmp s0, s1
-    b.ls 1
+    movz x6, #1
+    movz x5, #2
+    movz x4, #3
+    movz x3, #6
+    movz x2, #4
+    movz x1, #5
     movz x0, #0
-    b 7
-1:
-    movz x0, #6
-    b 7
-2:
-    movz x0, #5
-    b 7
-3:
-    movz x0, #4
-    b 7
-4:
-    movz x0, #3
-    b 7
-5:
-    movz x0, #2
-    b 7
-6:
-    movz x0, #1
-7:
+    fcmp s0, s1
+    csel x0, x3, x0, ls
+    fcmp s0, s1
+    csel x0, x1, x0, gt
+    fcmp s0, s1
+    csel x0, x2, x0, ge
+    fcmp s0, s1
+    csel x0, x4, x0, mi
+    fcmp s0, s1
+    csel x0, x5, x0, ne
+    fcmp s0, s1
+    csel x0, x6, x0, eq
     ret
 test_f64:
-    fcmp d0, d1
-    b.eq 6
-    fcmp d0, d1
-    b.ne 5
-    fcmp d0, d1
-    b.mi 4
-    fcmp d0, d1
-    b.ge 3
-    fcmp d0, d1
-    b.gt 2
-    fcmp d0, d1
-    b.ls 1
+    movz x6, #10
+    movz x5, #20
+    movz x4, #30
+    movz x3, #60
+    movz x2, #40
+    movz x1, #50
     movz x0, #0
-    b 7
-    movz x0, #60
-    b 7
-    movz x0, #50
-    b 7
-    movz x0, #40
-    b 7
-    movz x0, #30
-    b 7
-    movz x0, #20
-    b 7
-    movz x0, #10
+    fcmp d0, d1
+    csel x0, x3, x0, ls
+    fcmp d0, d1
+    csel x0, x1, x0, gt
+    fcmp d0, d1
+    csel x0, x2, x0, ge
+    fcmp d0, d1
+    csel x0, x4, x0, mi
+    fcmp d0, d1
+    csel x0, x5, x0, ne
+    fcmp d0, d1
+    csel x0, x6, x0, eq
     ret
 main:
     sub sp, sp, #64
@@ -941,39 +732,39 @@ main:
     str x22, [xzr, #24]
     str x23, [xzr, #32]
     stp x29, x30, [xzr, #40]
-    adr x0, 0xeb0
+    adr x0, 0xee0
     ldr s9, [x0]
-    adr x0, 0xeb4
+    adr x0, 0xee4
     ldr s8, [x0]
     orr v0.16b, v9.16b, v9.16b
     orr v1.16b, v8.16b, v8.16b
-    bl 0xffffff30
+    bl 0xffffff60
     mov x20, x0
     orr v1.16b, v8.16b, v8.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xffffff30
+    bl 0xffffff60
     mov x19, x0
-    adr x0, 0xeb8
+    adr x0, 0xee8
     ldr s0, [x0]
     orr v1.16b, v9.16b, v9.16b
-    bl 0xffffff30
+    bl 0xffffff60
     mov x23, x0
-    adr x0, 0xec0
+    adr x0, 0xef0
     ldr d9, [x0]
-    adr x0, 0xec8
+    adr x0, 0xef8
     ldr d8, [x0]
     orr v0.16b, v9.16b, v9.16b
     orr v1.16b, v8.16b, v8.16b
-    bl 0xffffff98
+    bl 0xffffffb0
     mov x22, x0
     orr v1.16b, v8.16b, v8.16b
     orr v0.16b, v8.16b, v8.16b
-    bl 0xffffff98
+    bl 0xffffffb0
     mov x21, x0
-    adr x0, 0xed0
+    adr x0, 0xf00
     ldr d0, [x0]
     orr v1.16b, v9.16b, v9.16b
-    bl 0xffffff98
+    bl 0xffffffb0
     add x2, x20, x19
     add x2, x2, x23
     add x2, x2, x22

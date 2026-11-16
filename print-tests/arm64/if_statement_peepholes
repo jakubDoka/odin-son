@@ -2,71 +2,46 @@
 opaques:
     ret
 test_signed:
+    movz x2, #1
+    movz x3, #2
+    movz x4, #3
+    movz x5, #6
+    movz x6, #4
+    movz x7, #5
+    movz x8, #0
     cmp x0, x1
-    b.eq 0x60
+    csel x5, x5, x8, le
     cmp x0, x1
-    b.ne 0x58
+    csel x5, x7, x5, gt
     cmp x0, x1
-    b.lt 0x50
+    csel x5, x6, x5, ge
     cmp x0, x1
-    b.ge 0x48
+    csel x4, x4, x5, lt
     cmp x0, x1
-    b.gt 0x40
+    csel x3, x3, x4, ne
     cmp x0, x1
-    b.le 0x38
-    movz x0, #0
-    b 7
-2:
-    movz x0, #6
-    b 7
-3:
-    movz x0, #5
-    b 7
-4:
-    movz x0, #4
-    b 7
-5:
-    movz x0, #3
-    b 7
-6:
-    movz x0, #2
-    b 7
-7:
-    movz x0, #1
-8:
+    csel x0, x2, x3, eq
     ret
 test_unsigned:
+    movz x2, #10
+    movz x3, #20
+    movz x4, #30
+    movz x5, #60
+    movz x6, #40
+    movz x7, #50
+    movz x8, #0
     cmp x0, x1
-    b.eq 0x60
+    csel x5, x5, x8, ls
     cmp x0, x1
-    b.ne 0x58
+    csel x5, x7, x5, hi
     cmp x0, x1
-    b.cc 0x50
+    csel x5, x6, x5, cs
     cmp x0, x1
-    b.cs 0x48
+    csel x4, x4, x5, cc
     cmp x0, x1
-    b.hi 0x40
+    csel x3, x3, x4, ne
     cmp x0, x1
-    b.ls 0x38
-    movz x0, #0
-    b 7
-10:
-    movz x0, #60
-    b 7
-11:
-    movz x0, #50
-    b 7
-12:
-    movz x0, #40
-    b 7
-13:
-    movz x0, #30
-    b 7
-14:
-    movz x0, #20
-    b 7
-15:
-    movz x0, #10
+    csel x0, x2, x3, eq
     ret
 test_mixed_patterns:
     sub sp, sp, #32
@@ -75,37 +50,26 @@ test_mixed_patterns:
     stp x29, x30, [xzr, #16]
     mov x19, x0
     mov x0, x19
-    bl 0xffffff2c
+    bl 0xffffff5c
     mov x20, x0
     movz x0, #1
     add x0, x0, x19
-    bl 0xffffff2c
+    bl 0xffffff5c
+    movz x1, #100
+    movz x2, #200
+    movz x3, #0
     cmp x20, x0
-    b.lt 0x38
-    b 4
-17:
+    csel x2, x2, x3, eq
     cmp x20, x0
-    b.le 3
-    b 4
+    csel x2, x2, x3, ge
     cmp x20, x0
-    b.ne 0x7c
+    csel x2, x2, x3, gt
     cmp x20, x0
-    b.gt 0x58
-    b test_unsigned
-18:
+    csel x1, x1, x2, ne
     cmp x20, x0
-    b.ge 7
-    b test_unsigned
+    csel x1, x1, x2, le
     cmp x20, x0
-    b.eq 0x74
-    movz x0, #0
-    b 0x80
-19:
-    movz x0, #200
-    b 0x80
-20:
-    movz x0, #100
-21:
+    csel x0, x1, x2, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -122,30 +86,30 @@ main:
     stp x29, x30, [xzr, #48]
     movz x0, #10
     movz x1, #20
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x19, x0
     movz x1, #20
     movz x0, #20
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x20, x0
     movz x1, #10
     movz x0, #30
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x21, x0
     movz x0, #10
     movz x1, #20
-    bl 0xffffff04
+    bl 0xffffff34
     mov x22, x0
     movz x1, #20
     movz x0, #20
-    bl 0xffffff04
+    bl 0xffffff34
     mov x23, x0
     movz x1, #10
     movz x0, #30
-    bl 0xffffff04
+    bl 0xffffff34
     mov x24, x0
     movz x0, #42
-    bl 0xffffff6c
+    bl 0xffffff84
     add x1, x19, x20
     add x1, x1, x21
     add x1, x1, x22
@@ -165,110 +129,74 @@ main:
 opaques:
     ret
 test_signed:
+    movz x8, #1
+    movz x7, #2
+    movz x6, #3
+    movz x5, #6
+    movz x4, #4
+    movz x3, #5
+    movz x2, #0
     cmp x0, x1
-    b.eq 0x60
+    csel x2, x5, x2, le
     cmp x0, x1
-    b.ne 0x58
+    csel x2, x3, x2, gt
     cmp x0, x1
-    b.lt 0x50
+    csel x2, x4, x2, ge
     cmp x0, x1
-    b.ge 0x48
+    csel x2, x6, x2, lt
     cmp x0, x1
-    b.gt 0x40
+    csel x2, x7, x2, ne
     cmp x0, x1
-    b.le 0x38
-    movz x0, #0
-    b 7
-2:
-    movz x0, #6
-    b 7
-3:
-    movz x0, #5
-    b 7
-4:
-    movz x0, #4
-    b 7
-5:
-    movz x0, #3
-    b 7
-6:
-    movz x0, #2
-    b 7
-7:
-    movz x0, #1
-8:
+    csel x0, x8, x2, eq
     ret
 test_unsigned:
+    movz x8, #10
+    movz x7, #20
+    movz x6, #30
+    movz x5, #60
+    movz x4, #40
+    movz x3, #50
+    movz x2, #0
     cmp x0, x1
-    b.eq 0x60
+    csel x2, x5, x2, ls
     cmp x0, x1
-    b.ne 0x58
+    csel x2, x3, x2, hi
     cmp x0, x1
-    b.cc 0x50
+    csel x2, x4, x2, cs
     cmp x0, x1
-    b.cs 0x48
+    csel x2, x6, x2, cc
     cmp x0, x1
-    b.hi 0x40
+    csel x2, x7, x2, ne
     cmp x0, x1
-    b.ls 0x38
-    movz x0, #0
-    b 7
-10:
-    movz x0, #60
-    b 7
-11:
-    movz x0, #50
-    b 7
-12:
-    movz x0, #40
-    b 7
-13:
-    movz x0, #30
-    b 7
-14:
-    movz x0, #20
-    b 7
-15:
-    movz x0, #10
+    csel x0, x8, x2, eq
     ret
 test_mixed_patterns:
     sub sp, sp, #32
     str x19, [xzr]
     str x20, [xzr, #8]
     stp x29, x30, [xzr, #16]
-    mov x20, x0
-    mov x0, x20
-    bl 0xffffff2c
     mov x19, x0
+    mov x0, x19
+    bl 0xffffff5c
+    mov x20, x0
     movz x0, #1
-    add x0, x0, x20
-    bl 0xffffff2c
-    cmp x19, x0
-    b.lt 0x38
-    b 4
-17:
-    cmp x19, x0
-    b.le 3
-    b 4
-    cmp x19, x0
-    b.ne 0x7c
-    cmp x19, x0
-    b.gt 0x58
-    b test_unsigned
-18:
-    cmp x19, x0
-    b.ge 7
-    b test_unsigned
-    cmp x19, x0
-    b.eq 0x74
-    movz x0, #0
-    b 0x80
-19:
-    movz x0, #200
-    b 0x80
-20:
-    movz x0, #100
-21:
+    add x0, x0, x19
+    bl 0xffffff5c
+    movz x4, #100
+    movz x2, #200
+    movz x3, #0
+    cmp x20, x0
+    csel x2, x2, x3, eq
+    cmp x20, x0
+    csel x2, x2, x3, ge
+    cmp x20, x0
+    csel x3, x2, x3, gt
+    cmp x20, x0
+    csel x2, x4, x3, ne
+    cmp x20, x0
+    csel x2, x2, x3, le
+    cmp x20, x0
+    csel x0, x2, x3, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -285,30 +213,30 @@ main:
     stp x29, x30, [xzr, #48]
     movz x0, #10
     movz x1, #20
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x21, x0
     movz x1, #20
     movz x0, #20
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x20, x0
     movz x1, #10
     movz x0, #30
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x19, x0
     movz x0, #10
     movz x1, #20
-    bl 0xffffff04
+    bl 0xffffff34
     mov x24, x0
     movz x1, #20
     movz x0, #20
-    bl 0xffffff04
+    bl 0xffffff34
     mov x23, x0
     movz x1, #10
     movz x0, #30
-    bl 0xffffff04
+    bl 0xffffff34
     mov x22, x0
     movz x0, #42
-    bl 0xffffff6c
+    bl 0xffffff84
     add x1, x21, x20
     add x2, x1, x19
     add x2, x2, x24
@@ -328,71 +256,46 @@ main:
 opaques:
     ret
 test_signed:
+    movz x2, #1
+    movz x3, #2
+    movz x4, #3
+    movz x5, #6
+    movz x6, #4
+    movz x7, #5
+    movz x8, #0
     cmp x0, x1
-    b.eq 0x60
+    csel x5, x5, x8, le
     cmp x0, x1
-    b.ne 0x58
+    csel x5, x7, x5, gt
     cmp x0, x1
-    b.lt 0x50
+    csel x5, x6, x5, ge
     cmp x0, x1
-    b.ge 0x48
+    csel x4, x4, x5, lt
     cmp x0, x1
-    b.gt 0x40
+    csel x3, x3, x4, ne
     cmp x0, x1
-    b.le 0x38
-    movz x0, #0
-    b 7
-2:
-    movz x0, #6
-    b 7
-3:
-    movz x0, #5
-    b 7
-4:
-    movz x0, #4
-    b 7
-5:
-    movz x0, #3
-    b 7
-6:
-    movz x0, #2
-    b 7
-7:
-    movz x0, #1
-8:
+    csel x0, x2, x3, eq
     ret
 test_unsigned:
+    movz x2, #10
+    movz x3, #20
+    movz x4, #30
+    movz x5, #60
+    movz x6, #40
+    movz x7, #50
+    movz x8, #0
     cmp x0, x1
-    b.eq 0x60
+    csel x5, x5, x8, ls
     cmp x0, x1
-    b.ne 0x58
+    csel x5, x7, x5, hi
     cmp x0, x1
-    b.cc 0x50
+    csel x5, x6, x5, cs
     cmp x0, x1
-    b.cs 0x48
+    csel x4, x4, x5, cc
     cmp x0, x1
-    b.hi 0x40
+    csel x3, x3, x4, ne
     cmp x0, x1
-    b.ls 0x38
-    movz x0, #0
-    b 7
-10:
-    movz x0, #60
-    b 7
-11:
-    movz x0, #50
-    b 7
-12:
-    movz x0, #40
-    b 7
-13:
-    movz x0, #30
-    b 7
-14:
-    movz x0, #20
-    b 7
-15:
-    movz x0, #10
+    csel x0, x2, x3, eq
     ret
 test_mixed_patterns:
     sub sp, sp, #32
@@ -401,37 +304,26 @@ test_mixed_patterns:
     stp x29, x30, [xzr, #16]
     mov x19, x0
     mov x0, x19
-    bl 0xffffff2c
+    bl 0xffffff5c
     mov x20, x0
     movz x0, #1
     add x0, x0, x19
-    bl 0xffffff2c
+    bl 0xffffff5c
+    movz x1, #100
+    movz x2, #200
+    movz x3, #0
     cmp x20, x0
-    b.lt 0x38
-    b 4
-17:
+    csel x2, x2, x3, eq
     cmp x20, x0
-    b.le 3
-    b 4
+    csel x2, x2, x3, ge
     cmp x20, x0
-    b.ne 0x7c
+    csel x2, x2, x3, gt
     cmp x20, x0
-    b.gt 0x58
-    b test_unsigned
-18:
+    csel x1, x1, x2, ne
     cmp x20, x0
-    b.ge 7
-    b test_unsigned
+    csel x1, x1, x2, le
     cmp x20, x0
-    b.eq 0x74
-    movz x0, #0
-    b 0x80
-19:
-    movz x0, #200
-    b 0x80
-20:
-    movz x0, #100
-21:
+    csel x0, x1, x2, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -448,30 +340,30 @@ main:
     stp x29, x30, [xzr, #48]
     movz x0, #10
     movz x1, #20
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x19, x0
     movz x1, #20
     movz x0, #20
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x20, x0
     movz x1, #10
     movz x0, #30
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x21, x0
     movz x0, #10
     movz x1, #20
-    bl 0xffffff04
+    bl 0xffffff34
     mov x22, x0
     movz x1, #20
     movz x0, #20
-    bl 0xffffff04
+    bl 0xffffff34
     mov x23, x0
     movz x1, #10
     movz x0, #30
-    bl 0xffffff04
+    bl 0xffffff34
     mov x24, x0
     movz x0, #42
-    bl 0xffffff6c
+    bl 0xffffff84
     add x1, x19, x20
     add x1, x1, x21
     add x1, x1, x22
@@ -491,110 +383,74 @@ main:
 opaques:
     ret
 test_signed:
+    movz x8, #1
+    movz x7, #2
+    movz x6, #3
+    movz x5, #6
+    movz x4, #4
+    movz x3, #5
+    movz x2, #0
     cmp x0, x1
-    b.eq 0x60
+    csel x2, x5, x2, le
     cmp x0, x1
-    b.ne 0x58
+    csel x2, x3, x2, gt
     cmp x0, x1
-    b.lt 0x50
+    csel x2, x4, x2, ge
     cmp x0, x1
-    b.ge 0x48
+    csel x2, x6, x2, lt
     cmp x0, x1
-    b.gt 0x40
+    csel x2, x7, x2, ne
     cmp x0, x1
-    b.le 0x38
-    movz x0, #0
-    b 7
-2:
-    movz x0, #6
-    b 7
-3:
-    movz x0, #5
-    b 7
-4:
-    movz x0, #4
-    b 7
-5:
-    movz x0, #3
-    b 7
-6:
-    movz x0, #2
-    b 7
-7:
-    movz x0, #1
-8:
+    csel x0, x8, x2, eq
     ret
 test_unsigned:
+    movz x8, #10
+    movz x7, #20
+    movz x6, #30
+    movz x5, #60
+    movz x4, #40
+    movz x3, #50
+    movz x2, #0
     cmp x0, x1
-    b.eq 0x60
+    csel x2, x5, x2, ls
     cmp x0, x1
-    b.ne 0x58
+    csel x2, x3, x2, hi
     cmp x0, x1
-    b.cc 0x50
+    csel x2, x4, x2, cs
     cmp x0, x1
-    b.cs 0x48
+    csel x2, x6, x2, cc
     cmp x0, x1
-    b.hi 0x40
+    csel x2, x7, x2, ne
     cmp x0, x1
-    b.ls 0x38
-    movz x0, #0
-    b 7
-10:
-    movz x0, #60
-    b 7
-11:
-    movz x0, #50
-    b 7
-12:
-    movz x0, #40
-    b 7
-13:
-    movz x0, #30
-    b 7
-14:
-    movz x0, #20
-    b 7
-15:
-    movz x0, #10
+    csel x0, x8, x2, eq
     ret
 test_mixed_patterns:
     sub sp, sp, #32
     str x19, [xzr]
     str x20, [xzr, #8]
     stp x29, x30, [xzr, #16]
-    mov x20, x0
-    mov x0, x20
-    bl 0xffffff2c
     mov x19, x0
+    mov x0, x19
+    bl 0xffffff5c
+    mov x20, x0
     movz x0, #1
-    add x0, x0, x20
-    bl 0xffffff2c
-    cmp x19, x0
-    b.lt 0x38
-    b 4
-17:
-    cmp x19, x0
-    b.le 3
-    b 4
-    cmp x19, x0
-    b.ne 0x7c
-    cmp x19, x0
-    b.gt 0x58
-    b test_unsigned
-18:
-    cmp x19, x0
-    b.ge 7
-    b test_unsigned
-    cmp x19, x0
-    b.eq 0x74
-    movz x0, #0
-    b 0x80
-19:
-    movz x0, #200
-    b 0x80
-20:
-    movz x0, #100
-21:
+    add x0, x0, x19
+    bl 0xffffff5c
+    movz x4, #100
+    movz x2, #200
+    movz x3, #0
+    cmp x20, x0
+    csel x2, x2, x3, eq
+    cmp x20, x0
+    csel x2, x2, x3, ge
+    cmp x20, x0
+    csel x3, x2, x3, gt
+    cmp x20, x0
+    csel x2, x4, x3, ne
+    cmp x20, x0
+    csel x2, x2, x3, le
+    cmp x20, x0
+    csel x0, x2, x3, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -611,30 +467,30 @@ main:
     stp x29, x30, [xzr, #48]
     movz x0, #10
     movz x1, #20
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x21, x0
     movz x1, #20
     movz x0, #20
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x20, x0
     movz x1, #10
     movz x0, #30
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x19, x0
     movz x0, #10
     movz x1, #20
-    bl 0xffffff04
+    bl 0xffffff34
     mov x24, x0
     movz x1, #20
     movz x0, #20
-    bl 0xffffff04
+    bl 0xffffff34
     mov x23, x0
     movz x1, #10
     movz x0, #30
-    bl 0xffffff04
+    bl 0xffffff34
     mov x22, x0
     movz x0, #42
-    bl 0xffffff6c
+    bl 0xffffff84
     add x1, x21, x20
     add x2, x1, x19
     add x2, x2, x24
@@ -654,110 +510,74 @@ main:
 opaques:
     ret
 test_signed:
+    movz x8, #1
+    movz x7, #2
+    movz x6, #3
+    movz x5, #6
+    movz x4, #4
+    movz x3, #5
+    movz x2, #0
     cmp x0, x1
-    b.eq 0x60
+    csel x2, x5, x2, le
     cmp x0, x1
-    b.ne 0x58
+    csel x2, x3, x2, gt
     cmp x0, x1
-    b.lt 0x50
+    csel x2, x4, x2, ge
     cmp x0, x1
-    b.ge 0x48
+    csel x2, x6, x2, lt
     cmp x0, x1
-    b.gt 0x40
+    csel x2, x7, x2, ne
     cmp x0, x1
-    b.le 0x38
-    movz x0, #0
-    b 7
-2:
-    movz x0, #6
-    b 7
-3:
-    movz x0, #5
-    b 7
-4:
-    movz x0, #4
-    b 7
-5:
-    movz x0, #3
-    b 7
-6:
-    movz x0, #2
-    b 7
-7:
-    movz x0, #1
-8:
+    csel x0, x8, x2, eq
     ret
 test_unsigned:
+    movz x8, #10
+    movz x7, #20
+    movz x6, #30
+    movz x5, #60
+    movz x4, #40
+    movz x3, #50
+    movz x2, #0
     cmp x0, x1
-    b.eq 0x60
+    csel x2, x5, x2, ls
     cmp x0, x1
-    b.ne 0x58
+    csel x2, x3, x2, hi
     cmp x0, x1
-    b.cc 0x50
+    csel x2, x4, x2, cs
     cmp x0, x1
-    b.cs 0x48
+    csel x2, x6, x2, cc
     cmp x0, x1
-    b.hi 0x40
+    csel x2, x7, x2, ne
     cmp x0, x1
-    b.ls 0x38
-    movz x0, #0
-    b 7
-10:
-    movz x0, #60
-    b 7
-11:
-    movz x0, #50
-    b 7
-12:
-    movz x0, #40
-    b 7
-13:
-    movz x0, #30
-    b 7
-14:
-    movz x0, #20
-    b 7
-15:
-    movz x0, #10
+    csel x0, x8, x2, eq
     ret
 test_mixed_patterns:
     sub sp, sp, #32
     str x19, [xzr]
     str x20, [xzr, #8]
     stp x29, x30, [xzr, #16]
-    mov x20, x0
-    mov x0, x20
-    bl 0xffffff2c
     mov x19, x0
+    mov x0, x19
+    bl 0xffffff5c
+    mov x20, x0
     movz x0, #1
-    add x0, x0, x20
-    bl 0xffffff2c
-    cmp x19, x0
-    b.lt 0x38
-    b 4
-17:
-    cmp x19, x0
-    b.le 3
-    b 4
-    cmp x19, x0
-    b.ne 0x7c
-    cmp x19, x0
-    b.gt 0x58
-    b test_unsigned
-18:
-    cmp x19, x0
-    b.ge 7
-    b test_unsigned
-    cmp x19, x0
-    b.eq 0x74
-    movz x0, #0
-    b 0x80
-19:
-    movz x0, #200
-    b 0x80
-20:
-    movz x0, #100
-21:
+    add x0, x0, x19
+    bl 0xffffff5c
+    movz x4, #100
+    movz x2, #200
+    movz x3, #0
+    cmp x20, x0
+    csel x2, x2, x3, eq
+    cmp x20, x0
+    csel x2, x2, x3, ge
+    cmp x20, x0
+    csel x3, x2, x3, gt
+    cmp x20, x0
+    csel x2, x4, x3, ne
+    cmp x20, x0
+    csel x2, x2, x3, le
+    cmp x20, x0
+    csel x0, x2, x3, lt
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldp x29, x30, [xzr, #16]
@@ -774,30 +594,30 @@ main:
     stp x29, x30, [xzr, #48]
     movz x0, #10
     movz x1, #20
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x21, x0
     movz x1, #20
     movz x0, #20
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x20, x0
     movz x1, #10
     movz x0, #30
-    bl 0xfffffe9c
+    bl 0xfffffee4
     mov x19, x0
     movz x0, #10
     movz x1, #20
-    bl 0xffffff04
+    bl 0xffffff34
     mov x24, x0
     movz x1, #20
     movz x0, #20
-    bl 0xffffff04
+    bl 0xffffff34
     mov x23, x0
     movz x1, #10
     movz x0, #30
-    bl 0xffffff04
+    bl 0xffffff34
     mov x22, x0
     movz x0, #42
-    bl 0xffffff6c
+    bl 0xffffff84
     add x1, x21, x20
     add x2, x1, x19
     add x2, x2, x24
@@ -815,65 +635,46 @@ main:
     ret
 =========== OPT LEVEL: aggresive ===========
 test_signed:
+    movz x8, #1
+    movz x7, #2
+    movz x6, #3
+    movz x5, #6
+    movz x4, #4
+    movz x3, #5
+    movz x2, #0
     cmp x0, x1
-    b.eq 6
+    csel x2, x5, x2, le
     cmp x0, x1
-    b.ne 5
+    csel x2, x3, x2, gt
     cmp x0, x1
-    b.lt 4
+    csel x2, x4, x2, ge
     cmp x0, x1
-    b.ge 3
+    csel x2, x6, x2, lt
     cmp x0, x1
-    b.gt 2
+    csel x2, x7, x2, ne
     cmp x0, x1
-    b.le 1
-    movz x0, #0
-    b 7
-1:
-    movz x0, #6
-    b 7
-2:
-    movz x0, #5
-    b 7
-3:
-    movz x0, #4
-    b 7
-4:
-    movz x0, #3
-    b 7
-5:
-    movz x0, #2
-    b 7
-6:
-    movz x0, #1
-7:
+    csel x0, x8, x2, eq
     ret
 test_unsigned:
+    movz x8, #10
+    movz x7, #20
+    movz x6, #30
+    movz x5, #60
+    movz x4, #40
+    movz x3, #50
+    movz x2, #0
     cmp x0, x1
-    b.eq 6
+    csel x2, x5, x2, ls
     cmp x0, x1
-    b.ne 5
+    csel x2, x3, x2, hi
     cmp x0, x1
-    b.cc 4
+    csel x2, x4, x2, cs
     cmp x0, x1
-    b.cs 3
+    csel x2, x6, x2, cc
     cmp x0, x1
-    b.hi 2
+    csel x2, x7, x2, ne
     cmp x0, x1
-    b.ls 1
-    movz x0, #0
-    b 7
-    movz x0, #60
-    b 7
-    movz x0, #50
-    b 7
-    movz x0, #40
-    b 7
-    movz x0, #30
-    b 7
-    movz x0, #20
-    b 7
-    movz x0, #10
+    csel x0, x8, x2, eq
     ret
 main:
     sub sp, sp, #64
@@ -885,27 +686,27 @@ main:
     stp x29, x30, [xzr, #40]
     movz x0, #10
     movz x1, #20
-    bl 0xffffff30
+    bl 0xffffff60
     mov x22, x0
     movz x1, #20
     movz x0, #20
-    bl 0xffffff30
+    bl 0xffffff60
     mov x21, x0
     movz x1, #10
     movz x0, #30
-    bl 0xffffff30
+    bl 0xffffff60
     mov x20, x0
     movz x0, #10
     movz x1, #20
-    bl 0xffffff98
+    bl 0xffffffb0
     mov x19, x0
     movz x1, #20
     movz x0, #20
-    bl 0xffffff98
+    bl 0xffffffb0
     mov x23, x0
     movz x1, #10
     movz x0, #30
-    bl 0xffffff98
+    bl 0xffffffb0
     add x1, x22, x21
     add x1, x1, x20
     add x2, x1, x19

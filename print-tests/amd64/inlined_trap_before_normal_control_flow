@@ -1,20 +1,22 @@
 =========== OPT LEVEL: none-quick ===========
 main:
-    sub rsp, 8
-    cmp.q [rip + 0xf36], 0
+    push rbx
+    cmp.q [rip + 0xf38], 0
     jne 1
     xor eax, eax
-    jmp 3
+    jmp 2
 1:
     call foo
-    cmp.q [rip + 0xf20], 0
-    je 2
-    xor eax, eax
-    jmp 3
+    mov rcx, 1
+    cmp.q [rip + 0xf1b], 0
+    sete dl
+    movzx edx, dl
+    xor ebx, ebx
+    test dl, dl
+    cmovne rbx, rcx
+    mov rax, rbx
 2:
-    mov rax, 1
-3:
-    add rsp, 8
+    pop rbx
     ret
 foo:
     ud2
@@ -24,37 +26,40 @@ main:
     cmp.q [rip + 0xf53], 0
     jne 1
     xor eax, eax
-    jmp 3
+    jmp 2
 1:
     call foo
-    cmp.q [rip + 0xf3d], 0
-    je 2
+    mov rdx, 1
+    cmp.q [rip + 0xf36], 0
+    sete cl
+    movzx ecx, cl
     xor eax, eax
-    jmp 3
+    test cl, cl
+    cmovne rax, rdx
 2:
-    mov rax, 1
-3:
     add rsp, 8
     ret
 foo:
     ud2
 =========== OPT LEVEL: moderate-quick ===========
 main:
-    sub rsp, 8
-    cmp.q [rip + 0xf36], 0
+    push rbx
+    cmp.q [rip + 0xf38], 0
     jne 1
     xor eax, eax
-    jmp 3
+    jmp 2
 1:
     call foo
-    cmp.q [rip + 0xf20], 0
-    je 2
-    xor eax, eax
-    jmp 3
+    mov rcx, 1
+    cmp.q [rip + 0xf1b], 0
+    sete dl
+    movzx edx, dl
+    xor ebx, ebx
+    test dl, dl
+    cmovne rbx, rcx
+    mov rax, rbx
 2:
-    mov rax, 1
-3:
-    add rsp, 8
+    pop rbx
     ret
 foo:
     ud2
@@ -64,16 +69,17 @@ main:
     cmp.q [rip + 0xf53], 0
     jne 1
     xor eax, eax
-    jmp 3
+    jmp 2
 1:
     call foo
-    cmp.q [rip + 0xf3d], 0
-    je 2
+    mov rdx, 1
+    cmp.q [rip + 0xf36], 0
+    sete cl
+    movzx ecx, cl
     xor eax, eax
-    jmp 3
+    test cl, cl
+    cmovne rax, rdx
 2:
-    mov rax, 1
-3:
     add rsp, 8
     ret
 foo:
@@ -84,16 +90,17 @@ main:
     cmp.q [rip + 0xf53], 0
     jne 1
     xor eax, eax
-    jmp 3
+    jmp 2
 1:
     call foo
-    cmp.q [rip + 0xf3d], 0
-    je 2
+    mov rdx, 1
+    cmp.q [rip + 0xf36], 0
+    sete cl
+    movzx ecx, cl
     xor eax, eax
-    jmp 3
+    test cl, cl
+    cmovne rax, rdx
 2:
-    mov rax, 1
-3:
     add rsp, 8
     ret
 foo:

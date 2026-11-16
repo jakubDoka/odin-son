@@ -55,7 +55,7 @@ If you are not explicitly instructed to modify this directory, assume it should
 not be modified.
 
 DONT try to obtain registers/local/slot in the instruction encoding stage
-(emit_functions/emit_instr). If you need temporaries, lower the node into
+(emit_procs/emit_instr). If you need temporaries, lower the node into
 multiple in a target specific peephole and, if required, add new instructions
 to the target. I dont want to see any hacks like spilling random register to
 stack or adding a wasm local, only exception is mem2mem split and that is rare

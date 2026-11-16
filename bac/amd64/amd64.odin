@@ -1403,7 +1403,7 @@ Rsp_Adjust :: struct {
 	delta: i32,
 }
 
-emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
+emit_proc :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	context.allocator, _ = arna.scrath(ectx.prc.temps)
 
 	spill_slot_base: [RK_COUNT]i32

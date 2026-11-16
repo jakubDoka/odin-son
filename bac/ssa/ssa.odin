@@ -125,7 +125,7 @@ compile :: proc(ctx: bac.Codegen_Emit_Ctx) -> (res: bac.Codegen_Output) {
 	}
 
 	check := bac.buf_checkpoint(&ctx.buf)
-	res.emit = ctx.prc.emit_function(ctx)
+	res.emit = ctx.prc.emit_proc(ctx)
 	res.bufs = bac.buf_output(ctx.buf, check)
 
 	return

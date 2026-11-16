@@ -15,7 +15,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 	spill_boundary = {64, 64, 64, 64, 64, 64},
 	collect_meta = collect_meta,
 	pre_regalloc_hook = pre_regalloc_hook,
-	emit_function = emit_function,
+	emit_proc = emit_proc,
 	peep = peep,
 	post_schedule_peep = post_schedule_peep,
 	inheritance_table = intrinsics.concatenate(bac.INHERITANCE_TABLE, []u16{

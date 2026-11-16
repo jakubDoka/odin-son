@@ -1363,7 +1363,7 @@ crate::abi_struct! {
     #[repr(C, align(8))]
     #[abi(size = 40)]
     pub struct Codegen_Spec {
-        #[abi(offset = 0)] pub r#emit_function: *mut core::ffi::c_void,
+        #[abi(offset = 0)] pub r#emit_proc: *mut core::ffi::c_void,
         #[abi(offset = 8)] pub r#sccp_compute: Sccp_Compute_Fn,
         #[abi(offset = 16)] pub r#peep: Peep_Fn,
         #[abi(offset = 24)] pub r#post_schedule_peep: PS_Peep_Fn,

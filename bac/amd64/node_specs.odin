@@ -12,7 +12,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 	datatype_to_reg_kind = {.Void = 0, .Mem = 0, .I8 = 0, .I16 = 0, .I32 = 0, .I64 = 0, .F32 = 1, .F64 = 1, .V128 = 1, .V256 = 1, .V512 = 1},
 	spill_boundary = {17, 16},
 	collect_meta = collect_meta,
-	emit_function = emit_function,
+	emit_proc = emit_proc,
 	peep = peep,
 	post_schedule_peep = post_schedule_peep,
 	inheritance_table = intrinsics.concatenate(bac.INHERITANCE_TABLE, []u16{

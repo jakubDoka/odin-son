@@ -1607,6 +1607,6 @@ post_schedule_peep :: proc(
 	return 0
 }
 
-emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
+emit_proc :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	return {}
 }

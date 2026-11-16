@@ -209,7 +209,7 @@ generate_spec :: proc(
 			fmt.fprintfln(file, "\t%v = %v,", vl, vl)
 		}
 
-		fmt.fprintf(file, "\temit_function = emit_function,\n")
+		fmt.fprintf(file, "\temit_proc = emit_proc,\n")
 		fmt.fprintf(file, "\tpeep = peep,\n")
 		fmt.fprintf(file, "\tpost_schedule_peep = post_schedule_peep,\n")
 	}

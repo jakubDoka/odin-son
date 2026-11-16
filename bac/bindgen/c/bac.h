@@ -930,7 +930,7 @@ struct bac_Regalloc_Spec {
 	bac_int (*collect_meta)(bac_Proc *, bac_Regalloc *, bac_Schedule *, Slice_Of_bac_Regalloc_Node_Meta *);
 };
 struct bac_Codegen_Spec {
-	bac_Codegen_Emit_Output (*emit_function)(bac_Codegen_Emit_Ctx);
+	bac_Codegen_Emit_Output (*emit_proc)(bac_Codegen_Emit_Ctx);
 	bac_Sccp_Compute_Fn sccp_compute;
 	bac_Peep_Fn peep;
 	bac_PS_Peep_Fn post_schedule_peep;

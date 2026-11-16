@@ -855,7 +855,7 @@ LOCAL_TO_WASM := [Local_Type]Type {
 	.v128 = .vec,
 }
 
-emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
+emit_proc :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 	context.allocator, _ = arna.scrath(ectx.prc.temps)
 
 	ctx: Ctx

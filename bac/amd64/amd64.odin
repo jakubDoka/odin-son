@@ -5,8 +5,10 @@ import "../../utils/arna"
 import "../../utils/bit_arr"
 import "../../utils/fmt"
 import "base:intrinsics"
+import "core:io"
 import "core:math"
 import "core:mem"
+import "core:os"
 import "core:slice"
 
 Reg :: bac.Reg
@@ -1515,43 +1517,36 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 		)
 	}
 
+	bac.eliminate_empty_branches(ctx)
+
 	ctx.local_relocs = make([dynamic]Local_Reloc, 0, len(ctx.bbs))
 
-	// TODO: this somehow breaks on other things
-	//prev_is_if := false
 	for &bb, i in ctx.bbs {
 		bb.offset = u32(ctx.code.pos)
 
 		last := expand_node(ctx, bb.instrs[len(bb.instrs) - 1])
+
+		if !ODIN_DISABLE_ASSERT {
+			has_consecutive := false
+			for out in last.outs {
+				has_consecutive |=
+					i + 1 < len(ctx.bbs) && ctx.bbs[i + 1].head == out.id
+			}
+			fmt.assertf(has_consecutive || len(last.outs) == 1, "%v", last)
+		}
+
 		is_consecutive :=
 			i + 1 < len(ctx.bbs) &&
 			0 < len(last.outs) &&
 			ctx.bbs[i + 1].head == last.outs[0].id
 
-		//if len(bb.instrs) == 1 && last.itype == .Jump && !prev_is_if {
-		//	continue
-		//}
-
 		for instr in bb.instrs {
 			emit_instr(&ctx, instr, is_consecutive)
 		}
-
-		//prev_is_if = last.itype == .If
 	}
 
-	block_base := ctx.gvn - u32(len(ctx.bbs))
 	for &reloc in ctx.local_relocs {
 		size: u32 = 4
-
-		for {
-			bb := &ctx.bbs[reloc.dest]
-
-			if len(bb.instrs) > 1 do break
-			jmp := expand_node(ctx, bb.instrs[0])
-			if jmp.itype != .Jump do break
-
-			reloc.dest = get_node(ctx, jmp.outs[0].id).gvn - block_base
-		}
 
 		dst_offset := ctx.bbs[reloc.dest].offset
 		jump := dst_offset - reloc.offset - size
@@ -1997,6 +1992,7 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: Node_ID, is_consecutive: bool) {
 		cc, unordered := condition_for(ctx, node.inps[1])
 		if is_consecutive do cc ~= 1
 		dest := get_node(ctx, node.outs[int(is_consecutive)].id).gvn - block_base
+		v := get_node(ctx, node.outs[int(is_consecutive)].id)
 		if unordered {
 			if cc == 4 {
 				// jp $after_jcc

@@ -651,6 +651,8 @@ peep :: proc(
 
 		if if_, ok := select_diamond(ctx, id, id); ok {
 			has_phis := false
+			// TODO: this will be falsely flagged as alive if only the debug phy is
+			// present, although, maybe thats correct
 			for out in node.outs {
 				has_phis |= get_node(ctx, out.id).itype == .Phi
 			}

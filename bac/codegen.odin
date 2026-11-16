@@ -282,6 +282,36 @@ Reloc_Slot :: struct #raw_union #align (1) {
 	},
 }
 
+eliminate_empty_branches :: proc(ctx: Codegen_Emit_Ctx) {
+	block_base := ctx.gvn - u32(len(ctx.bbs))
+
+	keep := 0
+	for &bb, i in ctx.bbs {
+		head := expand_node(ctx, bb.head)
+		if (head.itype == .Then || head.itype == .Else) && len(bb.instrs) == 1 {
+			if head.inps[0] != slice.last(ctx.bbs[keep - 1].instrs[:]) {
+				vl := expand_node(ctx, bb.instrs[0])
+				if vl.itype == .Jump {
+					assert(len(vl.outs) == 1)
+					outs := get_outputs(ctx, head.inps[0])
+					idx := slice.linear_search(outs, {id = bb.head}) or_else panic("")
+					outs[idx] = vl.outs[0]
+					get_inputs(ctx, vl.outs[0].id)[vl.outs[0].idx] = head.inps[0]
+					continue
+				}
+			}
+		}
+
+		head.gvn = block_base + u32(keep)
+
+		ctx.bbs[keep] = bb
+		keep += 1
+	}
+	resize(&ctx.bbs, keep)
+
+	ctx.gvn = block_base + u32(keep)
+}
+
 @(tag = "api")
 buf_checkpoint :: proc(
 	buf: ^Codegen_Emit_Buf,

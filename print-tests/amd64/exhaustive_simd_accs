@@ -2493,7 +2493,6 @@ init_inc u8:
     add rdx, 1
     cmp rdx, rsi
     jl 2
-    jmp 3
 3:
     ret
 init_inc u16:
@@ -2506,7 +2505,6 @@ init_inc u16:
     add rcx, 1
     cmp rcx, rsi
     jl 5
-    jmp 6
 6:
     ret
 init_inc u32:
@@ -2519,7 +2517,6 @@ init_inc u32:
     add rcx, 1
     cmp rcx, rsi
     jl 8
-    jmp 9
 9:
     ret
 init_inc u64:
@@ -2531,7 +2528,6 @@ init_inc u64:
     add rax, 1
     cmp rax, rsi
     jl 11
-    jmp 12
 12:
     ret
 simd_fold u8:
@@ -2639,7 +2635,6 @@ simd_fold u8:
     test dl, dl
     je 17
     add al, r8b
-    jmp 18
 18:
     add rsp, 0x58
     pop r15
@@ -2738,9 +2733,10 @@ simd_fold u16:
     mov r10, rcx
     mov r9, rdx
     cmp r10, 0
-    jle +0x43
+    jle 24
     xor r8d, r8d
     xor ecx, ecx
+23:
     movzx.w edi, [r9 + rcx*2]
     add r8w, di
     and r8w, di
@@ -2752,9 +2748,9 @@ simd_fold u16:
     movzx edx, dl
     sub r8w, di
     test dl, dl
-    je -0x34
+    je 23
     add ax, r8w
-    jmp +0x0
+24:
     add rsp, 0x58
     pop r15
     pop r14
@@ -2774,10 +2770,10 @@ simd_fold u32:
     mov r15, rdi
     mov r14, rsi
     cmp r14, 4
-    jle 25
+    jle 27
     xor eax, eax
     pxor xmm0, xmm0
-24:
+26:
     movups.x [rsp + 0x40], xmm0
     mov r13, rax
     lea rax, [r15 + r13*4]
@@ -2823,7 +2819,7 @@ simd_fold u32:
     cmp rax, r14
     mov rax, rbp
     movups xmm0, xmm1
-    jl 24
+    jl 26
     lea rdx, [r15 + rbp*4]
     mov rcx, r14
     sub rcx, rbp
@@ -2832,8 +2828,8 @@ simd_fold u32:
     pextrd eax, xmm0, 1
     movd esi, xmm0
     add eax, esi
-    jmp 26
-25:
+    jmp +0x2a
+27:
     pxor xmm0, xmm0
     pshufd xmm1, xmm0, -0x12
     pxor xmm0, xmm0
@@ -2843,14 +2839,13 @@ simd_fold u32:
     add eax, ecx
     mov rdx, r15
     mov rcx, r14
-26:
     mov r10, rcx
     mov r9, rdx
     cmp r10, 0
-    jle 28
+    jle 29
     xor r8d, r8d
     xor ecx, ecx
-27:
+28:
     mov.d edi, [r9 + rcx*4]
     add r8d, edi
     and r8d, edi
@@ -2862,10 +2857,9 @@ simd_fold u32:
     movzx edx, dl
     sub r8d, edi
     test dl, dl
-    je 27
+    je 28
     add eax, r8d
-    jmp 28
-28:
+29:
     add rsp, 0x58
     pop r15
     pop r14
@@ -2885,10 +2879,10 @@ simd_fold u64:
     mov r15, rdi
     mov r14, rsi
     cmp r14, 2
-    jle 31
+    jle 32
     xor eax, eax
     pxor xmm0, xmm0
-30:
+31:
     movups.x [rsp + 0x40], xmm0
     mov r13, rax
     lea rax, [r15 + r13*8]
@@ -2934,7 +2928,7 @@ simd_fold u64:
     cmp rax, r14
     mov rax, rbp
     movups xmm0, xmm1
-    jl 30
+    jl 31
     lea rdx, [r15 + rbp*8]
     mov rax, r14
     sub rax, rbp
@@ -2942,8 +2936,8 @@ simd_fold u64:
     movq rcx, xmm1
     add rsi, rcx
     mov rcx, rsi
-    jmp 32
-31:
+    jmp 33
+32:
     pxor xmm0, xmm0
     pextrq rcx, xmm0, 1
     pxor xmm0, xmm0
@@ -2951,13 +2945,14 @@ simd_fold u64:
     add rcx, rax
     mov rdx, r15
     mov rax, r14
-32:
+33:
     mov r10, rax
     mov r9, rdx
     cmp r10, 0
-    jle 33
+    jle 35
     xor edx, edx
     xor eax, eax
+34:
     mov rsi, rax
     mov.q r8, [r9 + rdx*8]
     add rsi, r8
@@ -2971,13 +2966,13 @@ simd_fold u64:
     sub rsi, r8
     mov rax, rsi
     test dil, dil
-    je -0x34
+    je 34
     mov rax, rsi
     add rax, rcx
-    jmp 34
-33:
+    jmp 36
+35:
     mov rax, rcx
-34:
+36:
     add rsp, 0x58
     pop r15
     pop r14
@@ -3152,7 +3147,6 @@ main:
     test dl, dl
     je 10
     add si, r8w
-    jmp 11
 11:
     xor ecx, ecx
     pxor xmm0, xmm0
@@ -3201,7 +3195,6 @@ main:
     test dil, dil
     je 13
     add edx, r9d
-    jmp 14
 14:
     xor ecx, ecx
     pxor xmm1, xmm1
@@ -3248,7 +3241,6 @@ main:
     mov rdi, r9
     je 16
     add rcx, r9
-    jmp 17
 17:
     movzx eax, al
     movzx esi, si

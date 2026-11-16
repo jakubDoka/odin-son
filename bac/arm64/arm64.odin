@@ -575,6 +575,8 @@ emit_function :: proc(ectx: bac.Codegen_Emit_Ctx) -> bac.Codegen_Emit_Output {
 		ctx.code.pos = idx
 	}
 
+	bac.eliminate_empty_branches(ctx)
+
 	for &bb, i in ctx.schedule.bbs {
 		bb.offset = u32(ctx.code.pos)
 

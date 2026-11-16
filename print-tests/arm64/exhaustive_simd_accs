@@ -2903,7 +2903,7 @@ main:
 init_inc u8:
     movz x2, #0
     cmp x1, x2
-    b.le 0x2c
+    b.le 0x28
     movz x5, #1
 2:
     add x4, x0, x2
@@ -2912,13 +2912,12 @@ init_inc u8:
     add x2, x5, x2
     cmp x2, x1
     b.lt 0x10
-    b 0x2c
 3:
     ret
 init_inc u16:
     movz x2, #0
     cmp x1, x2
-    b.le 0x34
+    b.le 0x30
     movz x6, #2
     movz x5, #1
 5:
@@ -2929,13 +2928,12 @@ init_inc u16:
     add x2, x5, x2
     cmp x2, x1
     b.lt 0x14
-    b 0x34
 6:
     ret
 init_inc u32:
     movz x2, #0
     cmp x1, x2
-    b.le 0x34
+    b.le 0x30
     movz x6, #4
     movz x5, #1
 8:
@@ -2946,13 +2944,12 @@ init_inc u32:
     add x2, x5, x2
     cmp x2, x1
     b.lt 0x14
-    b 0x34
 9:
     ret
 init_inc u64:
     movz x2, #0
     cmp x1, x2
-    b.le 0x30
+    b.le 0x2c
     movz x5, #8
     movz x4, #1
 11:
@@ -2962,7 +2959,6 @@ init_inc u64:
     add x2, x4, x2
     cmp x2, x1
     b.lt 0x14
-    b 0x30
 12:
     ret
 simd_fold u8:
@@ -2992,23 +2988,23 @@ simd_fold u8:
     sub x24, x20, x23
     mov x0, x25
     mov x1, x24
-    bl 0x610
+    bl 0x608
     orr v10.16b, v0.16b, v0.16b
     mov x0, x25
     mov x1, x24
-    bl 0x610
+    bl 0x608
     orr v9.16b, v0.16b, v0.16b
     mov x0, x25
     mov x1, x24
-    bl 0x610
+    bl 0x608
     orr v12.16b, v0.16b, v0.16b
     mov x0, x25
     mov x1, x24
-    bl 0x610
+    bl 0x608
     orr v11.16b, v0.16b, v0.16b
     mov x0, x25
     mov x1, x24
-    bl 0x610
+    bl 0x608
     add v1.16b, v8.16b, v10.16b
     and v2.16b, v1.16b, v9.16b
     eor v2.16b, v2.16b, v12.16b
@@ -3052,10 +3048,9 @@ simd_fold u8:
     b.lt 0x10c
     add w0, w6, w2
     uxtb w0, w0
-    b 0x150
+    b 5
 18:
     uxtb w0, w6
-19:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -3091,30 +3086,30 @@ simd_fold u16:
     b.le 0xf4
     movz x22, #16
     movz x24, #0
-21:
+20:
     madd x1, x24, x19, xzr
     add x26, x1, x28
     add x21, x24, x23
     sub x25, x21, x24
     mov x0, x26
     mov x1, x25
-    bl 0x498
+    bl 0x490
     orr v10.16b, v0.16b, v0.16b
     mov x0, x26
     mov x1, x25
-    bl 0x498
+    bl 0x490
     orr v9.16b, v0.16b, v0.16b
     mov x0, x26
     mov x1, x25
-    bl 0x498
+    bl 0x490
     orr v12.16b, v0.16b, v0.16b
     mov x0, x26
     mov x1, x25
-    bl 0x498
+    bl 0x490
     orr v11.16b, v0.16b, v0.16b
     mov x0, x26
     mov x1, x25
-    bl 0x498
+    bl 0x490
     add v1.8h, v8.8h, v10.8h
     and v2.16b, v1.16b, v9.16b
     eor v2.16b, v2.16b, v12.16b
@@ -3131,19 +3126,19 @@ simd_fold u16:
     fmov x0, d0
     uxth w7, w0
     b 0x108
-22:
+21:
     addv h0, v8.8h
     fmov x0, d0
     uxth w7, w0
     mov x6, x28
     mov x5, x27
-23:
+22:
     cmp x5, x20
     b.le 0x160
     movz x4, #1
     movz x0, #0
     movz x1, #0
-24:
+23:
     madd x3, x1, x19, xzr
     add x2, x6, x3
     ldrh w2, [x2]
@@ -3161,9 +3156,9 @@ simd_fold u16:
     add w0, w7, w2
     uxth w0, w0
     b 0x164
-25:
+24:
     uxth w0, w7
-26:
+25:
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -3198,30 +3193,30 @@ simd_fold u32:
     b.le 0xe8
     movz x22, #8
     movz x23, #0
-28:
+27:
     madd x1, x23, x19, xzr
     add x25, x1, x27
     add x21, x23, x19
     sub x24, x21, x23
     mov x0, x25
     mov x1, x24
-    bl 0x308
+    bl 0x300
     orr v10.16b, v0.16b, v0.16b
     mov x0, x25
     mov x1, x24
-    bl 0x308
+    bl 0x300
     orr v9.16b, v0.16b, v0.16b
     mov x0, x25
     mov x1, x24
-    bl 0x308
+    bl 0x300
     orr v12.16b, v0.16b, v0.16b
     mov x0, x25
     mov x1, x24
-    bl 0x308
+    bl 0x300
     orr v11.16b, v0.16b, v0.16b
     mov x0, x25
     mov x1, x24
-    bl 0x308
+    bl 0x300
     add v1.4s, v8.4s, v10.4s
     and v2.16b, v1.16b, v9.16b
     eor v2.16b, v2.16b, v12.16b
@@ -3237,18 +3232,18 @@ simd_fold u32:
     addv s0, v8.4s
     fmov x0, d0
     b 0xf8
-29:
+28:
     addv s0, v8.4s
     fmov x0, d0
     mov x7, x27
     mov x6, x26
-30:
+29:
     cmp x6, x20
     b.le init_inc u16
     movz x5, #1
     movz x1, #0
     movz x2, #0
-31:
+30:
     madd x4, x2, x19, xzr
     add x3, x7, x4
     ldr w4, [x3]
@@ -3261,7 +3256,6 @@ simd_fold u32:
     sub w1, w3, w4
     b.lt 0x10c
     add w0, w0, w1
-    b init_inc u16
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -3297,30 +3291,30 @@ simd_fold u64:
     b.le 0xf4
     movz x22, #4
     movz x24, #0
-33:
+32:
     madd x1, x24, x19, xzr
     add x26, x1, x28
     add x21, x24, x23
     sub x25, x21, x24
     mov x0, x26
     mov x1, x25
-    bl 0x1a0
+    bl 0x19c
     orr v10.16b, v0.16b, v0.16b
     mov x0, x26
     mov x1, x25
-    bl 0x1a0
+    bl 0x19c
     orr v9.16b, v0.16b, v0.16b
     mov x0, x26
     mov x1, x25
-    bl 0x1a0
+    bl 0x19c
     orr v12.16b, v0.16b, v0.16b
     mov x0, x26
     mov x1, x25
-    bl 0x1a0
+    bl 0x19c
     orr v11.16b, v0.16b, v0.16b
     mov x0, x26
     mov x1, x25
-    bl 0x1a0
+    bl 0x19c
     add v1.2d, v8.2d, v10.2d
     and v2.16b, v1.16b, v9.16b
     eor v2.16b, v2.16b, v12.16b
@@ -3337,19 +3331,19 @@ simd_fold u64:
     invalid
     add x0, x1, x0
     b 0x108
-34:
+33:
     mov x1[0]
     invalid
     add x0, x1, x0
     mov x7, x28
     mov x6, x27
-35:
+34:
     cmp x6, x20
     b.le 5
     movz x5, #1
     movz x2, #0
     movz x1, #0
-36:
+35:
     madd x4, x1, x19, xzr
     add x3, x7, x4
     ldr x4, [x3]
@@ -3363,7 +3357,6 @@ simd_fold u64:
     mov x2, x3
     b.lt 0x11c
     add x0, x0, x3
-    b 5
     ldr x19, [xzr]
     ldr x20, [xzr, #8]
     ldr x21, [xzr, #16]
@@ -3390,7 +3383,7 @@ from_slice =2 u64:
     ldr q0, [x0]
     ret
 =========== OPT LEVEL: aggresive ===========
-Error{inst_idx = 868, code = "INVALID_OPCODE", _ = [0, 0, 0]}
+Error{inst_idx = 864, code = "INVALID_OPCODE", _ = [0, 0, 0]}
 main:
     sub sp, sp, #192
     str x19, [xzr]
@@ -3605,7 +3598,6 @@ main:
     sub w8, w8, w9
     b.lt 14
     add w0, w0, w8
-    b 15
 15:
     movz x7, #0
     eor v0.16b, v0.16b, v0.16b
@@ -3647,7 +3639,6 @@ main:
     mov x4, x6
     b.lt 17
     add x8, x8, x6
-    b 18
 18:
     uxtb w2, w1
     uxth w1, w3

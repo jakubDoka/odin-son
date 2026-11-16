@@ -109,7 +109,6 @@ run_gpu_test :: proc(
 	ref_impl: proc(params: []gpu.Reg, results: []gpu.Reg),
 	max_float_ulps: int,
 ) {
-	{return}
 	name_str = name
 	context.logger.options &= ~{.Time, .Date, .Level, .Procedure}
 	when ODIN_DEBUG {

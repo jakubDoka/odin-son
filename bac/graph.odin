@@ -2131,14 +2131,6 @@ delete_node_node :: proc(prc: ^Proc, node: ^Node) {
 		rtype = DEAD_NODE_KIND,
 	}
 
-	//lines, err := trace.resolve(
-	//	trace.capture(skip = 1),
-	//	context.temp_allocator,
-	//	context.temp_allocator,
-	//)
-	//runtime.print_string("[back trace]\n")
-	//trace.print(lines)
-
 	add_efficiency_stat(prc, .deleted_nodes, 1)
 
 }

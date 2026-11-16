@@ -64,9 +64,6 @@ is_hex:
     test cl, cl
     jne 6
     xor eax, eax
-    jmp 6
-    jmp 6
-    jmp 6
 6:
     ret
 skip_ws:
@@ -151,7 +148,7 @@ parse_string:
     jmp 22
 17:
     xor ecx, ecx
-    jmp +0xf1
+    jmp 26
 18:
     mov rdi, rbx
     call advance
@@ -174,7 +171,7 @@ parse_string:
     cmp al, 0x75
     je 19
     xor ecx, ecx
-    jmp +0x87
+    jmp 26
 19:
     xor edx, edx
 20:
@@ -193,25 +190,18 @@ parse_string:
     jmp 20
 21:
     xor ecx, ecx
-    jmp +0x40
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
+    jmp 26
 22:
     jmp 16
 23:
     xor ecx, ecx
-    jmp +0xb
+    jmp 26
 24:
     mov cl, 1
-    jmp +0x3
+    jmp 26
 25:
     xor ecx, ecx
+26:
     mov rax, rcx
     add rsp, 8
     pop rbp
@@ -223,15 +213,15 @@ parse_number:
     mov rdi, rbx
     call peek
     cmp al, 0x2d
-    je 27
-    jmp 28
-27:
-    add.q [rbx + 0x10], 1
+    je 28
+    jmp 29
 28:
+    add.q [rbx + 0x10], 1
+29:
     mov rdi, rbx
     call peek
     cmp al, 0x30
-    je 31
+    je 32
     cmp al, 0x31
     setae cl
     movzx ecx, cl
@@ -240,47 +230,46 @@ parse_number:
     movzx eax, al
     and cl, al
     test cl, cl
-    jne 29
+    jne 30
     xor ecx, ecx
-    jmp 43
-29:
-    add.q [rbx + 0x10], 1
+    jmp 44
 30:
+    add.q [rbx + 0x10], 1
+31:
     mov rdi, rbx
     call peek
     mov rdi, rax
     call is_digit
     cmp al, 0
-    je 32
+    je 33
     add.q [rbx + 0x10], 1
-    jmp 30
-    jmp 32
-31:
-    add.q [rbx + 0x10], 1
+    jmp 31
 32:
+    add.q [rbx + 0x10], 1
+33:
     mov rdi, rbx
     call peek
     cmp al, 0x2e
-    je 33
-    jmp 35
-33:
-    add.q [rbx + 0x10], 1
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call is_digit
-    cmp al, 0
-    je 42
+    je 34
+    jmp 36
 34:
+    add.q [rbx + 0x10], 1
     mov rdi, rbx
     call peek
     mov rdi, rax
     call is_digit
     cmp al, 0
-    je 35
-    add.q [rbx + 0x10], 1
-    jmp 34
+    je 43
 35:
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call is_digit
+    cmp al, 0
+    je 36
+    add.q [rbx + 0x10], 1
+    jmp 35
+36:
     mov rdi, rbx
     call peek
     cmp al, 0x65
@@ -291,9 +280,9 @@ parse_number:
     movzx eax, al
     or dl, al
     test dl, dl
-    jne 36
-    jmp 40
-36:
+    jne 37
+    jmp 41
+37:
     add.q [rbx + 0x10], 1
     mov rdi, rbx
     call peek
@@ -305,35 +294,35 @@ parse_number:
     movzx eax, al
     or dl, al
     test dl, dl
-    jne 37
-    jmp 38
-37:
-    add.q [rbx + 0x10], 1
+    jne 38
+    jmp 39
 38:
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call is_digit
-    cmp al, 0
-    je 41
+    add.q [rbx + 0x10], 1
 39:
     mov rdi, rbx
     call peek
     mov rdi, rax
     call is_digit
     cmp al, 0
-    je 40
-    add.q [rbx + 0x10], 1
-    jmp 39
+    je 42
 40:
-    mov cl, 1
-    jmp 43
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call is_digit
+    cmp al, 0
+    je 41
+    add.q [rbx + 0x10], 1
+    jmp 40
 41:
-    xor ecx, ecx
-    jmp 43
+    mov cl, 1
+    jmp 44
 42:
     xor ecx, ecx
+    jmp 44
 43:
+    xor ecx, ecx
+44:
     mov rax, rcx
     pop rbx
     ret
@@ -343,43 +332,43 @@ parse_array:
     mov rdi, rbx
     call advance
     cmp al, 0x5b
-    jne 50
+    jne 51
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call peek
     cmp al, 0x5d
-    je 49
-45:
+    je 50
+46:
     mov rdi, rbx
     call parse_value
     cmp al, 0
-    je 48
+    je 49
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call advance
     cmp al, 0x5d
-    je 47
+    je 48
     cmp al, 0x2c
-    jne 46
-    jmp 45
-46:
-    xor eax, eax
-    jmp 51
+    jne 47
+    jmp 46
 47:
-    mov al, 1
-    jmp 51
-48:
     xor eax, eax
-    jmp 51
+    jmp 52
+48:
+    mov al, 1
+    jmp 52
 49:
+    xor eax, eax
+    jmp 52
+50:
     add.q [rbx + 0x10], 1
     mov al, 1
-    jmp 51
-50:
-    xor eax, eax
+    jmp 52
 51:
+    xor eax, eax
+52:
     pop rbx
     ret
 parse_object:
@@ -395,44 +384,41 @@ parse_object:
     call peek
     cmp al, 0x7d
     je 60
-53:
+54:
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call peek
     cmp al, 0x22
-    jne 59
+    jne +0x8f
     mov rdi, rbx
     call parse_string
     cmp al, 0
-    je 58
+    je 59
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call advance
     cmp al, 0x3a
-    jne 57
+    jne 58
     mov rdi, rbx
     call parse_value
     cmp al, 0
-    je 56
+    je 57
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call advance
     cmp al, 0x7d
-    je 55
+    je 56
     cmp al, 0x2c
-    jne 54
-    jmp 53
-54:
-    xor eax, eax
-    jmp 62
+    jne 55
+    jmp 54
 55:
-    mov al, 1
+    xor eax, eax
     jmp 62
 56:
-    xor eax, eax
+    mov al, 1
     jmp 62
 57:
     xor eax, eax
@@ -441,6 +427,8 @@ parse_object:
     xor eax, eax
     jmp 62
 59:
+    xor eax, eax
+    jmp 62
     xor eax, eax
     jmp 62
 60:
@@ -489,19 +477,19 @@ parse_value:
     call parse_number
     jmp 71
 65:
-    lea rsi, [rip + 0x858]
+    lea rsi, [rip + 0x894]
     mov rdi, rbx
     mov rdx, 4
     call parse_lit
     jmp 71
 66:
-    lea rsi, [rip + 0x838]
+    lea rsi, [rip + 0x874]
     mov rdx, 5
     mov rdi, rbx
     call parse_lit
     jmp 71
 67:
-    lea rsi, [rip + 0x819]
+    lea rsi, [rip + 0x855]
     mov rdi, rbx
     mov rdx, 4
     call parse_lit
@@ -556,35 +544,35 @@ main:
     push r14
     push r15
     sub rsp, 8
-    lea rdi, [rip + 0x76d]
+    lea rdi, [rip + 0x7a9]
     mov rsi, 4
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x75b]
+    lea rdi, [rip + 0x797]
     mov rsi, 5
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x74a]
+    lea rdi, [rip + 0x786]
     mov rsi, 4
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x738]
+    lea rdi, [rip + 0x774]
     mov rsi, 3
     call validate
     mov r13, rax
-    lea rdi, [rip + 0x725]
+    lea rdi, [rip + 0x761]
     mov rsi, 7
     call validate
     mov r14, rax
-    lea rdi, [rip + 0x716]
+    lea rdi, [rip + 0x752]
     mov rsi, 7
     call validate
     mov r15, rax
-    lea rdi, [rip + 0x707]
+    lea rdi, [rip + 0x743]
     mov rsi, 9
     call validate
     mov.q [rsp], rax
-    lea rdi, [rip + 0x6f9]
+    lea rdi, [rip + 0x735]
     mov rsi, 0x1b
     call validate
     mov rcx, rbx
@@ -626,19 +614,19 @@ main:
     mov rax, rcx
 78:
     mov rbx, rax
-    lea rdi, [rip + 0x664]
+    lea rdi, [rip + 0x6a0]
     mov rsi, 8
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x656]
+    lea rdi, [rip + 0x692]
     mov rsi, 2
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x642]
+    lea rdi, [rip + 0x67e]
     xor esi, esi
     call validate
     mov r13, rax
-    lea rdi, [rip + 0x630]
+    lea rdi, [rip + 0x66c]
     mov rsi, 1
     call validate
     mov rcx, rbx
@@ -656,27 +644,26 @@ main:
     cmp r13b, 0
     cmove rcx, rdx
     cmp al, 0
-    je 79
+    je +0x8
     mov rax, rcx
-    jmp 80
-79:
+    jmp 79
     add rcx, 0x800
     mov rax, rcx
-80:
+79:
     mov rbx, rax
-    lea rdi, [rip + 0x5c5]
+    lea rdi, [rip + 0x601]
     mov rsi, 4
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x5b3]
+    lea rdi, [rip + 0x5ef]
     mov rsi, 5
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x5a2]
+    lea rdi, [rip + 0x5de]
     mov rsi, 2
     call validate
     mov r13, rax
-    lea rdi, [rip + 0x58e]
+    lea rdi, [rip + 0x5ca]
     mov rsi, 6
     call validate
     mov rcx, rbx
@@ -694,19 +681,19 @@ main:
     cmp r13b, 0
     cmove rcx, rdx
     cmp al, 0
-    je 81
+    je 80
     mov rax, rcx
-    jmp 82
-81:
+    jmp 81
+80:
     add rcx, 0x8000
     mov rax, rcx
-82:
+81:
     mov rbx, rax
-    lea rdi, [rip + 0x526]
+    lea rdi, [rip + 0x562]
     mov rsi, 7
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x517]
+    lea rdi, [rip + 0x553]
     mov rsi, 3
     call validate
     mov rcx, rbx
@@ -792,9 +779,6 @@ is_hex:
     test cl, cl
     jne 6
     xor eax, eax
-    jmp 6
-    jmp 6
-    jmp 6
 6:
     ret
 skip_ws:
@@ -919,14 +903,6 @@ parse_string:
 21:
     xor eax, eax
     jmp 26
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
 22:
     jmp 16
 23:
@@ -979,7 +955,6 @@ parse_number:
     je 33
     add.q [rbx + 0x10], 1
     jmp 31
-    jmp 33
 32:
     add.q [rbx + 0x10], 1
 33:
@@ -1214,18 +1189,18 @@ parse_value:
     call parse_number
     jmp 72
 66:
-    lea rsi, [rip + 0x881]
+    lea rsi, [rip + 0x8bd]
     mov rdi, rbp
     call parse_lit
     jmp 72
 67:
-    lea rsi, [rip + 0x868]
+    lea rsi, [rip + 0x8a4]
     mov rdx, 5
     mov rdi, rbp
     call parse_lit
     jmp 72
 68:
-    lea rsi, [rip + 0x849]
+    lea rsi, [rip + 0x885]
     mov rdi, rbp
     call parse_lit
     jmp 72
@@ -1279,35 +1254,35 @@ main:
     push r14
     push r15
     sub rsp, 8
-    lea rdi, [rip + 0x7a4]
+    lea rdi, [rip + 0x7e0]
     mov rsi, 4
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x792]
+    lea rdi, [rip + 0x7ce]
     mov rsi, 5
     call validate
     mov.q [rsp], rax
-    lea rdi, [rip + 0x780]
+    lea rdi, [rip + 0x7bc]
     mov rsi, 4
     call validate
     mov r15, rax
-    lea rdi, [rip + 0x76e]
+    lea rdi, [rip + 0x7aa]
     mov rsi, 3
     call validate
     mov r14, rax
-    lea rdi, [rip + 0x75b]
+    lea rdi, [rip + 0x797]
     mov rsi, 7
     call validate
     mov r13, rax
-    lea rdi, [rip + 0x74c]
+    lea rdi, [rip + 0x788]
     mov rsi, 7
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x73d]
+    lea rdi, [rip + 0x779]
     mov rsi, 9
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x730]
+    lea rdi, [rip + 0x76c]
     mov rsi, 0x1b
     call validate
     mov rdx, rax
@@ -1347,19 +1322,19 @@ main:
     add rax, 0x80
 79:
     mov r13, rax
-    lea rdi, [rip + 0x6a1]
+    lea rdi, [rip + 0x6dd]
     mov rsi, 8
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x693]
+    lea rdi, [rip + 0x6cf]
     mov rsi, 2
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x67f]
+    lea rdi, [rip + 0x6bb]
     xor esi, esi
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x66d]
+    lea rdi, [rip + 0x6a9]
     mov rsi, 1
     call validate
     mov rdx, r13
@@ -1376,25 +1351,24 @@ main:
     cmp bl, 0
     cmove rcx, rdx
     cmp al, 0
-    je 80
-    jmp 81
-80:
+    je +0x5
+    jmp 80
     add rcx, 0x800
-81:
+80:
     mov r13, rcx
-    lea rdi, [rip + 0x60b]
+    lea rdi, [rip + 0x647]
     mov rsi, 4
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x5f9]
+    lea rdi, [rip + 0x635]
     mov rsi, 5
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x5e8]
+    lea rdi, [rip + 0x624]
     mov rsi, 2
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x5d4]
+    lea rdi, [rip + 0x610]
     mov rsi, 6
     call validate
     mov rdx, r13
@@ -1411,17 +1385,17 @@ main:
     cmp bl, 0
     cmove rcx, rdx
     cmp al, 0
-    je 82
-    jmp 83
-82:
+    je 81
+    jmp 82
+81:
     add rcx, 0x8000
-83:
+82:
     mov rbp, rcx
-    lea rdi, [rip + 0x575]
+    lea rdi, [rip + 0x5b1]
     mov rsi, 7
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x566]
+    lea rdi, [rip + 0x5a2]
     mov rsi, 3
     call validate
     mov rcx, rbp
@@ -1508,9 +1482,6 @@ is_hex:
     test cl, cl
     jne 6
     xor eax, eax
-    jmp 6
-    jmp 6
-    jmp 6
 6:
     ret
 skip_ws:
@@ -1595,7 +1566,7 @@ parse_string:
     jmp 22
 17:
     xor ecx, ecx
-    jmp +0xf1
+    jmp 26
 18:
     mov rdi, rbx
     call advance
@@ -1618,7 +1589,7 @@ parse_string:
     cmp al, 0x75
     je 19
     xor ecx, ecx
-    jmp +0x87
+    jmp 26
 19:
     xor edx, edx
 20:
@@ -1637,25 +1608,18 @@ parse_string:
     jmp 20
 21:
     xor ecx, ecx
-    jmp +0x40
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
+    jmp 26
 22:
     jmp 16
 23:
     xor ecx, ecx
-    jmp +0xb
+    jmp 26
 24:
     mov cl, 1
-    jmp +0x3
+    jmp 26
 25:
     xor ecx, ecx
+26:
     mov rax, rcx
     add rsp, 8
     pop rbp
@@ -1667,15 +1631,15 @@ parse_number:
     mov rdi, rbx
     call peek
     cmp al, 0x2d
-    je 27
-    jmp 28
-27:
-    add.q [rbx + 0x10], 1
+    je 28
+    jmp 29
 28:
+    add.q [rbx + 0x10], 1
+29:
     mov rdi, rbx
     call peek
     cmp al, 0x30
-    je 31
+    je 32
     cmp al, 0x31
     setae cl
     movzx ecx, cl
@@ -1684,47 +1648,46 @@ parse_number:
     movzx eax, al
     and cl, al
     test cl, cl
-    jne 29
+    jne 30
     xor ecx, ecx
-    jmp 43
-29:
-    add.q [rbx + 0x10], 1
+    jmp 44
 30:
+    add.q [rbx + 0x10], 1
+31:
     mov rdi, rbx
     call peek
     mov rdi, rax
     call is_digit
     cmp al, 0
-    je 32
+    je 33
     add.q [rbx + 0x10], 1
-    jmp 30
-    jmp 32
-31:
-    add.q [rbx + 0x10], 1
+    jmp 31
 32:
+    add.q [rbx + 0x10], 1
+33:
     mov rdi, rbx
     call peek
     cmp al, 0x2e
-    je 33
-    jmp 35
-33:
-    add.q [rbx + 0x10], 1
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call is_digit
-    cmp al, 0
-    je 42
+    je 34
+    jmp 36
 34:
+    add.q [rbx + 0x10], 1
     mov rdi, rbx
     call peek
     mov rdi, rax
     call is_digit
     cmp al, 0
-    je 35
-    add.q [rbx + 0x10], 1
-    jmp 34
+    je 43
 35:
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call is_digit
+    cmp al, 0
+    je 36
+    add.q [rbx + 0x10], 1
+    jmp 35
+36:
     mov rdi, rbx
     call peek
     cmp al, 0x65
@@ -1735,9 +1698,9 @@ parse_number:
     movzx eax, al
     or dl, al
     test dl, dl
-    jne 36
-    jmp 40
-36:
+    jne 37
+    jmp 41
+37:
     add.q [rbx + 0x10], 1
     mov rdi, rbx
     call peek
@@ -1749,35 +1712,35 @@ parse_number:
     movzx eax, al
     or dl, al
     test dl, dl
-    jne 37
-    jmp 38
-37:
-    add.q [rbx + 0x10], 1
+    jne 38
+    jmp 39
 38:
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call is_digit
-    cmp al, 0
-    je 41
+    add.q [rbx + 0x10], 1
 39:
     mov rdi, rbx
     call peek
     mov rdi, rax
     call is_digit
     cmp al, 0
-    je 40
-    add.q [rbx + 0x10], 1
-    jmp 39
+    je 42
 40:
-    mov cl, 1
-    jmp 43
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call is_digit
+    cmp al, 0
+    je 41
+    add.q [rbx + 0x10], 1
+    jmp 40
 41:
-    xor ecx, ecx
-    jmp 43
+    mov cl, 1
+    jmp 44
 42:
     xor ecx, ecx
+    jmp 44
 43:
+    xor ecx, ecx
+44:
     mov rax, rcx
     pop rbx
     ret
@@ -1787,43 +1750,43 @@ parse_array:
     mov rdi, rbx
     call advance
     cmp al, 0x5b
-    jne 50
+    jne 51
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call peek
     cmp al, 0x5d
-    je 49
-45:
+    je 50
+46:
     mov rdi, rbx
     call parse_value
     cmp al, 0
-    je 48
+    je 49
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call advance
     cmp al, 0x5d
-    je 47
+    je 48
     cmp al, 0x2c
-    jne 46
-    jmp 45
-46:
-    xor eax, eax
-    jmp 51
+    jne 47
+    jmp 46
 47:
-    mov al, 1
-    jmp 51
-48:
     xor eax, eax
-    jmp 51
+    jmp 52
+48:
+    mov al, 1
+    jmp 52
 49:
+    xor eax, eax
+    jmp 52
+50:
     add.q [rbx + 0x10], 1
     mov al, 1
-    jmp 51
-50:
-    xor eax, eax
+    jmp 52
 51:
+    xor eax, eax
+52:
     pop rbx
     ret
 parse_object:
@@ -1839,44 +1802,41 @@ parse_object:
     call peek
     cmp al, 0x7d
     je 60
-53:
+54:
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call peek
     cmp al, 0x22
-    jne 59
+    jne +0x8f
     mov rdi, rbx
     call parse_string
     cmp al, 0
-    je 58
+    je 59
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call advance
     cmp al, 0x3a
-    jne 57
+    jne 58
     mov rdi, rbx
     call parse_value
     cmp al, 0
-    je 56
+    je 57
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call advance
     cmp al, 0x7d
-    je 55
+    je 56
     cmp al, 0x2c
-    jne 54
-    jmp 53
-54:
-    xor eax, eax
-    jmp 62
+    jne 55
+    jmp 54
 55:
-    mov al, 1
+    xor eax, eax
     jmp 62
 56:
-    xor eax, eax
+    mov al, 1
     jmp 62
 57:
     xor eax, eax
@@ -1885,6 +1845,8 @@ parse_object:
     xor eax, eax
     jmp 62
 59:
+    xor eax, eax
+    jmp 62
     xor eax, eax
     jmp 62
 60:
@@ -1933,19 +1895,19 @@ parse_value:
     call parse_number
     jmp 71
 65:
-    lea rsi, [rip + 0x858]
+    lea rsi, [rip + 0x894]
     mov rdi, rbx
     mov rdx, 4
     call parse_lit
     jmp 71
 66:
-    lea rsi, [rip + 0x838]
+    lea rsi, [rip + 0x874]
     mov rdx, 5
     mov rdi, rbx
     call parse_lit
     jmp 71
 67:
-    lea rsi, [rip + 0x819]
+    lea rsi, [rip + 0x855]
     mov rdi, rbx
     mov rdx, 4
     call parse_lit
@@ -2000,35 +1962,35 @@ main:
     push r14
     push r15
     sub rsp, 8
-    lea rdi, [rip + 0x76d]
+    lea rdi, [rip + 0x7a9]
     mov rsi, 4
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x75b]
+    lea rdi, [rip + 0x797]
     mov rsi, 5
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x74a]
+    lea rdi, [rip + 0x786]
     mov rsi, 4
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x738]
+    lea rdi, [rip + 0x774]
     mov rsi, 3
     call validate
     mov r13, rax
-    lea rdi, [rip + 0x725]
+    lea rdi, [rip + 0x761]
     mov rsi, 7
     call validate
     mov r14, rax
-    lea rdi, [rip + 0x716]
+    lea rdi, [rip + 0x752]
     mov rsi, 7
     call validate
     mov r15, rax
-    lea rdi, [rip + 0x707]
+    lea rdi, [rip + 0x743]
     mov rsi, 9
     call validate
     mov.q [rsp], rax
-    lea rdi, [rip + 0x6f9]
+    lea rdi, [rip + 0x735]
     mov rsi, 0x1b
     call validate
     mov rcx, rbx
@@ -2070,19 +2032,19 @@ main:
     mov rax, rcx
 78:
     mov rbx, rax
-    lea rdi, [rip + 0x664]
+    lea rdi, [rip + 0x6a0]
     mov rsi, 8
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x656]
+    lea rdi, [rip + 0x692]
     mov rsi, 2
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x642]
+    lea rdi, [rip + 0x67e]
     xor esi, esi
     call validate
     mov r13, rax
-    lea rdi, [rip + 0x630]
+    lea rdi, [rip + 0x66c]
     mov rsi, 1
     call validate
     mov rcx, rbx
@@ -2100,27 +2062,26 @@ main:
     cmp r13b, 0
     cmove rcx, rdx
     cmp al, 0
-    je 79
+    je +0x8
     mov rax, rcx
-    jmp 80
-79:
+    jmp 79
     add rcx, 0x800
     mov rax, rcx
-80:
+79:
     mov rbx, rax
-    lea rdi, [rip + 0x5c5]
+    lea rdi, [rip + 0x601]
     mov rsi, 4
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x5b3]
+    lea rdi, [rip + 0x5ef]
     mov rsi, 5
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x5a2]
+    lea rdi, [rip + 0x5de]
     mov rsi, 2
     call validate
     mov r13, rax
-    lea rdi, [rip + 0x58e]
+    lea rdi, [rip + 0x5ca]
     mov rsi, 6
     call validate
     mov rcx, rbx
@@ -2138,19 +2099,19 @@ main:
     cmp r13b, 0
     cmove rcx, rdx
     cmp al, 0
-    je 81
+    je 80
     mov rax, rcx
-    jmp 82
-81:
+    jmp 81
+80:
     add rcx, 0x8000
     mov rax, rcx
-82:
+81:
     mov rbx, rax
-    lea rdi, [rip + 0x526]
+    lea rdi, [rip + 0x562]
     mov rsi, 7
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x517]
+    lea rdi, [rip + 0x553]
     mov rsi, 3
     call validate
     mov rcx, rbx
@@ -2236,9 +2197,6 @@ is_hex:
     test cl, cl
     jne 6
     xor eax, eax
-    jmp 6
-    jmp 6
-    jmp 6
 6:
     ret
 skip_ws:
@@ -2363,14 +2321,6 @@ parse_string:
 21:
     xor eax, eax
     jmp 26
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
-    jmp 22
 22:
     jmp 16
 23:
@@ -2423,7 +2373,6 @@ parse_number:
     je 33
     add.q [rbx + 0x10], 1
     jmp 31
-    jmp 33
 32:
     add.q [rbx + 0x10], 1
 33:
@@ -2658,18 +2607,18 @@ parse_value:
     call parse_number
     jmp 72
 66:
-    lea rsi, [rip + 0x881]
+    lea rsi, [rip + 0x8bd]
     mov rdi, rbp
     call parse_lit
     jmp 72
 67:
-    lea rsi, [rip + 0x868]
+    lea rsi, [rip + 0x8a4]
     mov rdx, 5
     mov rdi, rbp
     call parse_lit
     jmp 72
 68:
-    lea rsi, [rip + 0x849]
+    lea rsi, [rip + 0x885]
     mov rdi, rbp
     call parse_lit
     jmp 72
@@ -2723,35 +2672,35 @@ main:
     push r14
     push r15
     sub rsp, 8
-    lea rdi, [rip + 0x7a4]
+    lea rdi, [rip + 0x7e0]
     mov rsi, 4
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x792]
+    lea rdi, [rip + 0x7ce]
     mov rsi, 5
     call validate
     mov.q [rsp], rax
-    lea rdi, [rip + 0x780]
+    lea rdi, [rip + 0x7bc]
     mov rsi, 4
     call validate
     mov r15, rax
-    lea rdi, [rip + 0x76e]
+    lea rdi, [rip + 0x7aa]
     mov rsi, 3
     call validate
     mov r14, rax
-    lea rdi, [rip + 0x75b]
+    lea rdi, [rip + 0x797]
     mov rsi, 7
     call validate
     mov r13, rax
-    lea rdi, [rip + 0x74c]
+    lea rdi, [rip + 0x788]
     mov rsi, 7
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x73d]
+    lea rdi, [rip + 0x779]
     mov rsi, 9
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x730]
+    lea rdi, [rip + 0x76c]
     mov rsi, 0x1b
     call validate
     mov rdx, rax
@@ -2791,19 +2740,19 @@ main:
     add rax, 0x80
 79:
     mov r13, rax
-    lea rdi, [rip + 0x6a1]
+    lea rdi, [rip + 0x6dd]
     mov rsi, 8
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x693]
+    lea rdi, [rip + 0x6cf]
     mov rsi, 2
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x67f]
+    lea rdi, [rip + 0x6bb]
     xor esi, esi
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x66d]
+    lea rdi, [rip + 0x6a9]
     mov rsi, 1
     call validate
     mov rdx, r13
@@ -2820,25 +2769,24 @@ main:
     cmp bl, 0
     cmove rcx, rdx
     cmp al, 0
-    je 80
-    jmp 81
-80:
+    je +0x5
+    jmp 80
     add rcx, 0x800
-81:
+80:
     mov r13, rcx
-    lea rdi, [rip + 0x60b]
+    lea rdi, [rip + 0x647]
     mov rsi, 4
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x5f9]
+    lea rdi, [rip + 0x635]
     mov rsi, 5
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x5e8]
+    lea rdi, [rip + 0x624]
     mov rsi, 2
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x5d4]
+    lea rdi, [rip + 0x610]
     mov rsi, 6
     call validate
     mov rdx, r13
@@ -2855,17 +2803,17 @@ main:
     cmp bl, 0
     cmove rcx, rdx
     cmp al, 0
-    je 82
-    jmp 83
-82:
+    je 81
+    jmp 82
+81:
     add rcx, 0x8000
-83:
+82:
     mov rbp, rcx
-    lea rdi, [rip + 0x575]
+    lea rdi, [rip + 0x5b1]
     mov rsi, 7
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x566]
+    lea rdi, [rip + 0x5a2]
     mov rsi, 3
     call validate
     mov rcx, rbp
@@ -2950,9 +2898,6 @@ is_hex:
     test cl, cl
     jne 6
     xor eax, eax
-    jmp 6
-    jmp 6
-    jmp 6
 6:
     ret
 skip_ws:
@@ -3028,7 +2973,7 @@ parse_string:
     mov rdi, rbp
     call advance
     cmp al, 0x22
-    jne +0x11d
+    jne 24
 16:
     mov rdi, rbp
     call advance
@@ -3043,7 +2988,7 @@ parse_string:
     jmp 21
 17:
     xor eax, eax
-    jmp 24
+    jmp 25
 18:
     mov rdi, rbp
     call advance
@@ -3066,7 +3011,7 @@ parse_string:
     cmp al, 0x75
     je 19
     xor eax, eax
-    jmp 24
+    jmp 25
 19:
     xor ebx, ebx
 20:
@@ -3080,25 +3025,18 @@ parse_string:
     cmp al, 0
     jne 20
     xor eax, eax
-    jmp 24
-    jmp 21
-    jmp 21
-    jmp 21
-    jmp 21
-    jmp 21
-    jmp 21
-    jmp 21
-    jmp 21
+    jmp 25
 21:
     jmp 16
 22:
     xor eax, eax
-    jmp 24
+    jmp 25
 23:
     mov al, 1
-    jmp 24
-    xor eax, eax
+    jmp 25
 24:
+    xor eax, eax
+25:
     add rsp, 8
     pop rbp
     pop rbx
@@ -3109,15 +3047,15 @@ parse_number:
     mov rdi, rbx
     call peek
     cmp al, 0x2d
-    je 26
-    jmp 27
-26:
-    add.q [rbx + 0x10], 1
+    je 27
+    jmp 28
 27:
+    add.q [rbx + 0x10], 1
+28:
     mov rdi, rbx
     call peek
     cmp al, 0x30
-    je 30
+    je 31
     cmp al, 0x31
     setae cl
     movzx ecx, cl
@@ -3126,47 +3064,46 @@ parse_number:
     movzx eax, al
     and cl, al
     test cl, cl
-    jne 28
+    jne 29
     xor eax, eax
-    jmp 42
-28:
-    add.q [rbx + 0x10], 1
+    jmp 43
 29:
+    add.q [rbx + 0x10], 1
+30:
     mov rdi, rbx
     call peek
     mov rdi, rax
     call is_digit
     cmp al, 0
-    je 31
+    je 32
     add.q [rbx + 0x10], 1
-    jmp 29
-    jmp 31
-30:
-    add.q [rbx + 0x10], 1
+    jmp 30
 31:
+    add.q [rbx + 0x10], 1
+32:
     mov rdi, rbx
     call peek
     cmp al, 0x2e
-    je 32
-    jmp 34
-32:
-    add.q [rbx + 0x10], 1
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call is_digit
-    cmp al, 0
-    je 41
+    je 33
+    jmp 35
 33:
+    add.q [rbx + 0x10], 1
     mov rdi, rbx
     call peek
     mov rdi, rax
     call is_digit
     cmp al, 0
-    je 34
-    add.q [rbx + 0x10], 1
-    jmp 33
+    je 42
 34:
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call is_digit
+    cmp al, 0
+    je 35
+    add.q [rbx + 0x10], 1
+    jmp 34
+35:
     mov rdi, rbx
     call peek
     cmp al, 0x65
@@ -3177,9 +3114,9 @@ parse_number:
     movzx eax, al
     or cl, al
     test cl, cl
-    jne 35
-    jmp 39
-35:
+    jne 36
+    jmp 40
+36:
     add.q [rbx + 0x10], 1
     mov rdi, rbx
     call peek
@@ -3191,35 +3128,35 @@ parse_number:
     movzx eax, al
     or cl, al
     test cl, cl
-    jne 36
-    jmp 37
-36:
-    add.q [rbx + 0x10], 1
+    jne 37
+    jmp 38
 37:
-    mov rdi, rbx
-    call peek
-    mov rdi, rax
-    call is_digit
-    cmp al, 0
-    je 40
+    add.q [rbx + 0x10], 1
 38:
     mov rdi, rbx
     call peek
     mov rdi, rax
     call is_digit
     cmp al, 0
-    je 39
-    add.q [rbx + 0x10], 1
-    jmp 38
+    je 41
 39:
-    mov al, 1
-    jmp 42
+    mov rdi, rbx
+    call peek
+    mov rdi, rax
+    call is_digit
+    cmp al, 0
+    je 40
+    add.q [rbx + 0x10], 1
+    jmp 39
 40:
-    xor eax, eax
-    jmp 42
+    mov al, 1
+    jmp 43
 41:
     xor eax, eax
+    jmp 43
 42:
+    xor eax, eax
+43:
     pop rbx
     ret
 parse_array:
@@ -3228,41 +3165,41 @@ parse_array:
     mov rdi, rbx
     call advance
     cmp al, 0x5b
-    jne 48
+    jne 49
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call peek
     cmp al, 0x5d
-    je 47
-44:
+    je 48
+45:
     mov rdi, rbx
     call parse_value
     cmp al, 0
-    je 46
+    je 47
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call advance
     cmp al, 0x5d
-    je 45
+    je 46
     cmp al, 0x2c
-    je 44
+    je 45
     xor eax, eax
-    jmp 49
-45:
-    mov al, 1
-    jmp 49
+    jmp 50
 46:
-    xor eax, eax
-    jmp 49
+    mov al, 1
+    jmp 50
 47:
+    xor eax, eax
+    jmp 50
+48:
     add.q [rbx + 0x10], 1
     mov al, 1
-    jmp 49
-48:
-    xor eax, eax
+    jmp 50
 49:
+    xor eax, eax
+50:
     pop rbx
     ret
 parse_object:
@@ -3278,42 +3215,39 @@ parse_object:
     call peek
     cmp al, 0x7d
     je 57
-51:
+52:
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call peek
     cmp al, 0x22
-    jne 56
+    jne +0x8a
     mov rdi, rbx
     call parse_string
     cmp al, 0
-    je 55
+    je 56
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call advance
     cmp al, 0x3a
-    jne 54
+    jne 55
     mov rdi, rbx
     call parse_value
     cmp al, 0
-    je 53
+    je 54
     mov rdi, rbx
     call skip_ws
     mov rdi, rbx
     call advance
     cmp al, 0x7d
-    je 52
+    je 53
     cmp al, 0x2c
-    je 51
+    je 52
     xor eax, eax
-    jmp 59
-52:
-    mov al, 1
     jmp 59
 53:
-    xor eax, eax
+    mov al, 1
     jmp 59
 54:
     xor eax, eax
@@ -3322,6 +3256,8 @@ parse_object:
     xor eax, eax
     jmp 59
 56:
+    xor eax, eax
+    jmp 59
     xor eax, eax
     jmp 59
 57:
@@ -3371,18 +3307,18 @@ parse_value:
     call parse_number
     jmp 68
 62:
-    lea rsi, [rip + 0x881]
+    lea rsi, [rip + 0x8bd]
     mov rdi, rbp
     call parse_lit
     jmp 68
 63:
-    lea rsi, [rip + 0x868]
+    lea rsi, [rip + 0x8a4]
     mov rdx, 5
     mov rdi, rbp
     call parse_lit
     jmp 68
 64:
-    lea rsi, [rip + 0x849]
+    lea rsi, [rip + 0x885]
     mov rdi, rbp
     call parse_lit
     jmp 68
@@ -3436,35 +3372,35 @@ main:
     push r14
     push r15
     sub rsp, 8
-    lea rdi, [rip + 0x7a4]
+    lea rdi, [rip + 0x7e0]
     mov rsi, 4
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x792]
+    lea rdi, [rip + 0x7ce]
     mov rsi, 5
     call validate
     mov.q [rsp], rax
-    lea rdi, [rip + 0x780]
+    lea rdi, [rip + 0x7bc]
     mov rsi, 4
     call validate
     mov r15, rax
-    lea rdi, [rip + 0x76e]
+    lea rdi, [rip + 0x7aa]
     mov rsi, 3
     call validate
     mov r14, rax
-    lea rdi, [rip + 0x75b]
+    lea rdi, [rip + 0x797]
     mov rsi, 7
     call validate
     mov r13, rax
-    lea rdi, [rip + 0x74c]
+    lea rdi, [rip + 0x788]
     mov rsi, 7
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x73d]
+    lea rdi, [rip + 0x779]
     mov rsi, 9
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x730]
+    lea rdi, [rip + 0x76c]
     mov rsi, 0x1b
     call validate
     mov rdx, rax
@@ -3504,19 +3440,19 @@ main:
     add rax, 0x80
 75:
     mov r13, rax
-    lea rdi, [rip + 0x6a1]
+    lea rdi, [rip + 0x6dd]
     mov rsi, 8
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x693]
+    lea rdi, [rip + 0x6cf]
     mov rsi, 2
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x67f]
+    lea rdi, [rip + 0x6bb]
     xor esi, esi
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x66d]
+    lea rdi, [rip + 0x6a9]
     mov rsi, 1
     call validate
     mov rdx, r13
@@ -3539,19 +3475,19 @@ main:
     add rcx, 0x800
 77:
     mov r13, rcx
-    lea rdi, [rip + 0x60b]
+    lea rdi, [rip + 0x647]
     mov rsi, 4
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x5f9]
+    lea rdi, [rip + 0x635]
     mov rsi, 5
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x5e8]
+    lea rdi, [rip + 0x624]
     mov rsi, 2
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x5d4]
+    lea rdi, [rip + 0x610]
     mov rsi, 6
     call validate
     mov rdx, r13
@@ -3574,11 +3510,11 @@ main:
     add rcx, 0x8000
 79:
     mov rbp, rcx
-    lea rdi, [rip + 0x575]
+    lea rdi, [rip + 0x5b1]
     mov rsi, 7
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x566]
+    lea rdi, [rip + 0x5a2]
     mov rsi, 3
     call validate
     mov rcx, rbp
@@ -3797,14 +3733,6 @@ parse_string:
     jne 18
     xor eax, eax
     jmp 27
-    jmp 23
-    jmp 23
-    jmp 23
-    jmp 23
-    jmp 23
-    jmp 23
-    jmp 23
-    jmp 23
 23:
     jmp 14
 24:
@@ -3998,7 +3926,6 @@ parse_value:
     je 51
     add.q [rbp + 0x10], 1
     jmp 49
-    jmp 51
 50:
     add.q [rbp + 0x10], 1
 51:
@@ -4079,18 +4006,18 @@ parse_value:
     xor eax, eax
     jmp 68
 62:
-    lea rsi, [rip + 0x88e]
+    lea rsi, [rip + 0x8bb]
     mov rdi, rbp
     call parse_lit
     jmp 68
 63:
-    lea rsi, [rip + 0x875]
+    lea rsi, [rip + 0x8a2]
     mov rdx, 5
     mov rdi, rbp
     call parse_lit
     jmp 68
 64:
-    lea rsi, [rip + 0x856]
+    lea rsi, [rip + 0x883]
     mov rdi, rbp
     call parse_lit
     jmp 68
@@ -4144,35 +4071,35 @@ main:
     push r14
     push r15
     sub rsp, 8
-    lea rdi, [rip + 0x7b1]
+    lea rdi, [rip + 0x7de]
     mov rsi, 4
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x79f]
+    lea rdi, [rip + 0x7cc]
     mov rsi, 5
     call validate
     mov.q [rsp], rax
-    lea rdi, [rip + 0x78d]
+    lea rdi, [rip + 0x7ba]
     mov rsi, 4
     call validate
     mov r15, rax
-    lea rdi, [rip + 0x77b]
+    lea rdi, [rip + 0x7a8]
     mov rsi, 3
     call validate
     mov r14, rax
-    lea rdi, [rip + 0x768]
+    lea rdi, [rip + 0x795]
     mov rsi, 7
     call validate
     mov r13, rax
-    lea rdi, [rip + 0x759]
+    lea rdi, [rip + 0x786]
     mov rsi, 7
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x74a]
+    lea rdi, [rip + 0x777]
     mov rsi, 9
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x73d]
+    lea rdi, [rip + 0x76a]
     mov rsi, 0x1b
     call validate
     mov rdx, rax
@@ -4212,19 +4139,19 @@ main:
     add rax, 0x80
 75:
     mov r13, rax
-    lea rdi, [rip + 0x6ae]
+    lea rdi, [rip + 0x6db]
     mov rsi, 8
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x6a0]
+    lea rdi, [rip + 0x6cd]
     mov rsi, 2
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x68c]
+    lea rdi, [rip + 0x6b9]
     xor esi, esi
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x67a]
+    lea rdi, [rip + 0x6a7]
     mov rsi, 1
     call validate
     mov rdx, r13
@@ -4247,19 +4174,19 @@ main:
     add rcx, 0x800
 77:
     mov r13, rcx
-    lea rdi, [rip + 0x618]
+    lea rdi, [rip + 0x645]
     mov rsi, 4
     call validate
     mov r12, rax
-    lea rdi, [rip + 0x606]
+    lea rdi, [rip + 0x633]
     mov rsi, 5
     call validate
     mov rbp, rax
-    lea rdi, [rip + 0x5f5]
+    lea rdi, [rip + 0x622]
     mov rsi, 2
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x5e1]
+    lea rdi, [rip + 0x60e]
     mov rsi, 6
     call validate
     mov rdx, r13
@@ -4282,11 +4209,11 @@ main:
     add rcx, 0x8000
 79:
     mov rbp, rcx
-    lea rdi, [rip + 0x582]
+    lea rdi, [rip + 0x5af]
     mov rsi, 7
     call validate
     mov rbx, rax
-    lea rdi, [rip + 0x573]
+    lea rdi, [rip + 0x5a0]
     mov rsi, 3
     call validate
     mov rcx, rbp

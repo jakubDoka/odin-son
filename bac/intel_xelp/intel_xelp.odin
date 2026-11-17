@@ -42,8 +42,6 @@ R6 :: Reg(6)
 R7 :: Reg(7)
 R8 :: Reg(8)
 
-ADDRESS_PAYLOAD :: Reg(116)
-
 R118 :: Reg(118)
 R119 :: Reg(119)
 R120 :: Reg(120)
@@ -81,7 +79,8 @@ when SPEC_NOT_PRESENT {
 		Value_U_Le,
 		Value_U_Ge,
 		Extract_Lane,
-		Address_Payload,
+		Pair_Undef,
+		Insert_Half,
 		Store_A64,
 		Lane_Sequence,
 		Mul_Lo16,
@@ -187,20 +186,28 @@ peep :: proc(
 			get_node(ctx, node.inps[3]).dt == .I32 ||
 			get_node(ctx, node.inps[3]).dt == .F32,
 		)
+		// NOTE: the payload is built in place starting from an undefined pair so
+		// that it is live, and interferes, with both halves while being written,
+		// it goes last in the inputs since the scheduler only sinks the last
+		// single use input, which keeps the whole chain next to the store
 		lo, hi := split_address(ctx.prc, node.inps[2])
-		payload := bac.add_raw(
-			ctx,
-			"a64",
-			u16(Node_Type.Address_Payload),
-			.V512,
-			{node.inps[0], node.inps[1], lo, hi},
-		)
+		payload := bac.add_raw(ctx, "a64", u16(Node_Type.Pair_Undef), .V512, {})
+		for half, i in ([2]bac.Node_ID{lo, hi}) {
+			payload = bac.add_raw(
+				ctx,
+				"a64half",
+				u16(Node_Type.Insert_Half),
+				.V512,
+				{half, payload},
+				extra = &bac.Tup{u32(i)},
+			)
+		}
 		return bac.add_raw(
 			ctx,
 			"storea64",
 			u16(Node_Type.Store_A64),
 			.Mem,
-			{node.inps[0], node.inps[1], payload, node.inps[3]},
+			{node.inps[0], node.inps[1], node.inps[3], payload},
 		)
 	case .Conv, .U_Conv:
 		source := expand_node(ctx, node.inps[0])
@@ -259,6 +266,7 @@ meta_of :: proc(
 		RK_FLAG = FLAG_MASKS[:],
 	}
 	nmasks := masks[nkind]
+	if node.dt == .V512 do nmasks = GRF_PAIR_MASKS[:]
 	out := nmasks[0]
 
 	if node.dt <= .Mem {
@@ -303,17 +311,20 @@ meta_of :: proc(
 		return {out = out, masks = nmasks[:1]}
 	case .Thread_Id, .Lane_Sequence:
 		return {out = out}
-	case .Address_Payload:
+	case .Pair_Undef:
+		return {out = out, width = 2}
+	case .Insert_Half:
 		return {
-			out = single(ra, ADDRESS_PAYLOAD),
-			input_start = 2,
-			masks = GRF_MASKS[:2],
+			out = out,
+			masks = dup({GRF_MASK_IDX, GRF_PAIR_MASK_IDX}),
+			in_place_slot = 2,
+			width = 2,
 		}
 	case .Store_A64:
 		return {
 			out = IOUT,
 			input_start = 2,
-			masks = dup({single(ra, ADDRESS_PAYLOAD), GRF_MASK_IDX}),
+			masks = dup({GRF_MASK_IDX, GRF_PAIR_MASK_IDX}),
 		}
 	case .Split:
 		source := expand_node(prc, node.inps[0])
@@ -454,7 +465,7 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, block_idx: int) {
 	#partial switch xtype(node) {
 	case .Nil ..= .Dbg_Scope:
 		fmt.panicf("should not reach these: %v", node)
-	case .Poison ..= .Phi:
+	case .Poison ..= .Phi, .Pair_Undef:
 	case .CInt:
 		value := bac.get_extra(ctx, node, bac.CInt)
 		bits := u32(value.value)
@@ -502,26 +513,26 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, block_idx: int) {
 				0x76543210,
 			},
 		)
-	case .Address_Payload:
+	case .Insert_Half:
 		dst := reg_of(ctx, instr)
-		assert(dst == ADDRESS_PAYLOAD)
-		for input, half in node.inps[2:] {
-			// mov (8|M0) r{dst}.{half}<2>:ud r{src}.0<8;8,1>:ud {@1}
-			emit_op(
-				ctx.code,
-				{
-					eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
-					eu_dst(dst, eu_subreg(u32(half), .UD), .UD, 2) | eu_src0_type(.UD),
-					eu_src(reg_of(ctx, input), 0, 8, 8, 1),
-					0,
-				},
-			)
-		}
+		assert(dst == reg_of(ctx, node.inps[1]))
+		half := bac.get_extra(ctx, node, bac.Tup).idx
+		// mov (8|M0) r{dst}.{half}<2>:ud r{src}.0<8;8,1>:ud {@1}
+		emit_op(
+			ctx.code,
+			{
+				eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
+				eu_dst(dst, eu_subreg(half, .UD), .UD, 2) | eu_src0_type(.UD),
+				eu_src(reg_of(ctx, node.inps[0]), 0, 8, 8, 1),
+				0,
+			},
+		)
 	case .Store_A64:
 		d1, d2, d3 := eu_send_desc(
 			eu_dc1_desc(0x19, 0x2e, 0xfd, 2, header = false),
 		)
 		e1, e2, e3 := eu_send_ex_desc(eu_message_ex_desc(1))
+		assert(ctx.widths[get_node(ctx, node.inps[3]).gvn] == 2)
 		// send.dc1 (8|M0) null r{address} r{value} 0x40 0x04066efd {@1,$0}
 		emit_op(
 			ctx.code,
@@ -529,10 +540,10 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, block_idx: int) {
 				eu_control(.Send, 8, swsb = eu_swsb_combined(1, 0)),
 				eu_send_dst(R0, .ARF) | d1 | e1,
 				eu_send_target(.DC1) |
-				eu_send_src(reg_of(ctx, node.inps[2])) |
+				eu_send_src(reg_of(ctx, node.inps[3])) |
 				d2 |
 				e2,
-				eu_send_src(reg_of(ctx, node.inps[3])) | d3 | e3,
+				eu_send_src(reg_of(ctx, node.inps[2])) | d3 | e3,
 			},
 		)
 		// A send reads its payload asynchronously, past the allocator's last use.
@@ -570,16 +581,21 @@ emit_instr :: proc(ctx: ^$C/Ctx, instr: bac.Node_ID, block_idx: int) {
 				},
 			)
 		} else {
-			// mov (8|M0) r{dst}.0<1>:ud r{src}.0<8;8,1>:ud {@1}
-			emit_op(
-				ctx.code,
-				{
-					eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
-					eu_dst(dst, 0, .UD) | eu_src0_type(.UD),
-					eu_src(src, 0, 8, 8, 1),
-					0,
-				},
-			)
+			width := u16(ctx.widths[node.gvn])
+			for i in 0 ..< width {
+				// NOTE: the spans can overlap, copy away from the overlap
+				k := dst.index > src.index ? width - 1 - i : i
+				// mov (8|M0) r{dst+k}.0<1>:ud r{src+k}.0<8;8,1>:ud {@1}
+				emit_op(
+					ctx.code,
+					{
+						eu_control(.Mov, 8, swsb = eu_swsb_regdist(1)),
+						eu_dst({index = dst.index + k}, 0, .UD) | eu_src0_type(.UD),
+						eu_src({index = src.index + k}, 0, 8, 8, 1),
+						0,
+					},
+				)
+			}
 		}
 	case .Eq ..= .U_Ge, .Value_Eq ..= .Value_U_Ge:
 		materialized := xtype(node) >= .Value_Eq

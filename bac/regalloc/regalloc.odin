@@ -93,6 +93,7 @@ regalloc_round :: proc(
 		block_offset:    int,
 		blocks:          []Block,
 		res:             []bac.Reg,
+		lrgs:            []bac.Lrg,
 		block_base:      int,
 		pre_split_gvn:   u32,
 	}
@@ -169,19 +170,29 @@ regalloc_round :: proc(
 					}
 				}
 
-				mask := bac.rm_get(ctx.ra, ctx.gmetas[inode.gvn].out)
+				meta := ctx.gmetas[inode.gvn]
+				assert(mode == .with_coloring || meta.width == 1)
+				assert(meta.width <= bac.MASK_SIZE)
+
+				mask := bac.rm_get(ctx.ra, meta.out)
 				if lrg == nil {
 					lrg = &lrgs[used_lrgs]
 					lrg.node = instr
 					lrg.must_spill = inode.must_spill
 					lrg.index = used_lrgs
 					lrg.mask = bac.reg_mask_clone(mask)
+					lrg.width = meta.width
 					lrg.reg = -1
 					used_lrgs += 1
 				} else {
 					lrg = find(lrg)
+					lrg.width = max(lrg.width, meta.width)
 					lrg.must_spill |= inode.must_spill
 					intersect(lrg, mask)
+				}
+
+				if inode.itype == .Split {
+					lrg.width = max(lrg.width, find(get_lrg(ctx, inode.inps[0])).width)
 				}
 
 				for o in inode.outs {
@@ -212,6 +223,18 @@ regalloc_round :: proc(
 	preserved: u32
 	for &lrg, i in lrgs[:used_lrgs] {
 		if lrg.parent == nil {
+			// NOTE: bases past the boundary are stack slots, a spilled wide
+			// value needs all of its slots
+			limits := [2]int {
+				ctx.ra.spill_boundary[lrg.mask.kind],
+				int(lrg.mask.bit_length),
+			}
+			for limit in limits {
+				for base in max(limit - int(lrg.width) + 1, 0) ..< limit {
+					bac.reg_mask_set(lrg.mask, base, false)
+				}
+			}
+
 			projection[i] = preserved
 			lrg.index = preserved
 			lrgs[preserved] = lrg
@@ -220,6 +243,7 @@ regalloc_round :: proc(
 	}
 
 	used_lrgs = preserved
+	ctx.lrgs = lrgs
 
 	for &lrg in ctx.lrg_table {
 		idx := (uintptr(lrg) - uintptr(raw_data(lrgs))) / size_of(bac.Lrg)
@@ -379,6 +403,13 @@ regalloc_round :: proc(
 
 			if is_def(ctx, inode) {
 				lrg := ctx.lrg_table[inode.gvn]
+				// NOTE: a split of a phi can be visited before the wide def coming
+				// over the back edge widens the phi
+				assert(
+					inode.itype != .Split ||
+					lrg.width >= get_lrg(ctx, inode.inps[0]).width,
+				)
+
 				v := liveouts_delete(&curr_live, lrg.index)
 				if v.node != 0 {
 					// NOTE: this will not happen twice for a given def since
@@ -391,7 +422,14 @@ regalloc_round :: proc(
 				if interference.bit_length != 0 {
 					for l in curr_live.data.id[:curr_live.len] {
 						l := &lrgs[l.lrg]
-						if !bac.reg_mask_intersects(l.mask, lrg.mask) do continue
+						if !bac.reg_mask_spans_intersect(
+							l.mask,
+							l.width,
+							lrg.mask,
+							lrg.width,
+						) {
+							continue
+						}
 
 						pair := []^bac.Lrg{lrg, l}
 
@@ -400,10 +438,11 @@ regalloc_round :: proc(
 
 							// TODO: this could be a single operation
 							if bac.reg_mask_pop_count(ll.mask) == 1 {
-								bac.reg_mask_set(
+								bac.reg_mask_exclude_span(
 									rl.mask,
+									rl.width,
 									bac.reg_mask_first_set(ll.mask) or_else fmt.panicf(""),
-									false,
+									ll.width,
 								)
 
 								// TODO: one of them will fail, and its pretty
@@ -432,7 +471,10 @@ regalloc_round :: proc(
 				for l in curr_live.data.id[:curr_live.len] {
 					l := &lrgs[l.lrg]
 					assert(l.mask.bit_length != 0)
-					l.mask.masks[0] &= ~clobbers[l.mask.kind]
+					l.mask.masks[0] &= ~bac.reg_word_forbidden_bases(
+						clobbers[l.mask.kind],
+						l.width,
+					)
 					if bac.reg_mask_is_empty(l.mask) {
 						l.killed = true
 					}
@@ -898,6 +940,10 @@ regalloc_round :: proc(
 
 				slices[slice_cursor] = u32(edge - base)
 				slice_cursor += 1
+				lrgs[cursor].degree += edge_degree(
+					lrgs[u32(edge - base)],
+					lrgs[cursor],
+				)
 				break
 			}
 		}
@@ -976,6 +1022,10 @@ regalloc_round :: proc(
 				ifg[winner.index] = buf
 				ifg[other.index] = {}
 
+				// NOTE: the winner can be wider than both, so all its edges change
+				winner.degree = degree_of(lrgs, buf, winner^)
+				for adj in buf do lrgs[adj].degree = degree_of(lrgs, ifg[adj], lrgs[adj])
+
 				ordered_remove(&bb.instrs, j)
 				bac.subsume(prc, inode.inps[0], instr)
 			}
@@ -1006,8 +1056,10 @@ regalloc_round :: proc(
 
 		when !ODIN_DISABLE_ASSERT {
 			sum := 0
-			for i in ifg {
-				sum += len(i)
+			for adj, i in ifg {
+				sum += len(adj)
+				if lrgs[i].parent != nil do continue
+				assert(lrgs[i].degree == degree_of(lrgs, adj, lrgs[i]))
 			}
 		}
 
@@ -1101,6 +1153,7 @@ regalloc_round :: proc(
 					lrg_search(slc^, lrg.index) or_else fmt.panicf("removed a lrg twice")
 				slc[idx], slc[len(slc) - 1] = slc[len(slc) - 1], slc[idx]
 				slc^ = slc[:len(slc) - 1]
+				ctx.lrgs[adj].degree -= edge_degree(lrg^, ctx.lrgs[adj])
 			}
 		}
 
@@ -1112,12 +1165,21 @@ regalloc_round :: proc(
 			yes: bool,
 		) {
 			return(
-				bac.reg_mask_pop_count(lrg.mask) > len(ctx.adj[lrg.index]) &&
+				bac.reg_mask_pop_count(lrg.mask) > int(lrg.degree) &&
 				lrg.color_ord_idx >= u32(ready) \
 			)
 		}
 
 		if failed_any do ctx.color_ord = {}
+
+		degree_of :: proc(lrgs: []bac.Lrg, adj: []u32, lrg: bac.Lrg) -> (d: u32) {
+			for a in adj do d += edge_degree(lrg, lrgs[a])
+			return
+		}
+
+		edge_degree :: #force_inline proc(a, b: bac.Lrg) -> u32 {
+			return u32(a.width + b.width - 1)
+		}
 
 		#reverse for co in ctx.color_ord {
 			n := ifg[co]
@@ -1129,7 +1191,12 @@ regalloc_round :: proc(
 				adjs^ = raw_data(adjs^)[:len(adjs) + 1]
 				assert(adjs[len(adjs) - 1] == lrg.index)
 				if lrgs[inter].reg != -1 {
-					bac.reg_mask_set(lrg.mask, lrgs[inter].reg, false)
+					bac.reg_mask_exclude_span(
+						lrg.mask,
+						lrg.width,
+						lrgs[inter].reg,
+						lrgs[inter].width,
+					)
 				}
 			}
 
@@ -1162,11 +1229,13 @@ regalloc_round :: proc(
 	}
 
 	res.allocs = make([]bac.Reg, def_count)
+	res.widths = make([]u8, def_count)
 	for lrg, j in ctx.lrg_table {
 		res.allocs[j] = {
 			kind  = lrg.mask.kind,
 			index = u16(lrg.reg),
 		}
+		res.widths[j] = lrg.width
 	}
 
 	ctx.res = res.allocs
@@ -1194,6 +1263,7 @@ regalloc_round :: proc(
 		}
 
 		b.parent = a
+		a.width = max(a.width, b.width)
 
 		intersect(a, b.mask)
 
@@ -1765,7 +1835,12 @@ regalloc_round :: proc(
 			for j in idx + 1 ..< sindex {
 				clobber := expand_node(ctx.prc, bb.instrs[j])
 				if !is_def(ctx, clobber) do continue
-				if res[inpnode.gvn] == res[clobber.gvn] {
+				a, b := res[inpnode.gvn], res[clobber.gvn]
+				aw := int(ctx.lrg_table[inpnode.gvn].width)
+				bw := int(ctx.lrg_table[clobber.gvn].width)
+				if a.kind == b.kind &&
+				   int(a.index) < int(b.index) + bw &&
+				   int(b.index) < int(a.index) + aw {
 					//bac.display_graph(
 					//	os.to_writer(os.stderr),
 					//	ctx.prc,

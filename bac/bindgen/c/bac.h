@@ -725,9 +725,11 @@ struct bac_Regalloc_Node_Meta {
 	bac_RM_Intern_Idx out;
 	bac_i8 in_place_slot;
 	bac_u8 input_start;
+	bac_u8 width;
 };
 struct bac_Regalloc_Output {
 	Slice_Of_bac_Reg allocs;
+	Slice_Of_bac_u8 widths;
 	bac_Reg_Kind temp_stack_slot;
 	_Bool computed;
 };

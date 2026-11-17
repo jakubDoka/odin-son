@@ -848,10 +848,10 @@ spill_slot_offset :: proc(ctx: Codegen_Emit_Ctx, reg: Reg) -> i32 {
 
 layout_spill_slots :: proc(ctx: Codegen_Emit_Ctx, stack_size: ^i32) {
 	spill_slot_count: [8]i32
-	for reg in ctx.allocs {
+	for reg, i in ctx.allocs {
 		spill_slot_count[reg.kind] = max(
 			spill_slot_count[reg.kind],
-			i32(reg.index) - i32(ctx.spill_boundary[reg.kind]) + 1,
+			i32(reg.index) + i32(ctx.widths[i]) - i32(ctx.spill_boundary[reg.kind]),
 		)
 	}
 

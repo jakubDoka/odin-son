@@ -61,6 +61,9 @@ to the target. I dont want to see any hacks like spilling random register to
 stack or adding a wasm local, only exception is mem2mem split and that is rare
 case, no instructions should quarantee spills.
 
+ALWAYS prefer to express things with nodes, as oposed to adding more features
+to the generic algorithms like regalloc.
+
 When hardcoding instructions encodings, it is adamant that you add a comment
 with the parametrized assembly to make it clear what is being encoded.
 

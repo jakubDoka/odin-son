@@ -509,7 +509,7 @@ const _: () = assert!(core::mem::align_of::<Node_ID>() == 4);
 crate::abi_struct! {
     #[derive(AbiStruct)]
     #[repr(C, align(8))]
-    #[abi(size = 240)]
+    #[abi(size = 256)]
     pub struct Codegen_Emit_Ctx {
         #[abi(offset = 0)] pub r#prc: *mut Proc,
         #[abi(offset = 8)] pub r#schedule: *mut Schedule,
@@ -520,15 +520,15 @@ crate::abi_struct! {
         #[abi(offset = 84)] pub r#lib_calls: Lib_Calls,
         #[abi(offset = 96)] pub r#regalloc_mode: Regalloc_Mode,
         #[abi(offset = 104)] pub r#ra_out: Regalloc_Output,
-        #[abi(offset = 128)] pub r#param_specs: Slice<Param_Spec>,
-        #[abi(offset = 144)] pub r#stack_param_offset: Slice<DynamicArray<i32>>,
-        #[abi(offset = 160)] pub r#spill_slot_base: Slice<i32>,
-        #[abi(offset = 176)] pub r#spill_slot_size: Slice<i32>,
-        #[abi(offset = 192)] pub r#instr_offsets: Slice<u32>,
-        #[abi(offset = 208)] pub r#code_start: usize,
-        #[abi(offset = 216)] pub r#constants_start: usize,
-        #[abi(offset = 224)] pub r#last_off: usize,
-        #[abi(offset = 232)] pub r#sloc: Sloc,
+        #[abi(offset = 144)] pub r#param_specs: Slice<Param_Spec>,
+        #[abi(offset = 160)] pub r#stack_param_offset: Slice<DynamicArray<i32>>,
+        #[abi(offset = 176)] pub r#spill_slot_base: Slice<i32>,
+        #[abi(offset = 192)] pub r#spill_slot_size: Slice<i32>,
+        #[abi(offset = 208)] pub r#instr_offsets: Slice<u32>,
+        #[abi(offset = 224)] pub r#code_start: usize,
+        #[abi(offset = 232)] pub r#constants_start: usize,
+        #[abi(offset = 240)] pub r#last_off: usize,
+        #[abi(offset = 248)] pub r#sloc: Sloc,
     }
 }
 crate::abi_struct! {
@@ -616,11 +616,12 @@ crate::abi_enum! {
 crate::abi_struct! {
     #[derive(AbiStruct)]
     #[repr(C, align(8))]
-    #[abi(size = 24)]
+    #[abi(size = 40)]
     pub struct Regalloc_Output {
         #[abi(offset = 0)] pub r#allocs: Slice<Reg>,
-        #[abi(offset = 16)] pub r#temp_stack_slot: Reg_Kind,
-        #[abi(offset = 18)] pub r#computed: bool,
+        #[abi(offset = 16)] pub r#widths: Slice<u8>,
+        #[abi(offset = 32)] pub r#temp_stack_slot: Reg_Kind,
+        #[abi(offset = 34)] pub r#computed: bool,
     }
 }
 crate::abi_enum! {

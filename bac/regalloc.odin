@@ -127,6 +127,52 @@ reg_mask_contains :: proc(bset: Reg_Mask, #any_int index: u32) -> bool {
 	return bset.masks[index / MASK_SIZE] & (1 << uint(index % MASK_SIZE)) != 0
 }
 
+// TODO: these things are inefficient, we should do exponential widening. These
+// shift+or loops are compiling into some vectorized mess nobody understands.
+
+reg_mask_spans_intersect :: proc(
+	a: Reg_Mask,
+	#any_int awidth: uint,
+	b: Reg_Mask,
+	#any_int bwidth: uint,
+) -> bool {
+	if a.kind != b.kind do return false
+	assert(a.bit_length == b.bit_length)
+
+	aprev, bprev: u64
+	for i in 0 ..< a.bit_length / MASK_SIZE {
+		aw, bw := u64(a.masks[i]), u64(b.masks[i])
+		if occupied(aw, aprev, awidth) & occupied(bw, bprev, bwidth) != 0 {
+			return true
+		}
+		aprev, bprev = aw, bw
+	}
+	return false
+
+	occupied :: proc(word, prev: u64, width: uint) -> (res: u64) {
+		res = word
+		for k in 1 ..< width do res |= word << k | prev >> (MASK_SIZE - k)
+		return
+	}
+}
+
+reg_mask_exclude_span :: proc(
+	rm: Reg_Mask,
+	#any_int width: int,
+	#any_int reg: int,
+	#any_int reg_width: int,
+) {
+	for i in max(reg - width + 1, 0) ..< min(reg + reg_width, int(rm.bit_length)) {
+		reg_mask_set(rm, i, false)
+	}
+}
+
+reg_word_forbidden_bases :: proc(word: i64, #any_int width: uint) -> i64 {
+	res := u64(word)
+	for k in 1 ..< width do res |= u64(word) >> k
+	return i64(res)
+}
+
 Regalloc_Spec :: struct {
 	datatype_to_reg_kind: [Node_Datatype]Reg_Kind,
 	spill_boundary:       []int,
@@ -160,6 +206,7 @@ Regalloc :: struct {
 
 Regalloc_Output :: struct {
 	allocs:          []Reg,
+	widths:          []u8,
 	temp_stack_slot: Reg_Kind,
 	computed:        bool,
 }
@@ -280,6 +327,8 @@ Regalloc_Node_Meta :: struct {
 	out:           RM_Intern_Idx,
 	in_place_slot: i8,
 	input_start:   u8,
+	// NOTE: masks of wide values hold legal base registers, zero means one
+	width:         u8,
 }
 
 regalloc_collect_meta :: #force_inline proc(
@@ -328,6 +377,7 @@ regalloc_collect_meta :: #force_inline proc(
 			}
 
 			slots[inode.gvn] = meta
+			slots[inode.gvn].width = max(meta.width, 1)
 			slots[inode.gvn].in_place_slot -= 1
 			if slots[inode.gvn].in_place_slot >= 0 {
 				slots[inode.gvn].in_place_slot += i8(slots[inode.gvn].input_start)
@@ -396,8 +446,10 @@ Lrg :: struct {
 	parent:        ^Lrg,
 	// TODO: this should go into meta instead of the index
 	using fails:   Lrg_Fails,
+	width:         u8,
 	reg:           i16,
 	color_ord_idx: u32,
+	degree:        u32,
 }
 
 Slrg_ID :: distinct int

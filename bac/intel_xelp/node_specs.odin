@@ -2,7 +2,7 @@ package bac_intel_xelp
 import bac ".."
 Reg_Kind :: bac.Reg_Kind
 Class_Flag :: bac.Class_Flag
-import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta2/meta2.odin(50:3)
+import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/personal/odin/jit/bac/meta2/meta2.odin(51:3)
 
 @(tag = "api", rodata, export, link_name = "bac_intel_xelp_SPEC")SPEC := bac.Node_Spec{
 	call_clobbers = {
@@ -27,7 +27,8 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		0b10, // Value_U_Le
 		0b10, // Value_U_Ge
 		0b100000, // Extract_Lane
-		0b10, // Address_Payload
+		0b10, // Pair_Undef
+		0b100000, // Insert_Half
 		0b10, // Store_A64
 		0b10, // Lane_Sequence
 		0b10, // Mul_Lo16
@@ -46,7 +47,8 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		0, // Value_U_Le -> No_Extra
 		0, // Value_U_Ge -> No_Extra
 		1, // Extract_Lane -> Tup
-		0, // Address_Payload -> No_Extra
+		0, // Pair_Undef -> No_Extra
+		1, // Insert_Half -> Tup
 		0, // Store_A64 -> No_Extra
 		0, // Lane_Sequence -> No_Extra
 		0, // Mul_Lo16 -> No_Extra
@@ -65,7 +67,8 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		{Class_Flag.Interned}, // Value_U_Le
 		{Class_Flag.Interned}, // Value_U_Ge
 		{Class_Flag.Interned}, // Extract_Lane
-		{}, // Address_Payload
+		{Class_Flag.Clonable}, // Pair_Undef
+		{}, // Insert_Half
 		{Class_Flag.Store}, // Store_A64
 		{Class_Flag.Interned}, // Lane_Sequence
 		{Class_Flag.Interned}, // Mul_Lo16
@@ -85,6 +88,7 @@ import "base:intrinsics"// NOTE: this file is generated, see: /home/mlokis/perso
 		bac.No_Extra,
 		bac.Tup,
 		bac.No_Extra,
+		bac.Tup,
 		bac.No_Extra,
 		bac.No_Extra,
 		bac.No_Extra,
@@ -181,7 +185,8 @@ Node_Type :: enum u16 {
 	Value_U_Le,
 	Value_U_Ge,
 	Extract_Lane,
-	Address_Payload,
+	Pair_Undef,
+	Insert_Half,
 	Store_A64,
 	Lane_Sequence,
 	Mul_Lo16,
@@ -213,9 +218,13 @@ inherit_idx_of :: #force_inline proc($T: typeid) -> u8 {
 #assert(size_of(bac.No_Extra) % bac.PRECISION == 0)
 #assert(size_of(bac.Tup) % bac.PRECISION == 0)
 
-@(rodata) GRF_MASK := [?]i64{transmute(i64)u64(0xfffffffffffffffe), transmute(i64)u64(0xff0fffffffffffff)}
+@(rodata) GRF_MASK := [?]i64{transmute(i64)u64(0xfffffffffffffffe), transmute(i64)u64(0xff3fffffffffffff)}
 GRF_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 0}
 @(rodata) GRF_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GRF_MASK_IDX}
+
+@(rodata) GRF_PAIR_MASK := [?]i64{transmute(i64)u64(0xfffffffffffffffe), transmute(i64)u64(0x7f1fffffffffffff)}
+GRF_PAIR_MASK_IDX :: bac.RM_Intern_Idx{index = 1, kind = 0}
+@(rodata) GRF_PAIR_MASKS := [6]bac.RM_Intern_Idx{0 ..< 6 = GRF_PAIR_MASK_IDX}
 
 @(rodata) FLAG_MASK := [?]i64{transmute(i64)u64(0x000000000000000f), transmute(i64)u64(0x0000000000000000)}
 FLAG_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 1}
@@ -224,6 +233,7 @@ FLAG_MASK_IDX :: bac.RM_Intern_Idx{index = 0, kind = 1}
 seed_rm_interner :: proc(ra: ^bac.Regalloc) {
 	ra.mask_len = MASK_SIZE
 	bac.rm_intern_slice(ra, 0, GRF_MASK[:])
+	bac.rm_intern_slice(ra, 0, GRF_PAIR_MASK[:])
 	bac.rm_intern_slice(ra, 1, FLAG_MASK[:])
 }
 

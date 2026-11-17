@@ -41,7 +41,8 @@ main :: proc() {
 			.Inv = {no_ctor = true, flags = {.Interned}},
 			.Value_Eq ..= .Value_U_Ge = {no_ctor = true, flags = {.Interned}},
 			.Extract_Lane = {id = bac.Tup, no_ctor = true, flags = {.Interned}},
-			.Address_Payload = {no_ctor = true},
+			.Pair_Undef = {no_ctor = true, flags = {.Clonable}},
+			.Insert_Half = {id = bac.Tup, no_ctor = true},
 			.Store_A64 = {no_ctor = true, flags = {.Store}},
 			.Lane_Sequence = {no_ctor = true, flags = {.Interned}},
 			.Mul_Lo16 ..= .Mul_Hi16 = {no_ctor = true, flags = {.Interned}},
@@ -64,7 +65,12 @@ main :: proc() {
 				common_reg_specs = {
 					// TODO: this is not ideal to reserve so many registers for shit
 					// and instead support this in the regalloc but that is a big task
-					{"GRF", intel_xelp.RK_GRF, {~i64(1), ~i64(0xf << 52)}},
+					{"GRF", intel_xelp.RK_GRF, {~i64(1), ~i64(0x3 << 54)}},
+					{
+						"GRF_PAIR",
+						intel_xelp.RK_GRF,
+						{~i64(1), ~i64(0x7 << 53) & max(i64)},
+					},
 					{"FLAG", intel_xelp.RK_FLAG, {0xf, 0}},
 				},
 			},

@@ -1228,8 +1228,8 @@ regalloc_round :: proc(
 
 	}
 
-	res.allocs = make([]bac.Reg, def_count)
-	res.widths = make([]u8, def_count)
+	res.allocs = make([]bac.Reg, def_count, scratch)
+	res.widths = make([]u8, def_count, scratch)
 	for lrg, j in ctx.lrg_table {
 		res.allocs[j] = {
 			kind  = lrg.mask.kind,

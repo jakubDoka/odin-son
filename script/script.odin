@@ -751,6 +751,15 @@ run_generated :: proc() -> int {
 		cmd("wasm-opt", "-Oz", "mini.wasm", "-o", "mini.wasm")
 		cmd("mv", "mini.wasm", "odinc/mini")
 	case "build-unicorn":
+		// the submodule is `update = none` so it is only fetched by people who need it
+		cmd(
+			"git",
+			"submodule",
+			"update",
+			"--init",
+			"--checkout",
+			"vendored/unicorn-engine",
+		)
 		cmd(
 			"cmake",
 			"-S",

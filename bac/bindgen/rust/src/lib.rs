@@ -305,7 +305,7 @@ impl<'a> Proc<'a> {
         self.raw.get_mut().node_spec = spec.as_ptr();
     }
 
-    pub fn apply_peeps(&mut self, opt_hints: sys::Opt_Hints) -> bool {
+    pub fn apply_peeps(&mut self, opt_hints: sys::Opt_Config) -> bool {
         unsafe {
             sys::bac_apply_peeps(sys::Peep_Ctx {
                 prc: self.raw_ptr(),
@@ -314,7 +314,7 @@ impl<'a> Proc<'a> {
         }
     }
 
-    pub fn opt(&mut self, opt_hints: sys::Opt_Hints) {
+    pub fn opt(&mut self, opt_hints: sys::Opt_Config) {
         unsafe {
             sys::bac_opt(sys::Peep_Ctx {
                 prc: self.raw_ptr(),
